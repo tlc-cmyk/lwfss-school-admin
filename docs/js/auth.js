@@ -82,22 +82,12 @@
     try { sessionStorage.removeItem(LEGACY_KEY); } catch (e) { /* ignore */ }
   }
 
-  function providerHintHtml() {
-    return (
-      "登入使用 <strong>Supabase Auth → Google</strong>。請先在 Supabase Dashboard 啟用：" +
-      "<br><strong>Authentication → Providers → Google</strong>，填入 Google Cloud 的 Client ID 與 Client Secret。" +
-      "<br>Google Cloud 的已授權重新導向 URI：<code>https://edausixxdclhonkrdzqg.supabase.co/auth/v1/callback</code>" +
-      "<br>已授權的 JavaScript 來源請包含 <code>https://tlc-cmyk.github.io</code>。" +
-      "<br>只接受 <strong>@" + allowedDomain + "</strong> 學校帳戶；其他帳戶會被登出。" +
-      "<br>Supabase 的 Redirect URLs 亦須允許本站（見 README）。"
-    );
-  }
-
   function setHint() {
     var hint = $("oauth-hint");
-    if (!hint) return;
-    hint.classList.remove("hidden");
-    hint.innerHTML = providerHintHtml();
+    if (hint) {
+      hint.textContent = "";
+      hint.classList.add("hidden");
+    }
   }
 
   function acceptSupabaseSession(session) {
