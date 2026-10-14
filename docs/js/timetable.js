@@ -1,6 +1,11 @@
 (function () {
   "use strict";
 
+  var PAGE = 1000;
+  var uiReady = false;
+  var cloudStarted = false;
+  var searchedFromQuery = false;
+
   function $(id) { return document.getElementById(id); }
 
   function getData() {
@@ -162,16 +167,168 @@
     showTeacher(found);
   }
 
-  function init() {
-    var data = getData();
+  function setInfo(data, extra) {
     var info = $("data-info");
-    if (info && data && data.meta) {
-      info.textContent =
-        (data.meta.schoolShort || "") + " · " +
-        data.meta.teacherCount + " 位教師 · 更新於 " +
-        (data.meta.generatedAt || "—");
+    if (!info) return;
+    if (!data || !data.meta) {
+      info.textContent = extra || "";
+      return;
     }
+    var count = data.meta.teacherCount || (data.teachers ? data.teachers.length : 0);
+    info.textContent =
+      (data.meta.schoolShort || "") + " · " +
+      count + " 位教師 · 更新於 " +
+      (data.meta.generatedAt || "—") +
+      (extra ? " · " + extra : "");
+  }
 
+  function setCloudNote(text) {
+    var note = $("cloud-note");
+    if (!note) return;
+    if (text) {
+      note.textContent = text;
+      note.classList.remove("hidden");
+    } else {
+      note.textContent = "";
+      note.classList.add("hidden");
+    }
+  }
+
+  function bindLocal(extra) {
+    var data = getData();
+    setInfo(data, extra || "");
+    if (data && data.teachers) renderSuggestions(data.teachers.slice(0, 8));
+    applyQuery();
+  }
+
+  function applyQuery() {
+    if (searchedFromQuery) return;
+    var params = new URLSearchParams(location.search);
+    var code = params.get("t") || "";
+    if (!code) {
+      var q = params.get("code") || "";
+      // Supabase PKCE 回傳的 ?code= 很長，不是教師代碼
+      if (q && /^[A-Za-z0-9]{1,8}$/.test(q)) code = q;
+    }
+    var input = $("code-input");
+    if (code && input && getData()) {
+      searchedFromQuery = true;
+      input.value = code;
+      doSearch();
+    }
+  }
+
+  function assemble(teacherRows, lessonRows, metaRows) {
+    var metaMap = {};
+    (metaRows || []).forEach(function (row) { metaMap[row.key] = row.value; });
+    var byCode = {};
+    var teachers = (teacherRows || []).map(function (t) {
+      var schedule = {};
+      for (var d = 1; d <= 10; d++) schedule[String(d)] = {};
+      var obj = {
+        code: t.code,
+        eng: t.eng_name || "",
+        chi: t.chi_name || "",
+        lessonCount: t.lesson_count || 0,
+        schedule: schedule
+      };
+      byCode[t.code] = obj;
+      return obj;
+    });
+    (lessonRows || []).forEach(function (l) {
+      var teacher = byCode[l.teacher_code];
+      if (!teacher) return;
+      var dayKey = String(l.day);
+      var day = teacher.schedule[dayKey] || (teacher.schedule[dayKey] = {});
+      day[String(l.period)] = {
+        class: l.class_name || "",
+        classShort: l.class_short || "",
+        subject: l.subject || "",
+        subjectShort: l.subject_short || "",
+        teacher: l.teachers_field || "",
+        room: l.room || ""
+      };
+    });
+    var extraDays = String(metaMap.periods_extra_days || "5,10").split(",").map(function (x) {
+      return parseInt(x, 10);
+    }).filter(function (n) { return !isNaN(n); });
+    return {
+      meta: {
+        school: metaMap.school || "",
+        schoolShort: metaMap.school_short || "",
+        sourceFileId: metaMap.source_file_id || "",
+        sourceName: metaMap.source_name || "",
+        sourceTab: metaMap.source_tab || "",
+        teacherCount: parseInt(metaMap.teacher_count, 10) || teachers.length,
+        days: parseInt(metaMap.days, 10) || 10,
+        periodsNormal: parseInt(metaMap.periods_normal, 10) || 7,
+        periodsExtraDays: extraDays.length ? extraDays : [5, 10],
+        generatedAt: metaMap.generated_at || "",
+        generatedFrom: "Supabase cloud"
+      },
+      teachers: teachers
+    };
+  }
+
+  function fetchAll(supabase, table, orderCol) {
+    var from = 0;
+    var all = [];
+    function next() {
+      var query = supabase.from(table).select("*").order(orderCol).range(from, from + PAGE - 1);
+      return query.then(function (res) {
+        if (res.error) throw res.error;
+        var rows = res.data || [];
+        all = all.concat(rows);
+        if (rows.length < PAGE) return all;
+        from += PAGE;
+        return next();
+      });
+    }
+    return next();
+  }
+
+  function useLocalBackup() {
+    setCloudNote("雲端暫不可用，使用本地備份");
+    bindLocal("本地備份");
+  }
+
+  function loadFromCloud() {
+    if (cloudStarted) return;
+    var auth = window.SchoolAdminAuth;
+    var supabase = (auth && auth.getClient && auth.getClient()) || window.__supabaseClient;
+    var session = auth && auth.getSession ? auth.getSession() : window.__schoolAdminSession;
+    if (!session || session.method !== "supabase" || !supabase) {
+      setCloudNote("");
+      bindLocal(session && session.method !== "supabase" ? "本地備份" : "");
+      return;
+    }
+    cloudStarted = true;
+    setCloudNote("");
+    setInfo(null, "正在從 Supabase 雲端載入時間表…");
+    Promise.all([
+      fetchAll(supabase, "teachers", "code"),
+      fetchAll(supabase, "lessons", "id"),
+      fetchAll(supabase, "meta", "key")
+    ]).then(function (parts) {
+      var data = assemble(parts[0], parts[1], parts[2]);
+      if (!data.teachers.length) throw new Error("empty");
+      window.TIMETABLE_DATA = data;
+      setCloudNote("");
+      var current = window.__currentTeacher && window.__currentTeacher.code;
+      bindLocal("Supabase 雲端");
+      if (current) {
+        var again = findTeacher(current);
+        if (again && !Array.isArray(again)) renderSchedule(again, window.__currentDay || 1);
+      }
+    }).catch(function () {
+      cloudStarted = false;
+      useLocalBackup();
+    });
+  }
+
+  function ensureUi() {
+    if (uiReady) return;
+    uiReady = true;
     var form = $("search-form");
     if (form) {
       form.addEventListener("submit", function (e) {
@@ -179,7 +336,6 @@
         doSearch();
       });
     }
-
     var input = $("code-input");
     if (input) {
       input.addEventListener("input", function () {
@@ -193,17 +349,34 @@
         else if (found) renderSuggestions([found]);
       });
     }
+  }
 
-    if (data && data.teachers) {
-      renderSuggestions(data.teachers.slice(0, 8));
+  function onAuthed() {
+    ensureUi();
+    var session = (window.SchoolAdminAuth && SchoolAdminAuth.getSession()) || window.__schoolAdminSession;
+    if (session && session.method === "supabase") {
+      var client = (window.SchoolAdminAuth && SchoolAdminAuth.getClient && SchoolAdminAuth.getClient()) || window.__supabaseClient;
+      if (client) loadFromCloud();
+      else {
+        var waits = 0;
+        (function wait() {
+          waits += 1;
+          var ready = (window.SchoolAdminAuth && SchoolAdminAuth.getClient && SchoolAdminAuth.getClient()) || window.__supabaseClient;
+          if (ready) loadFromCloud();
+          else if (waits < 50) setTimeout(wait, 100);
+          else useLocalBackup();
+        })();
+      }
+    } else {
+      setCloudNote("");
+      bindLocal("");
     }
+  }
 
-    var params = new URLSearchParams(location.search);
-    var code = params.get("code") || params.get("t");
-    if (code && input) {
-      input.value = code;
-      doSearch();
-    }
+  function init() {
+    ensureUi();
+    document.addEventListener("schooladmin:authed", onAuthed);
+    if (window.__schoolAdminSession) onAuthed();
   }
 
   if (document.readyState === "loading") {

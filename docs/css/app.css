@@ -296,7 +296,7 @@ a:hover { text-decoration: underline; }
 }
 
 .gate {
-  max-width: 360px;
+  max-width: 440px;
   margin: 48px auto;
   background: var(--card);
   border-radius: var(--radius);
@@ -378,4 +378,12 @@ a:hover { text-decoration: underline; }
   margin-top: 8px;
   font-size: 0.75rem;
   opacity: 0.9;
+}
+
+.supabase-login {
+  width: 100%;
+  margin: 4px 0 10px;
+}
+.cloud-note, #cloud-note {
+  margin-top: 4px;
 }
