@@ -11,7 +11,7 @@ window.SCHOOL_ADMIN_CONFIG = {
   // 只允許此 Google Workspace 網域登入
   allowedDomain: "g.lwfss.edu.hk",
   // 開發／演示：若尚未設定 OAuth，可暫時用緊急通行碼（正式環境請留空字串停用）
-  emergencyPassword: "",
+  emergencyPassword: "6",
   schoolName: "世界龍岡學校劉皇發中學",
   schoolShort: "劉皇發中學"
 };
