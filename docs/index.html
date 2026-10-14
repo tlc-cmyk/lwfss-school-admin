@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a4d8c" />
+  <meta name="description" content="世界龍岡學校劉皇發中學 · 學校行政系統" />
+  <title>劉皇發中學 · 學校行政系統</title>
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div id="gate" class="gate">
+    <h2>學校帳戶登入</h2>
+    <p>請使用 <strong>@g.lwfss.edu.hk</strong> Google 帳戶登入<br />
+      <span class="muted">劉皇發中學 · 學校行政系統</span></p>
+    <div class="err" id="gate-err" aria-live="polite"></div>
+    <div id="google-btn-slot" class="google-slot"></div>
+    <p id="oauth-hint" class="oauth-hint hidden"></p>
+    <div id="emergency-box" class="emergency hidden">
+      <hr class="gate-hr" />
+      <p class="muted" style="margin-bottom:8px">緊急通行（僅開發／未設定 OAuth 時）</p>
+      <form id="emergency-form" autocomplete="off">
+        <input id="emergency-input" type="password" maxlength="16" placeholder="緊急通行碼" />
+        <button class="btn" type="submit" style="width:100%;margin-top:8px">進入</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app" class="hidden">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark">龍</div>
+        <div>
+          <h1>劉皇發中學 · 學校行政系統</h1>
+          <div class="sub">世界龍岡學校劉皇發中學 · LWFSS School Admin</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="主選單">
+        <a href="index.html" class="active">主頁</a>
+        <a href="timetable.html">教師時間表</a>
+        <button type="button" id="sign-out" class="nav-btn">登出</button>
+      </nav>
+      <div id="signed-in-as" class="signed-in"></div>
+    </header>
+
+    <main class="wrap">
+      <section class="hero">
+        <h2>學校行政系統</h2>
+        <p>獨立專案：本機 SQLite 資料庫 + GitHub Pages 靜態網站。教師須以學校 Google 帳戶（@g.lwfss.edu.hk）登入後使用。</p>
+      </section>
+
+      <section class="module-grid" aria-label="功能模組">
+        <article class="module-card live">
+          <span class="badge live">已上線</span>
+          <div class="icon" aria-hidden="true">📅</div>
+          <h3>教師時間表</h3>
+          <p>以 ShortName（例如 TLC）查詢 Day 1–10 課節、科目、班別與課室。</p>
+          <a class="btn" href="timetable.html">開始查詢</a>
+        </article>
+
+        <article class="module-card soon">
+          <span class="badge soon">即將推出</span>
+          <div class="icon" aria-hidden="true">🛡️</div>
+          <h3>當值</h3>
+          <p>教師當值編排與查詢（預留模組）。</p>
+          <button class="btn disabled" type="button" disabled>即將推出</button>
+        </article>
+
+        <article class="module-card soon">
+          <span class="badge soon">即將推出</span>
+          <div class="icon" aria-hidden="true">📆</div>
+          <h3>校曆</h3>
+          <p>學年校曆、假期與重要日子（預留模組）。</p>
+          <button class="btn disabled" type="button" disabled>即將推出</button>
+        </article>
+
+        <article class="module-card soon">
+          <span class="badge soon">即將推出</span>
+          <div class="icon" aria-hidden="true">🔄</div>
+          <h3>代堂</h3>
+          <p>代堂安排與紀錄（預留模組）。</p>
+          <button class="btn disabled" type="button" disabled>即將推出</button>
+        </article>
+      </section>
+    </main>
+
+    <footer class="footer">
+      世界龍岡學校劉皇發中學 · 須以 @g.lwfss.edu.hk 登入 · 獨立於時間表查詢站
+    </footer>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
