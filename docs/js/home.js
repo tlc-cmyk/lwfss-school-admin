@@ -6,6 +6,10 @@
   var clockTimer = null;
   var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
   var NOTES_DEADLINE_MAX = 3;
+  // Hide from homepage「今日事項」only (still listed on 全部文件遞交).
+  var HOME_NOTES_HIDDEN_DEADLINE_TITLES = {
+    "中、英文科老師完成修改中六學生申報聯招及個人概覽自述文章/學會活動計劃書/行政會議": true
+  };
 
   // Bell times (一般／BF) — same source as timetable-app bells.json
   var BELLS = {
@@ -538,9 +542,14 @@
           .then(function (dlRes) {
             var items = [];
             if (dlRes && !dlRes.error && dlRes.data) {
-              items = dlRes.data.map(function (r) {
-                return { title: r.title, source: "deadline" };
-              });
+              items = dlRes.data
+                .filter(function (r) {
+                  var t = (r && r.title) || "";
+                  return t && !HOME_NOTES_HIDDEN_DEADLINE_TITLES[t];
+                })
+                .map(function (r) {
+                  return { title: r.title, source: "deadline" };
+                });
             }
             finishDeadlines(items);
           })
