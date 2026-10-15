@@ -588,6 +588,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+  pointer-events: none;
 }
 
 .home-top-when-row {
@@ -627,6 +628,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   border-radius: 10px;
   background: rgba(255,255,255,0.14);
   cursor: pointer;
+  overflow: hidden; /* clip native date-input hit target on mobile Chrome */
 }
 .home-bar-pick-icon { font-size: 1.05rem; line-height: 1; }
 .home-bar-date-input {
@@ -752,30 +754,44 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .home-notes { /* unused standalone; notes live in .home-top-notes */ }
 .home-bar { /* unused; replaced by .home-top */ }
 
-/* Sticky chrome: top info card + function bar always visible */
+/* Sticky chrome: top info card + function bar always visible.
+   isolation + z-index keep scrolled panel controls (select/chips) from
+   stealing taps/swipes on mobile Chrome when they pass under the chrome. */
 .home-sticky {
   position: sticky;
   top: 0;
   z-index: 40;
+  isolation: isolate;
+  overflow: visible;
   background: var(--bg);
   padding-top: 2px;
   margin-bottom: 4px;
   box-shadow: 0 10px 14px -12px rgba(13, 82, 56, 0.35);
+  pointer-events: auto;
 }
 
 /* Function bar — tabs; only bottom panel swaps */
 .home-func-bar {
+  position: relative;
+  z-index: 1;
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   margin: 0 0 10px;
   padding: 2px 0 8px;
   background: var(--bg);
+  pointer-events: auto;
 }
 .home-func-bar::-webkit-scrollbar { display: none; }
 .home-func-tab {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -790,7 +806,11 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-family: inherit;
   white-space: nowrap;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
   box-shadow: 0 1px 2px rgba(26, 58, 108, 0.04);
+  pointer-events: auto;
 }
 .home-func-tab:hover { background: var(--primary-soft); }
 .home-func-tab.active {
@@ -804,8 +824,13 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   outline-offset: 2px;
 }
 
-/* Bottom panels — only this region remounts/swaps by tab */
-.home-panels { min-height: 120px; }
+/* Bottom panels — only this region remounts/swaps by tab.
+   Lower stacking context so sticky chrome always wins hit-testing. */
+.home-panels {
+  position: relative;
+  z-index: 0;
+  min-height: 120px;
+}
 .home-panel { margin-bottom: 8px; }
 .home-panel.hidden,
 .home-panel[hidden] { display: none !important; }
@@ -1012,7 +1037,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 }
 
 html[data-app-role="staff"] .tt-teacher-row[data-role-view="staff"]:not(.hidden),
-html[data-app-role="staff"] .home-func-bar[data-role-view="staff"],
+html[data-app-role="staff"] .home-func-bar[data-role-view="staff"]:not(.hidden),
 html[data-app-role="student"] .tt-student-block[data-role-view="student"]:not(.hidden) {
   display: flex;
 }
