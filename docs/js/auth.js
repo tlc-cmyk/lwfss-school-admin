@@ -9,6 +9,7 @@
   var publishedEmail = "";
   var gateMessage = "";
   var booted = false;
+  var staffLookupInflight = "";
 
   function $(id) { return document.getElementById(id); }
 
@@ -94,8 +95,12 @@
   function publish(session) {
     window.__schoolAdminSession = session;
     showApp(session);
+    // Listeners in timetable.js / staff-deadlines.js use document.addEventListener.
+    // CustomEvent does not bubble by default, and window is above document, so a
+    // window-only dispatch never reaches those listeners — cycle day + deadlines
+    // never loaded even when staff RLS succeeded.
     try {
-      window.dispatchEvent(new CustomEvent("schooladmin:authed", { detail: session }));
+      document.dispatchEvent(new CustomEvent("schooladmin:authed", { detail: session }));
     } catch (e) { /* ignore */ }
   }
 
@@ -131,6 +136,7 @@
   function lookupStaffAndPublish(baseSession) {
     var email = (baseSession.email || "").toLowerCase();
     var finish = function (role, staffRow, errMsg) {
+      if (staffLookupInflight === email) staffLookupInflight = "";
       baseSession.role = role;
       baseSession.staff = staffRow || null;
       if (errMsg) baseSession.roleLookupError = errMsg;
@@ -141,6 +147,8 @@
       finish("student", null, "");
       return;
     }
+    if (staffLookupInflight === email) return;
+    staffLookupInflight = email;
     client
       .from("staff")
       .select("email,short_name,name,role_title,class_teacher,is_teaching_staff")
@@ -183,7 +191,12 @@
       return;
     }
     if (publishedEmail === email && window.__schoolAdminSession && window.__schoolAdminSession.method === "supabase" && window.__schoolAdminSession.role) {
+      // Session already resolved — refresh chrome and re-notify page modules
+      // (safe: timetable/deadlines guard with cloudStarted / loaded).
       showApp(window.__schoolAdminSession);
+      try {
+        document.dispatchEvent(new CustomEvent("schooladmin:authed", { detail: window.__schoolAdminSession }));
+      } catch (e) { /* ignore */ }
       return;
     }
     gateMessage = "";

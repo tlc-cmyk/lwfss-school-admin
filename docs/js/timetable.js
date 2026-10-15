@@ -491,7 +491,14 @@
 
   function init() {
     ensureUi();
-    document.addEventListener("schooladmin:authed", onAuthed);
+    function bindAuthedListener() {
+      if (bindAuthedListener.done) return;
+      bindAuthedListener.done = true;
+      // Auth publishes on document; also listen on window for older builds.
+      document.addEventListener("schooladmin:authed", onAuthed);
+      window.addEventListener("schooladmin:authed", onAuthed);
+    }
+    bindAuthedListener();
     if (window.__schoolAdminSession) onAuthed();
   }
 
