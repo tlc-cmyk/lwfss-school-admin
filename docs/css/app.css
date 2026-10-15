@@ -705,48 +705,48 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   background: #d4e8ff;
   color: #0f3460;
 }
-/* Today's notes — inset inside the same top card */
+/* Today's notes — one-line inset inside the same top card */
 .home-top-notes {
-  margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 2px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
   background: rgba(255,255,255,0.96);
   color: var(--text);
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-}
-.home-notes-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
+  font-size: 0.82rem;
+  line-height: 1.4;
 }
 .home-notes-title {
-  font-size: 0.88rem;
+  flex: 0 0 auto;
+  font-size: inherit;
   font-weight: 700;
   color: var(--primary-dark);
   margin: 0;
 }
+.home-notes-title::after {
+  content: " · ";
+  font-weight: 400;
+  color: var(--muted, #6b7c8f);
+}
 .home-notes-list {
-  list-style: none;
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: inline;
 }
 .home-note-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  padding: 5px 0;
-  border-bottom: 1px solid #eef2f6;
+  display: inline;
+  color: var(--text);
+  word-break: break-word;
 }
-.home-note-item:last-child { border-bottom: none; padding-bottom: 0; }
-.home-note-icon { flex: 0 0 auto; line-height: 1.35; }
-.home-note-title { flex: 1; min-width: 0; word-break: break-word; color: var(--text); }
+.home-note-sep {
+  color: var(--muted, #6b7c8f);
+}
 
 /* Legacy class kept for any leftover markup */
 .home-notes { /* unused standalone; notes live in .home-top-notes */ }

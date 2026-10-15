@@ -396,16 +396,18 @@
       return;
     }
 
-    var html = "";
-    items.forEach(function (it) {
+    var parts = [];
+    items.forEach(function (it, i) {
       var icon = it.kind === "deadline" ? "📋" : (it.kind === "meeting" ? "🗓️" : "📌");
-      html +=
-        '<li class="home-note-item">' +
-          '<span class="home-note-icon" aria-hidden="true">' + icon + "</span>" +
-          '<span class="home-note-title">' + escapeHtml(it.title) + "</span>" +
-        "</li>";
+      if (i) parts.push('<span class="home-note-sep" aria-hidden="true"> · </span>');
+      parts.push(
+        '<span class="home-note-item">' +
+          '<span aria-hidden="true">' + icon + "</span>" +
+          "「" + escapeHtml(it.title) + "」" +
+        "</span>"
+      );
     });
-    list.innerHTML = html;
+    list.innerHTML = parts.join("");
     section.hidden = false;
   }
 
