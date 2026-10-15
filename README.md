@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：主頁單一頂卡（nav＋今日＋事項）＋模組 pill＋課表；教師時間表查詢；文件遞交清單及校務會議（教職員）
+- **模組**：主頁 sticky 頂卡＋功能欄；下方面板跟 tab 轉（預設循環日課表）；教師時間表查詢；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -49,14 +49,14 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 沒有 INSERT / UPDATE / DELETE 政策，所以即使資料表 GRANT 給了 `anon` 和 `authenticated`，未登入或非本校電郵的請求也讀不到列（實測 anon key 查 `teachers` 回傳 `[]`），也不能改資料。  
 **不要**把 `service_role` key 或 Google Client Secret 放進這個倉庫。
 
-### 主頁（登入後 · 單一頂欄，唔顯示校網）
+### 主頁（登入後 · sticky 頂卡＋功能欄，唔顯示校網）
 
-設計原則：**頂部三塊合成一塊**，唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。
+設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
-1. **單一頂卡**：compact nav（主頁／時間表／文件／登出）＋日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋今日事項（≤3）＋「全部文件遞交」。唔再堆疊校網 header、今日卡、事項卡三層。
+1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。主選單喺 footer。
 2. **今日事項**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；嵌喺頂卡內白底 inset。當值／早會**未有真 DB 資料就唔顯示**。
-3. **模組 pill**：橫向短 pill（完整時間表、文件／會議；即時空堂／約開會標「稍後」）。
-4. **課表（獨立）**：D1–D10 選擇器＋教師下拉＋P1… 節卡，放喺頂卡下面。
+3. **功能欄（sticky tabs）**：循環日課表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
+4. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡；其他 tab 而家用 placeholder（可連去完整頁）。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 

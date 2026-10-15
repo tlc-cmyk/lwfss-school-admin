@@ -82,7 +82,8 @@
     calendarItems: [],
     deadlineItems: [],
     viewingCode: "",
-    selectedDay: null
+    selectedDay: null,
+    activePanel: "tt"
   };
 
   function $(id) { return document.getElementById(id); }
@@ -851,6 +852,59 @@
     });
   }
 
+
+  function switchHomePanel(panelId) {
+    if (!panelId) panelId = "tt";
+    state.activePanel = panelId;
+
+    var bar = $("home-func-bar");
+    if (bar) {
+      Array.prototype.forEach.call(bar.querySelectorAll(".home-func-tab"), function (tab) {
+        var on = tab.getAttribute("data-panel") === panelId;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+        tab.tabIndex = on ? 0 : -1;
+      });
+    }
+
+    Array.prototype.forEach.call(document.querySelectorAll("#home-panels .home-panel"), function (panel) {
+      var on = panel.getAttribute("data-panel") === panelId;
+      panel.classList.toggle("hidden", !on);
+      if (on) panel.removeAttribute("hidden");
+      else panel.setAttribute("hidden", "");
+    });
+  }
+
+  function bindFuncBar() {
+    var bar = $("home-func-bar");
+    if (!bar || bar.dataset.bound === "1") return;
+    bar.dataset.bound = "1";
+    bar.addEventListener("click", function (e) {
+      var tab = e.target.closest(".home-func-tab");
+      if (!tab || !bar.contains(tab)) return;
+      var id = tab.getAttribute("data-panel");
+      if (!id || id === state.activePanel) return;
+      switchHomePanel(id);
+    });
+    // Keyboard: left/right between tabs
+    bar.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") return;
+      var tabs = Array.prototype.slice.call(bar.querySelectorAll(".home-func-tab"));
+      if (!tabs.length) return;
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0) i = tabs.findIndex(function (t) { return t.classList.contains("active"); });
+      if (i < 0) i = 0;
+      var next = i;
+      if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = tabs.length - 1;
+      e.preventDefault();
+      tabs[next].focus();
+      switchHomePanel(tabs[next].getAttribute("data-panel"));
+    });
+  }
+
   function bindTeacherSelect() {
     var sel = $("home-teacher-select");
     if (!sel || sel.dataset.bound === "1") return;
@@ -885,6 +939,8 @@
     startClock();
     bindTeacherSelect();
     bindDatePicker();
+    bindFuncBar();
+    switchHomePanel(state.activePanel || "tt");
     renderHomeBar(session);
     loadCycleAndCalendar(session);
     if (session.role === "staff") loadTimetableCloud(session);
@@ -902,6 +958,8 @@
     bindAuthedListener();
     state.browseDate = todayHK();
     startClock();
+    bindFuncBar();
+    switchHomePanel(state.activePanel || "tt");
     buildDayGrid();
     if (window.__schoolAdminSession) onAuthed();
   }

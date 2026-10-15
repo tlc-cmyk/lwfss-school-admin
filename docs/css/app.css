@@ -551,7 +551,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   .deadline-item { grid-template-columns: 1fr; gap: 4px; }
 }
 
-/* ——— Homepage: top card (when + notes) + mods + timetable; nav in footer ——— */
+/* ——— Homepage: sticky top+func bar; bottom panel swaps by tab ——— */
 .home-section { margin-bottom: 18px; }
 .home-section-title {
   font-size: 1.05rem;
@@ -575,7 +575,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: #fff;
   border-radius: 16px;
   padding: 12px 14px 14px;
-  margin-bottom: 14px;
+  margin-bottom: 10px;
   box-shadow: 0 4px 16px rgba(13, 82, 56, 0.28);
 }
 .home-top-signed-sr {
@@ -752,18 +752,30 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .home-notes { /* unused standalone; notes live in .home-top-notes */ }
 .home-bar { /* unused; replaced by .home-top */ }
 
-/* Slim module pills — no self-referential「循環日課表」tab */
-.home-mods {
+/* Sticky chrome: top info card + function bar always visible */
+.home-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg);
+  padding-top: 2px;
+  margin-bottom: 4px;
+  box-shadow: 0 10px 14px -12px rgba(13, 82, 56, 0.35);
+}
+
+/* Function bar — tabs; only bottom panel swaps */
+.home-func-bar {
   display: flex;
   gap: 8px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  margin-bottom: 16px;
-  padding: 2px 0;
+  margin: 0 0 10px;
+  padding: 2px 0 8px;
+  background: var(--bg);
 }
-.home-mods::-webkit-scrollbar { display: none; }
-.home-mod {
+.home-func-bar::-webkit-scrollbar { display: none; }
+.home-func-tab {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -772,28 +784,45 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   border-radius: 999px;
   border: 1.5px solid var(--border);
   background: #fff;
-  color: var(--primary) !important;
+  color: var(--primary);
   font-size: 0.8rem;
   font-weight: 600;
-  text-decoration: none !important;
+  font-family: inherit;
   white-space: nowrap;
+  cursor: pointer;
   box-shadow: 0 1px 2px rgba(26, 58, 108, 0.04);
 }
-a.home-mod:hover { background: var(--primary-soft); }
-.home-mod.is-soon {
-  color: var(--muted) !important;
-  background: #f4f6f8;
-  opacity: 0.7;
-  cursor: default;
+.home-func-tab:hover { background: var(--primary-soft); }
+.home-func-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(26, 58, 108, 0.18);
 }
-.home-mod-soon {
-  font-size: 0.62rem;
+.home-func-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Bottom panels — only this region remounts/swaps by tab */
+.home-panels { min-height: 120px; }
+.home-panel { margin-bottom: 8px; }
+.home-panel.hidden,
+.home-panel[hidden] { display: none !important; }
+.home-panel-placeholder {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  box-shadow: var(--shadow);
+}
+.home-panel-title {
+  font-size: 1.05rem;
+  color: var(--primary-dark);
+  margin: 0 0 8px;
   font-weight: 700;
-  padding: 1px 5px;
-  border-radius: 999px;
-  background: #e4e8ec;
-  color: #7a8590;
 }
+.home-panel-placeholder .btn { margin-top: 10px; }
 
 /* Timetable block — flat, whitespace, no nested Day/status banner */
 .home-tt {
@@ -983,12 +1012,12 @@ a.home-mod:hover { background: var(--primary-soft); }
 }
 
 html[data-app-role="staff"] .tt-teacher-row[data-role-view="staff"]:not(.hidden),
-html[data-app-role="staff"] .home-mods[data-role-view="staff"],
+html[data-app-role="staff"] .home-func-bar[data-role-view="staff"],
 html[data-app-role="student"] .tt-student-block[data-role-view="student"]:not(.hidden) {
   display: flex;
 }
 html[data-app-role="student"] .tt-teacher-row,
-html[data-app-role="student"] .home-mods {
+html[data-app-role="student"] .home-func-bar {
   display: none !important;
 }
 html[data-app-role="staff"] .tt-student-block { display: none !important; }

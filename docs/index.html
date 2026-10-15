@@ -22,67 +22,93 @@
 
   <div id="app" class="hidden">
     <main class="wrap wrap-home">
-      <!-- Top card only: 日期、時間、Day、狀態、姓名角色、今日事項、改日期 -->
-      <section id="home-top" class="home-top" aria-label="今日概況" aria-live="polite">
-        <div class="home-top-when-row">
-          <div class="home-bar-when">
-            <span id="home-date" class="home-bar-date">載入日期…</span>
-            <span id="home-clock" class="home-bar-clock" aria-label="現在時間">--:--</span>
+      <!-- Sticky chrome: top info + function bar always stay; only bottom panel swaps -->
+      <div class="home-sticky">
+        <section id="home-top" class="home-top" aria-label="今日概況" aria-live="polite">
+          <div class="home-top-when-row">
+            <div class="home-bar-when">
+              <span id="home-date" class="home-bar-date">載入日期…</span>
+              <span id="home-clock" class="home-bar-clock" aria-label="現在時間">--:--</span>
+            </div>
+            <label class="home-bar-pick" for="home-date-input" title="改日期">
+              <span class="home-bar-pick-icon" aria-hidden="true">📅</span>
+              <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
+            </label>
           </div>
-          <label class="home-bar-pick" for="home-date-input" title="改日期">
-            <span class="home-bar-pick-icon" aria-hidden="true">📅</span>
-            <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
-          </label>
-        </div>
 
-        <div class="home-bar-meta">
-          <span id="home-cycle" class="home-bar-day">載入循環日…</span>
-          <span id="home-status" class="home-status-chip" hidden></span>
-          <span id="home-who" class="home-bar-who"></span>
-        </div>
+          <div class="home-bar-meta">
+            <span id="home-cycle" class="home-bar-day">載入循環日…</span>
+            <span id="home-status" class="home-status-chip" hidden></span>
+            <span id="home-who" class="home-bar-who"></span>
+          </div>
 
-        <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
-          <h2 class="home-notes-title">今日事項</h2>
-          <div id="home-notes-list" class="home-notes-list"></div>
-        </div>
+          <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
+            <h2 class="home-notes-title">今日事項</h2>
+            <div id="home-notes-list" class="home-notes-list"></div>
+          </div>
 
-        <!-- auth.js fills this; visually folded into home-who above -->
-        <div id="signed-in-as" class="home-top-signed-sr" aria-live="polite"></div>
-      </section>
+          <!-- auth.js fills this; visually folded into home-who above -->
+          <div id="signed-in-as" class="home-top-signed-sr" aria-live="polite"></div>
+        </section>
 
-      <!-- Slim module row -->
-      <nav class="home-mods" aria-label="其他模組" data-role-view="staff">
-        <a class="home-mod" href="timetable.html">完整時間表</a>
-        <a class="home-mod" href="staff-deadlines.html">文件／會議</a>
-        <span class="home-mod is-soon" title="稍後">即時空堂<span class="home-mod-soon">稍後</span></span>
-        <span class="home-mod is-soon" title="稍後">約開會<span class="home-mod-soon">稍後</span></span>
-      </nav>
+        <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄" data-role-view="staff">
+          <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">循環日課表</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-full-tt" id="home-tab-full-tt" data-panel="full-tt">完整時間表</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs">文件／會議</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free">即時空堂</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet">約開會</button>
+        </nav>
+      </div>
 
-      <!-- Timetable: D1–D10 + teacher + period cards -->
-      <section class="home-tt" aria-label="課節時間表">
-        <div id="home-day-grid" class="tt-day-grid" role="tablist" aria-label="循環日 D1–D10"></div>
+      <div id="home-panels" class="home-panels">
+        <!-- Default: D1–D10 + period cards -->
+        <section id="home-panel-tt" class="home-panel home-tt" role="tabpanel" aria-labelledby="home-tab-tt" data-panel="tt">
+          <div id="home-day-grid" class="tt-day-grid" role="tablist" aria-label="循環日 D1–D10"></div>
 
-        <div class="tt-teacher-row" data-role-view="staff">
-          <label class="tt-teacher-label" for="home-teacher-select">查看教師</label>
-          <select id="home-teacher-select" class="home-teacher-select" aria-label="選擇教師">
-            <option value="">選擇教師…</option>
-          </select>
-          <span id="home-lesson-count" class="tt-lesson-count" hidden></span>
-        </div>
+          <div class="tt-teacher-row" data-role-view="staff">
+            <label class="tt-teacher-label" for="home-teacher-select">查看教師</label>
+            <select id="home-teacher-select" class="home-teacher-select" aria-label="選擇教師">
+              <option value="">選擇教師…</option>
+            </select>
+            <span id="home-lesson-count" class="tt-lesson-count" hidden></span>
+          </div>
 
-        <p id="home-tt-status" class="muted tt-load-status"></p>
-        <p id="home-tt-message" class="home-tt-message muted hidden"></p>
+          <p id="home-tt-status" class="muted tt-load-status"></p>
+          <p id="home-tt-message" class="home-tt-message muted hidden"></p>
 
-        <div id="home-tt-result" class="hidden">
-          <div id="home-tt-meta" class="teacher-meta tt-teacher-meta"></div>
-          <div id="home-periods" class="tt-periods"></div>
-        </div>
+          <div id="home-tt-result" class="hidden">
+            <div id="home-tt-meta" class="teacher-meta tt-teacher-meta"></div>
+            <div id="home-periods" class="tt-periods"></div>
+          </div>
 
-        <div id="home-tt-student" class="tt-student-block hidden" data-role-view="student">
-          <p class="home-tt-student-msg">學生時間表稍後推出。</p>
-          <p class="muted">上線後會按你的班別顯示今日循環日課表。</p>
-        </div>
-      </section>
+          <div id="home-tt-student" class="tt-student-block hidden" data-role-view="student">
+            <p class="home-tt-student-msg">學生時間表稍後推出。</p>
+            <p class="muted">上線後會按你的班別顯示今日循環日課表。</p>
+          </div>
+        </section>
+
+        <section id="home-panel-full-tt" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-full-tt" data-panel="full-tt" hidden>
+          <h2 class="home-panel-title">完整時間表</h2>
+          <p class="muted">稍後會嵌喺呢度。而家可開啟完整頁面。</p>
+          <p><a class="btn" href="timetable.html">開啟完整時間表</a></p>
+        </section>
+
+        <section id="home-panel-docs" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-docs" data-panel="docs" hidden>
+          <h2 class="home-panel-title">文件／會議</h2>
+          <p class="muted">稍後會喺呢度顯示文件遞交同會議清單。</p>
+          <p><a class="btn" href="staff-deadlines.html">開啟文件／會議</a></p>
+        </section>
+
+        <section id="home-panel-free" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-free" data-panel="free" hidden>
+          <h2 class="home-panel-title">即時空堂</h2>
+          <p class="muted">功能稍後推出。</p>
+        </section>
+
+        <section id="home-panel-meet" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-meet" data-panel="meet" hidden>
+          <h2 class="home-panel-title">約開會</h2>
+          <p class="muted">功能稍後推出。</p>
+        </section>
+      </div>
     </main>
 
     <footer class="footer">
