@@ -30,17 +30,54 @@
     return meta.full_name || meta.name || meta.given_name || (email ? email.split("@")[0] : "");
   }
 
+  function roleLabel(session) {
+    if (!session) return "";
+    if (session.role === "staff") {
+      var title = session.staff && session.staff.role_title;
+      return title ? ("教職員（" + title + "）") : "教職員";
+    }
+    if (session.role === "student") return "學生";
+    return "載入身分中…";
+  }
+
+  function applyRoleView(session) {
+    var role = (session && session.role) || "";
+    if (role === "staff" || role === "student") {
+      document.documentElement.setAttribute("data-app-role", role);
+    } else {
+      document.documentElement.removeAttribute("data-app-role");
+    }
+  }
+
   function showApp(session) {
     var gate = $("gate");
     var app = $("app");
     if (gate) gate.classList.add("hidden");
     if (app) app.classList.remove("hidden");
+    applyRoleView(session);
     var who = $("signed-in-as");
     if (who && session) {
-      who.textContent = (session.name || session.email || "") +
-        (session.email ? " · " + session.email : "");
+      var name = session.name || "";
+      var email = session.email || "";
+      var label = roleLabel(session);
+      var html = "";
+      if (name) html += '<span class="who-name">' + escapeText(name) + '</span>';
+      if (email) html += (html ? " · " : "") + '<span class="who-email">' + escapeText(email) + '</span>';
+      if (label) {
+        var badgeClass = session.role === "staff" ? "staff" : (session.role === "student" ? "student" : "");
+        html += ' <span class="role-badge ' + badgeClass + '">' + escapeText(label) + '</span>';
+      }
+      who.innerHTML = html;
     }
     window.__schoolAdminSession = session;
+  }
+
+  function escapeText(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   function showGate(message) {
@@ -50,6 +87,7 @@
     if (app) app.classList.add("hidden");
     var err = $("gate-err");
     if (err) err.textContent = message || "";
+    document.documentElement.removeAttribute("data-app-role");
     window.__schoolAdminSession = null;
   }
 
@@ -90,6 +128,44 @@
     }
   }
 
+  function lookupStaffAndPublish(baseSession) {
+    var email = (baseSession.email || "").toLowerCase();
+    var finish = function (role, staffRow, errMsg) {
+      baseSession.role = role;
+      baseSession.staff = staffRow || null;
+      if (errMsg) baseSession.roleLookupError = errMsg;
+      else delete baseSession.roleLookupError;
+      publish(baseSession);
+    };
+    if (!client || !email) {
+      finish("student", null, "");
+      return;
+    }
+    client
+      .from("staff")
+      .select("email,short_name,name,role_title,class_teacher,is_teaching_staff")
+      .eq("email", email)
+      .maybeSingle()
+      .then(function (result) {
+        if (result && result.error) {
+          // Fail closed for teacher UI: treat as student if lookup fails
+          finish("student", null, result.error.message || "staff lookup failed");
+          return;
+        }
+        var row = result && result.data;
+        if (row && row.is_teaching_staff !== false) {
+          // Prefer staff Chinese name when available
+          if (row.name) baseSession.name = row.name;
+          finish("staff", row, "");
+        } else {
+          finish("student", null, "");
+        }
+      })
+      .catch(function (e) {
+        finish("student", null, e && e.message ? e.message : "staff lookup failed");
+      });
+  }
+
   function acceptSupabaseSession(session) {
     if (!session || !session.user) {
       if (!publishedEmail && !loadEmergency()) showGate(gateMessage);
@@ -106,7 +182,7 @@
       }
       return;
     }
-    if (publishedEmail === email && window.__schoolAdminSession && window.__schoolAdminSession.method === "supabase") {
+    if (publishedEmail === email && window.__schoolAdminSession && window.__schoolAdminSession.method === "supabase" && window.__schoolAdminSession.role) {
       showApp(window.__schoolAdminSession);
       return;
     }
@@ -115,13 +191,14 @@
     var user = session.user;
     var meta = user.user_metadata || {};
     clearEmergency();
-    publish({
+    lookupStaffAndPublish({
       email: email,
       name: displayName(user, email),
       picture: meta.avatar_url || meta.picture || "",
       sub: user.id || "",
       at: Date.now(),
-      method: "supabase"
+      method: "supabase",
+      role: ""
     });
   }
 
@@ -216,7 +293,9 @@
       picture: payload.picture || "",
       sub: payload.sub || "",
       at: Date.now(),
-      method: "google"
+      method: "google",
+      role: "student",
+      staff: null
     });
     if (err) err.textContent = "";
   }
@@ -309,7 +388,9 @@
           picture: "",
           sub: "emergency",
           at: Date.now(),
-          method: "emergency"
+          method: "emergency",
+          role: "staff",
+          staff: { email: "emergency@" + allowedDomain, short_name: "", name: "緊急通行", role_title: "緊急通行", class_teacher: null, is_teaching_staff: true }
         };
         saveEmergency(session);
         publishedEmail = session.email;
@@ -397,6 +478,14 @@
   window.SchoolAdminAuth = {
     getSession: function () { return window.__schoolAdminSession || null; },
     getClient: function () { return client; },
+    getRole: function () {
+      var s = window.__schoolAdminSession;
+      return s && s.role ? s.role : "";
+    },
+    isStaff: function () {
+      var s = window.__schoolAdminSession;
+      return !!(s && s.role === "staff");
+    },
     signOut: function () {
       clearEmergency();
       if (client) {

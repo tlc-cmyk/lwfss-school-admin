@@ -387,3 +387,55 @@ a:hover { text-decoration: underline; }
 .cloud-note, #cloud-note {
   margin-top: 4px;
 }
+
+/* Role badge & student / staff views */
+.role-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  vertical-align: middle;
+  background: rgba(255,255,255,0.22);
+  color: #fff;
+}
+.role-badge.staff { background: #ffe8a3; color: #6b4e00; }
+.role-badge.student { background: #d4e8ff; color: #0f3460; }
+.signed-in .role-line {
+  display: block;
+  font-size: 0.78rem;
+  opacity: 0.92;
+  margin-top: 2px;
+}
+[data-role-view] { display: none; }
+html[data-app-role="staff"] [data-role-view="staff"]:not(.hidden),
+html[data-app-role="student"] [data-role-view="student"]:not(.hidden) {
+  display: block;
+}
+html[data-app-role="staff"] .module-grid[data-role-view="staff"],
+html[data-app-role="student"] .module-grid[data-role-view="student"] {
+  display: grid;
+}
+html[data-app-role="staff"] .staff-only-note[data-role-view="student"],
+html[data-app-role="student"] .module-grid[data-role-view="staff"] {
+  display: none;
+}
+.student-home {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 18px;
+  box-shadow: var(--shadow);
+}
+.student-home h2 { font-size: 1.15rem; color: var(--primary-dark); margin-bottom: 8px; }
+.student-home p { color: var(--muted); font-size: 0.92rem; margin-bottom: 8px; }
+.staff-only-note {
+  background: var(--card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  color: var(--muted);
+}
+html[data-app-role="student"] a[data-staff-only] { display: none; }

@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1908）、`meta` |
+| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75 職員允許名單） |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -36,6 +36,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_teachers`
 - `school_read_lessons`
 - `school_read_meta`
+- `school_read_staff`
 
 條件（約）：
 
@@ -46,6 +47,15 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 沒有 INSERT / UPDATE / DELETE 政策，所以即使資料表 GRANT 給了 `anon` 和 `authenticated`，未登入或非本校電郵的請求也讀不到列（實測 anon key 查 `teachers` 回傳 `[]`），也不能改資料。  
 **不要**把 `service_role` key 或 Google Client Secret 放進這個倉庫。
 
+### 身分：教職員 vs 學生
+
+教師與學生都用 `@g.lwfss.edu.hk` Google 登入。登入後前端以電郵查 `staff` 表：
+
+- **在職員名單** → 教職員介面（教師時間表等）
+- **不在名單** → 學生介面（班別時間表稍後）
+
+結構見 `db/staff.sql`；種子資料來自「2627職員名單」Google Sheet（另加 IT 主任 `tlc@g.lwfss.edu.hk`）。
+
 ---
 
 ## 目錄結構
@@ -54,6 +64,8 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 school-admin/
 ├── db/
 │   ├── schema.sql          # 本機 SQLite 結構（與雲端欄位對應）
+│   ├── staff.sql           # 雲端 staff 允許名單 DDL
+│   ├── seed_staff.sql      # staff upsert 種子
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
 │   └── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON

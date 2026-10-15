@@ -319,6 +319,12 @@
       if (current) {
         var again = findTeacher(current);
         if (again && !Array.isArray(again)) renderSchedule(again, window.__currentDay || 1);
+      } else if (window.__preferTeacherCode) {
+        var prefer = findTeacher(window.__preferTeacherCode);
+        if (prefer && !Array.isArray(prefer)) {
+          showTeacher(prefer);
+          window.__preferTeacherCode = "";
+        }
       }
     }).catch(function () {
       cloudStarted = false;
@@ -351,10 +357,31 @@
     }
   }
 
+  function prefillOwnCode(session) {
+    var input = $("code-input");
+    if (!input || !session || !session.staff || !session.staff.short_name) return;
+    if ((input.value || "").trim()) return;
+    var code = String(session.staff.short_name).toUpperCase();
+    input.value = code;
+    // Auto-search once data is ready
+    window.__preferTeacherCode = code;
+  }
+
   function onAuthed() {
     ensureUi();
     var session = (window.SchoolAdminAuth && SchoolAdminAuth.getSession()) || window.__schoolAdminSession;
-    if (session && session.method === "supabase") {
+    if (!session) return;
+    // Students do not use teacher timetable UI
+    if (session.role === "student") {
+      setCloudNote("");
+      return;
+    }
+    if (session.role && session.role !== "staff") {
+      // Role still resolving — wait for next authed event
+      return;
+    }
+    prefillOwnCode(session);
+    if (session.method === "supabase") {
       var client = (window.SchoolAdminAuth && SchoolAdminAuth.getClient && SchoolAdminAuth.getClient()) || window.__supabaseClient;
       if (client) loadFromCloud();
       else {

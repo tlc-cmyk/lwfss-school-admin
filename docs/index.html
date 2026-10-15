@@ -29,19 +29,19 @@
       </div>
       <nav class="nav" aria-label="主選單">
         <a href="index.html" class="active">主頁</a>
-        <a href="timetable.html">教師時間表</a>
+        <a href="timetable.html" data-staff-only>教師時間表</a>
         <button type="button" id="sign-out" class="nav-btn">登出</button>
       </nav>
       <div id="signed-in-as" class="signed-in"></div>
     </header>
 
     <main class="wrap">
-      <section class="hero">
-        <h2>學校行政系統</h2>
-        <p>獨立專案：時間表放在免費 Supabase 雲端資料庫，本機 SQLite 只作離線備份。教師須以學校 Google 帳戶（@g.lwfss.edu.hk）登入後使用。</p>
+      <section class="hero" data-role-view="staff">
+        <h2>學校行政系統 · 教職員</h2>
+        <p>時間表放在 Supabase 雲端資料庫。教職員以學校 Google 帳戶（@g.lwfss.edu.hk）登入後使用；身分由職員名單（staff）決定。</p>
       </section>
 
-      <section class="module-grid" aria-label="功能模組">
+      <section class="module-grid" aria-label="教職員功能模組" data-role-view="staff">
         <article class="module-card live">
           <span class="badge live">已上線</span>
           <div class="icon" aria-hidden="true">📅</div>
@@ -73,6 +73,13 @@
           <p>代堂安排與紀錄（預留模組）。</p>
           <button class="btn disabled" type="button" disabled>即將推出</button>
         </article>
+      </section>
+
+      <section class="student-home" data-role-view="student" aria-label="學生介面">
+        <h2>學生介面</h2>
+        <p>你已用學校 Google 帳戶登入。系統確認你不在職員名單內，因此顯示學生介面。</p>
+        <p><strong>班別時間表稍後推出。</strong>目前尚未匯入學生班別對應資料；上線後會在此顯示你的循環日課表。</p>
+        <p class="muted">如你是教職員但見到此頁，請聯絡資訊科技組核對電郵是否已列入職員名單。</p>
       </section>
     </main>
 
