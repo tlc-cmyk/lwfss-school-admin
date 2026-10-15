@@ -849,6 +849,24 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 }
 .home-panel-placeholder .btn { margin-top: 10px; }
 
+.home-panel-docs .home-docs-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px 18px;
+  box-shadow: var(--shadow);
+}
+.home-panel-docs .home-docs-source { margin-top: 8px; font-size: 0.82rem; }
+.home-panel-docs .home-docs-err {
+  min-height: 1.2em;
+  margin-top: 6px;
+  color: var(--danger);
+}
+.home-panel-docs .home-docs-student {
+  margin-top: 0;
+}
+.home-panel-docs .home-panel-title { margin-bottom: 4px; }
+
 /* Timetable block — flat, whitespace, no nested Day/status banner */
 .home-tt {
   margin-bottom: 8px;

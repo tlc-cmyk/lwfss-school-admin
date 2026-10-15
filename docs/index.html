@@ -93,10 +93,28 @@
           <p><a class="btn" href="timetable.html">開啟完整時間表</a></p>
         </section>
 
-        <section id="home-panel-docs" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-docs" data-panel="docs" hidden>
-          <h2 class="home-panel-title">文件／會議</h2>
-          <p class="muted">稍後會喺呢度顯示文件遞交同會議清單。</p>
-          <p><a class="btn" href="staff-deadlines.html">開啟文件／會議</a></p>
+        <section id="home-panel-docs" class="home-panel home-panel-docs hidden" role="tabpanel" aria-labelledby="home-tab-docs" data-panel="docs" hidden>
+          <div class="home-docs-card" data-role-view="staff">
+            <div class="deadlines-toolbar">
+              <div>
+                <h2 class="home-panel-title">文件遞交清單及校務會議</h2>
+                <p class="muted" id="deadlines-meta">載入中…</p>
+              </div>
+              <div class="deadlines-filters" role="group" aria-label="篩選">
+                <button type="button" class="chip active" data-filter="upcoming">即將到期</button>
+                <button type="button" class="chip" data-filter="all">全年</button>
+              </div>
+            </div>
+            <p class="muted home-docs-source">資料來源：校曆表「文件遞交清單及校務會議」欄 ·
+              <a href="assets/%E6%A0%A1%E6%9B%86%E8%A1%A8-2026-2027.pdf" target="_blank" rel="noopener">下載 PDF</a>
+            </p>
+            <div id="deadlines-err" class="err home-docs-err" aria-live="polite"></div>
+            <div id="deadlines-list" class="deadlines-list" aria-live="polite"></div>
+          </div>
+          <div class="staff-only-note home-docs-student" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">僅供教職員</h2>
+            <p>文件遞交清單及校務會議只供教職員查閱。學生介面不會顯示此內容。</p>
+          </div>
         </section>
 
         <section id="home-panel-free" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-free" data-panel="free" hidden>
@@ -126,5 +144,6 @@
   <script src="js/auth.js"></script>
   <script src="data/timetable.js"></script>
   <script src="js/home.js"></script>
+  <script src="js/staff-deadlines.js"></script>
 </body>
 </html>

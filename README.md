@@ -56,7 +56,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。主選單喺 footer。
 2. **今日事項**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；嵌喺頂卡內白底 inset。當值／早會**未有真 DB 資料就唔顯示**。
 3. **功能欄（sticky tabs）**：循環日課表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
-4. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡；其他 tab 而家用 placeholder（可連去完整頁）。
+4. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡；**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；其他 tab 而家用 placeholder（可連去完整頁）。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 
@@ -259,7 +259,7 @@ git push origin main
 
 ## 未來模組
 
-主頁已預留：**當值**、**代堂**（有真 DB 先顯示）；校曆／文件見 `staff-deadlines.html`。  
+主頁已預留：**當值**、**代堂**（有真 DB 先顯示）；文件遞交清單嵌喺主頁「文件／會議」面板（同 `staff-deadlines.html` 邏輯）。  
 新模組可沿用同一 Supabase 專案加表（並加上同樣的學校網域 SELECT 政策）、共用 `js/auth.js`。
 
 ---

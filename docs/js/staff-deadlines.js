@@ -126,6 +126,10 @@
     var err = $("deadlines-err");
     if (!session || session.role !== "staff") {
       if (err) err.textContent = "";
+      var metaEl = $("deadlines-meta");
+      if (metaEl) metaEl.textContent = "";
+      var boxEl = $("deadlines-list");
+      if (boxEl) boxEl.innerHTML = "";
       return;
     }
     if (!client || session.method !== "supabase") {
