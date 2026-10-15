@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：教師時間表查詢；文件遞交清單及校務會議（教職員）；時間表顯示今日循環日
+- **模組**：主頁三區（今日概況／系統模組／今日時間表）；教師時間表查詢；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -49,6 +49,12 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 沒有 INSERT / UPDATE / DELETE 政策，所以即使資料表 GRANT 給了 `anon` 和 `authenticated`，未登入或非本校電郵的請求也讀不到列（實測 anon key 查 `teachers` 回傳 `[]`），也不能改資料。  
 **不要**把 `service_role` key 或 Google Client Secret 放進這個倉庫。
 
+### 主頁三區（登入後）
+
+1. **今日概況**：香港日期與即時時間、`cycle_days` 循環日、今日 `calendar_events`（沒有則教職員顯示今日 `staff_deadlines`；學生不顯示職員專用項）、登入者姓名（優先 `staff.name`）
+2. **系統模組**：功能卡片；職員專用模組對學生隱藏
+3. **今日時間表**：教職員顯示當日循環日課表（預設本人，可下拉轉看其他教師）；無循環日則「今日無上課／假期」；學生顯示「學生時間表稍後」
+
 ### 身分：教職員 vs 學生
 
 教師與學生都用 `@g.lwfss.edu.hk` Google 登入。登入後前端以電郵查 `staff` 表：
@@ -82,6 +88,7 @@ school-admin/
 │   ├── css/app.css
 │   ├── js/config.js        # Supabase URL、anon key、allowedDomain
 │   ├── js/auth.js          # Supabase Google 登入
+│   ├── js/home.js          # 主頁三區：今日概況、模組、今日時間表
 │   ├── js/timetable.js     # 雲端時間表 + 今日循環日
 │   ├── js/staff-deadlines.js
 │   └── data/

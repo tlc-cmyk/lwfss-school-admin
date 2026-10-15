@@ -36,51 +36,97 @@
       <div id="signed-in-as" class="signed-in"></div>
     </header>
 
-    <main class="wrap">
-      <section class="hero" data-role-view="staff">
-        <h2>學校行政系統 · 教職員</h2>
-        <p>時間表放在 Supabase 雲端資料庫。教職員以學校 Google 帳戶（@g.lwfss.edu.hk）登入後使用；身分由職員名單（staff）決定。</p>
+    <main class="wrap wrap-wide">
+      <!-- Section 1 — top strip -->
+      <section id="home-strip" class="home-strip card" aria-label="今日概況" aria-live="polite">
+        <div class="home-strip-top">
+          <div class="home-strip-datetime">
+            <div id="home-date" class="home-date">載入日期…</div>
+            <div id="home-clock" class="home-clock" aria-label="現在時間">--:--:--</div>
+          </div>
+          <div id="home-cycle" class="home-cycle">載入循環日…</div>
+        </div>
+        <div id="home-cycle-note" class="home-cycle-note muted"></div>
+        <div class="home-cal-block">
+          <h3 class="home-cal-heading">今日事項</h3>
+          <div id="home-calendar-list" class="home-calendar-list">
+            <p class="muted">載入中…</p>
+          </div>
+        </div>
+        <div id="home-greeting" class="home-greeting"></div>
       </section>
 
-      <section class="module-grid" aria-label="教職員功能模組" data-role-view="staff">
-        <article class="module-card live">
-          <span class="badge live">已上線</span>
-          <div class="icon" aria-hidden="true">📅</div>
-          <h3>教師時間表</h3>
-          <p>以 ShortName（例如 TLC）查詢 Day 1–10 課節、科目、班別與課室。</p>
-          <a class="btn" href="timetable.html">開始查詢</a>
-        </article>
+      <!-- Section 2 — system modules -->
+      <section class="home-section" aria-label="系統模組">
+        <h2 class="home-section-title">系統模組</h2>
+        <div class="module-grid" data-role-view="staff">
+          <article class="module-card live">
+            <span class="badge live">已上線</span>
+            <div class="icon" aria-hidden="true">📅</div>
+            <h3>教師時間表</h3>
+            <p>以 ShortName（例如 TLC）查詢 Day 1–10 課節、科目、班別與課室。</p>
+            <a class="btn" href="timetable.html">開始查詢</a>
+          </article>
 
-        <article class="module-card soon">
-          <span class="badge soon">即將推出</span>
-          <div class="icon" aria-hidden="true">🛡️</div>
-          <h3>當值</h3>
-          <p>教師當值編排與查詢（預留模組）。</p>
-          <button class="btn disabled" type="button" disabled>即將推出</button>
-        </article>
+          <article class="module-card live">
+            <span class="badge live">已上線</span>
+            <div class="icon" aria-hidden="true">📋</div>
+            <h3>文件遞交清單及校務會議</h3>
+            <p>校曆表右欄：文件遞交期限與校務／行政／級會議（僅教職員可見）。</p>
+            <a class="btn" href="staff-deadlines.html">查看清單</a>
+          </article>
 
-        <article class="module-card live">
-          <span class="badge live">已上線</span>
-          <div class="icon" aria-hidden="true">📋</div>
-          <h3>文件遞交清單及校務會議</h3>
-          <p>校曆表右欄：文件遞交期限與校務／行政／級會議（僅教職員可見）。</p>
-          <a class="btn" href="staff-deadlines.html">查看清單</a>
-        </article>
+          <article class="module-card soon">
+            <span class="badge soon">即將推出</span>
+            <div class="icon" aria-hidden="true">🛡️</div>
+            <h3>當值</h3>
+            <p>教師當值編排與查詢（預留模組）。</p>
+            <button class="btn disabled" type="button" disabled>即將推出</button>
+          </article>
 
-        <article class="module-card soon">
-          <span class="badge soon">即將推出</span>
-          <div class="icon" aria-hidden="true">🔄</div>
-          <h3>代堂</h3>
-          <p>代堂安排與紀錄（預留模組）。</p>
-          <button class="btn disabled" type="button" disabled>即將推出</button>
-        </article>
+          <article class="module-card soon">
+            <span class="badge soon">即將推出</span>
+            <div class="icon" aria-hidden="true">🔄</div>
+            <h3>代堂</h3>
+            <p>代堂安排與紀錄（預留模組）。</p>
+            <button class="btn disabled" type="button" disabled>即將推出</button>
+          </article>
+        </div>
+
+        <div class="module-grid" data-role-view="student">
+          <article class="module-card soon">
+            <span class="badge soon">即將推出</span>
+            <div class="icon" aria-hidden="true">📚</div>
+            <h3>班別時間表</h3>
+            <p>學生循環日課表稍後推出。目前尚未匯入班別對應資料。</p>
+            <button class="btn disabled" type="button" disabled>稍後推出</button>
+          </article>
+        </div>
       </section>
 
-      <section class="student-home" data-role-view="student" aria-label="學生介面">
-        <h2>學生介面</h2>
-        <p>你已用學校 Google 帳戶登入。系統確認你不在職員名單內，因此顯示學生介面。</p>
-        <p><strong>班別時間表稍後推出。</strong>目前尚未匯入學生班別對應資料；上線後會在此顯示你的循環日課表。</p>
-        <p class="muted">如你是教職員但見到此頁，請聯絡資訊科技組核對電郵是否已列入職員名單。</p>
+      <!-- Section 3 — today's timetable -->
+      <section class="home-section" aria-label="今日時間表">
+        <h2 class="home-section-title">今日時間表</h2>
+
+        <div id="home-tt-staff" class="card home-tt-card hidden" data-role-view="staff">
+          <div class="home-tt-toolbar">
+            <label class="home-tt-label" for="home-teacher-select">查看教師</label>
+            <select id="home-teacher-select" class="home-teacher-select" aria-label="選擇教師">
+              <option value="">選擇教師…</option>
+            </select>
+          </div>
+          <p id="home-tt-status" class="muted" style="margin-top:8px"></p>
+          <p id="home-tt-message" class="home-tt-message muted hidden"></p>
+          <div id="home-tt-result" class="hidden" style="margin-top:10px">
+            <div id="home-tt-meta" class="teacher-meta"></div>
+            <div id="home-periods" class="periods" style="margin-top:10px"></div>
+          </div>
+        </div>
+
+        <div id="home-tt-student" class="card home-tt-card hidden" data-role-view="student">
+          <p class="home-tt-student-msg">學生時間表稍後推出。</p>
+          <p class="muted">上線後會按你的班別顯示今日循環日課表。</p>
+        </div>
       </section>
     </main>
 
@@ -91,5 +137,7 @@
 
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
+  <script src="data/timetable.js"></script>
+  <script src="js/home.js"></script>
 </body>
 </html>
