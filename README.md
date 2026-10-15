@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：主頁三區（今日概況／系統模組／今日時間表）；教師時間表查詢；文件遞交清單及校務會議（教職員）
+- **模組**：主頁精簡四段（今日條／今日事項／模組 pill／課表一次）；教師時間表查詢；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -49,11 +49,16 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 沒有 INSERT / UPDATE / DELETE 政策，所以即使資料表 GRANT 給了 `anon` 和 `authenticated`，未登入或非本校電郵的請求也讀不到列（實測 anon key 查 `teachers` 回傳 `[]`），也不能改資料。  
 **不要**把 `service_role` key 或 Google Client Secret 放進這個倉庫。
 
-### 主頁（登入後 ·  mobile教師時間表 UI）
+### 主頁（登入後 · 精簡版，唔重複）
 
-1. **深藍主卡「教師時間表」**：香港即時時間＋鐘聲狀態（上課中／小息／放學後）、日期「YYYY年M月D日 (週X)」、循環日 Day N、一般／BF 上課時間、當日 `calendar_events` 事項、教職員今日 `staff_deadlines`（學生不顯示）、早會主題（靜態 Day→主題；當值未接雲端則隱藏）、登入者姓名
-2. **中段**：橫向 pill（循環日課表啟用；即時空堂／約開會／全日概覽／代課標「稍後」）＋ D1–D10 格（今日標「今」）
-3. **下段課表**：Day N · 鐘聲時間表、節數統計、P1… 節卡（時間＋空堂／科目班別課室）；教職員可下拉轉看其他教師
+設計原則：**每樣資訊只出現一次**，mobile-first，深藍／白，留白多啲。
+
+1. **今日條（一條 compact bar）**：日期＋香港即時時間＋Day N＋狀態 chip（上課中／小息／放學後）＋登入者姓名。無第二個「教師時間表」大標題（nav 已有主頁）。
+2. **今日事項（一次）**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；連去「全部文件遞交」→ `staff-deadlines.html`。當值／早會**未有真 DB 資料就唔顯示**（唔用靜態假早會塞版面）。
+3. **模組 pill**：橫向短 pill（完整時間表、文件／會議；即時空堂／約開會標「稍後」）。**唔再**用「循環日課表」做 tab——下面已經係課表。
+4. **課表一次**：D1–D10 選擇器＋教師下拉＋P1… 節卡。Header 已有 Day／狀態，節卡上面**唔再**重複 Day／status banner。
+
+Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 
 ### 身分：教職員 vs 學生
 
@@ -88,7 +93,7 @@ school-admin/
 │   ├── css/app.css
 │   ├── js/config.js        # Supabase URL、anon key、allowedDomain
 │   ├── js/auth.js          # Supabase Google 登入
-│   ├── js/home.js          # 主頁三區：今日概況、模組、今日時間表
+│   ├── js/home.js          # 主頁精簡：今日條、今日事項、模組 pill、課表
 │   ├── js/timetable.js     # 雲端時間表 + 今日循環日
 │   ├── js/staff-deadlines.js
 │   └── data/
@@ -254,7 +259,7 @@ git push origin main
 
 ## 未來模組
 
-主頁已預留：**當值**、**校曆**、**代堂**。  
+主頁已預留：**當值**、**代堂**（有真 DB 先顯示）；校曆／文件見 `staff-deadlines.html`。  
 新模組可沿用同一 Supabase 專案加表（並加上同樣的學校網域 SELECT 政策）、共用 `js/auth.js`。
 
 ---

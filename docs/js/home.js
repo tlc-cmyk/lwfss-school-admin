@@ -5,6 +5,7 @@
   var cloudStarted = false;
   var clockTimer = null;
   var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+  var NOTES_DEADLINE_MAX = 3;
 
   // Bell times (一般／BF) — same source as timetable-app bells.json
   var BELLS = {
@@ -69,29 +70,15 @@
     }
   };
 
-  // Static assembly themes by cycle day (not in Supabase)
-  var ASSEMBLY_BY_DAY = {
-    "1": "校長分享",
-    "2": "國旗下的講話 / 輔導組",
-    "3": "頒獎",
-    "4": "學風組",
-    "5": "英語分享環節",
-    "6": "教師分享",
-    "7": "國旗下的講話 / 訓導組",
-    "8": "頒獎",
-    "9": "升輔組 / 閱讀分享",
-    "10": "英語分享環節"
-  };
-
   var state = {
-    browseDate: null,       // YYYY-MM-DD being viewed
-    todayCycleDay: null,    // cycle day for real today
-    browseCycleDay: null,   // cycle day for browseDate
+    browseDate: null,
+    todayCycleDay: null,
+    browseCycleDay: null,
     cycleNote: "",
     calendarItems: [],
     deadlineItems: [],
     viewingCode: "",
-    selectedDay: null       // D1–D10 selection for bottom TT
+    selectedDay: null
   };
 
   function $(id) { return document.getElementById(id); }
@@ -288,22 +275,29 @@
           if (slot && slot.label) {
             statusEl.hidden = false;
             statusEl.textContent = slot.label;
-            statusEl.className = "tt-status-chip " + statusChipClass(slot);
+            statusEl.className = "home-status-chip " + statusChipClass(slot);
           } else {
             statusEl.hidden = true;
           }
         } else if (browseIsToday()) {
           statusEl.hidden = false;
           statusEl.textContent = "無上課";
-          statusEl.className = "tt-status-chip is-after";
+          statusEl.className = "home-status-chip is-after";
         } else {
           statusEl.hidden = true;
         }
       }
 
-      // Refresh now-banner + period past/current occasionally
+      // Refresh period past/current when the minute flips
       if (browseIsToday() && state.selectedDay && state.selectedDay === state.todayCycleDay) {
-        updateNowBanner();
+        if (window.__homePeriodMark !== parts.hm) {
+          window.__homePeriodMark = parts.hm;
+          var result = $("home-tt-result");
+          if (result && !result.classList.contains("hidden") && state.viewingCode) {
+            var t = findTeacher(state.viewingCode);
+            if (t) renderPeriods(t, state.selectedDay);
+          }
+        }
       }
     }
     tick();
@@ -312,7 +306,7 @@
   }
 
   function renderWho(session) {
-    var el = $("tt-hero-who");
+    var el = $("home-who");
     if (!el) return;
     var name = displayPersonName(session);
     if (!name) {
@@ -323,22 +317,13 @@
       ? String(session.staff.short_name).toUpperCase()
       : "";
     el.innerHTML = escapeHtml(name) +
-      (short ? ' <span class="tt-who-code">' + escapeHtml(short) + "</span>" : "");
+      (short ? ' <span class="home-who-code">' + escapeHtml(short) + "</span>" : "");
   }
 
-  function renderHeroChrome(session) {
+  function renderHomeBar(session) {
     var iso = state.browseDate || todayHK();
     var dateEl = $("home-date");
     if (dateEl) dateEl.textContent = formatDateLine(iso);
-
-    var dayNum = $("home-date-daynum");
-    if (dayNum) {
-      var p = iso.split("-");
-      dayNum.textContent = p[2] ? String(parseInt(p[2], 10)) : "—";
-    }
-
-    var pill = $("home-today-pill");
-    if (pill) pill.hidden = !browseIsToday();
 
     var dateInput = $("home-date-input");
     if (dateInput && dateInput.value !== iso) dateInput.value = iso;
@@ -350,7 +335,7 @@
     var day = effectiveCycleDay();
     if (cycleEl) {
       if (day) {
-        cycleEl.textContent = "循環日 Day " + day;
+        cycleEl.textContent = "Day " + day;
         cycleEl.classList.remove("is-off");
       } else {
         cycleEl.textContent = browseIsToday() ? "今日無上課／假期" : "是日無上課／假期";
@@ -366,94 +351,59 @@
       }
     }
 
-    // Remarks line (calendar events of type remark / all non-deadline titles)
-    var remarks = $("home-remarks");
-    if (remarks) {
-      var remarkTitles = (state.calendarItems || [])
-        .filter(function (it) { return it.source === "calendar"; })
-        .map(function (it) { return it.title; });
-      if (remarkTitles.length) {
-        remarks.innerHTML = '<span class="tt-remarks-label">當日事項</span> ' +
-          escapeHtml(remarkTitles.join("、"));
-        remarks.hidden = false;
-      } else {
-        remarks.innerHTML = "";
-        remarks.hidden = true;
-      }
-    }
-
-    // Duty — no Supabase table; keep hidden
-    var duty = $("home-duty");
-    if (duty) {
-      duty.hidden = true;
-      duty.textContent = "";
-    }
-
-    // Assembly from static map when we have a cycle day
-    var asm = $("home-assembly");
-    if (asm) {
-      if (day && ASSEMBLY_BY_DAY[String(day)]) {
-        asm.hidden = false;
-        asm.innerHTML = '<span class="tt-meta-label">早會：</span>' +
-          escapeHtml(ASSEMBLY_BY_DAY[String(day)]);
-      } else {
-        asm.hidden = true;
-        asm.textContent = "";
-      }
-    }
-
-    renderEventList(session);
+    renderNotes(session);
   }
 
-  function renderEventList(session) {
-    var list = $("home-event-list");
-    if (!list) return;
+  function renderNotes(session) {
+    var section = $("home-notes");
+    var list = $("home-notes-list");
+    var allLink = $("home-notes-all");
+    if (!list || !section) return;
+
     var items = [];
 
-    // Prefer splitting: calendar meetings + staff deadlines for staff
+    // Calendar remarks / events (once)
     (state.calendarItems || []).forEach(function (it) {
-      if (it.source === "calendar" && it.type && it.type !== "remark") {
-        items.push({ icon: it.type === "meeting" ? "🗓️" : "📋", title: it.title });
-      }
+      if (!it || !it.title) return;
+      var isRemark = !it.type || it.type === "remark";
+      items.push({
+        kind: isRemark ? "remark" : (it.type === "meeting" ? "meeting" : "event"),
+        title: it.title
+      });
     });
 
+    // Staff deadlines — at most NOTES_DEADLINE_MAX
     if (session && session.role === "staff") {
+      var dlCount = 0;
       (state.deadlineItems || []).forEach(function (it) {
-        var title = it.title || "";
-        // Split combined "…／行政會議" style rows into checklist + meeting
-        var parts = title.split(/\s*[\/／]\s*/);
-        var meetPart = null;
-        if (parts.length > 1 && /會議\s*$/.test(parts[parts.length - 1])) {
-          meetPart = parts.pop();
-          title = parts.join("／");
-        }
-        var badge = browseIsToday() ? "今日" : "";
-        if (title) {
-          items.push({ icon: "📋", title: title, badge: badge });
-        }
-        if (meetPart) {
-          items.push({ icon: "🗓️", title: meetPart, badge: badge });
-        } else if (!title && /會議/.test(it.title || "")) {
-          items.push({ icon: "🗓️", title: it.title, badge: badge });
-        }
+        if (dlCount >= NOTES_DEADLINE_MAX) return;
+        var title = (it && it.title) || "";
+        if (!title) return;
+        items.push({ kind: "deadline", title: title });
+        dlCount++;
       });
+      if (allLink) allLink.hidden = false;
+    } else if (allLink) {
+      allLink.hidden = true;
     }
 
     if (!items.length) {
       list.innerHTML = "";
+      section.hidden = true;
       return;
     }
 
     var html = "";
     items.forEach(function (it) {
+      var icon = it.kind === "deadline" ? "📋" : (it.kind === "meeting" ? "🗓️" : "📌");
       html +=
-        '<li class="tt-event-item">' +
-          '<span class="tt-event-icon" aria-hidden="true">' + it.icon + "</span>" +
-          '<span class="tt-event-title">' + escapeHtml(it.title) + "</span>" +
-          (it.badge ? '<span class="tt-event-badge">' + escapeHtml(it.badge) + "</span>" : "") +
+        '<li class="home-note-item">' +
+          '<span class="home-note-icon" aria-hidden="true">' + icon + "</span>" +
+          '<span class="home-note-title">' + escapeHtml(it.title) + "</span>" +
         "</li>";
     });
     list.innerHTML = html;
+    section.hidden = false;
   }
 
   function buildDayGrid() {
@@ -499,33 +449,10 @@
     });
   }
 
-  function updateNowBanner() {
-    var banner = $("home-now-banner");
-    if (!banner) return;
-    var day = state.selectedDay;
-    if (!browseIsToday() || !day || day !== state.todayCycleDay) {
-      banner.hidden = true;
-      banner.textContent = "";
-      return;
-    }
-    var slot = findCurrentSlot(day);
-    if (!slot) {
-      banner.hidden = true;
-      return;
-    }
-    banner.hidden = false;
-    banner.className = "tt-now-banner" + (slot.kind === "period" ? " is-period" : "");
-    if (slot.kind === "period") {
-      banner.textContent = "⏱ 現正：" + (slot.slotLabel || ("第" + slot.period + "節"));
-    } else {
-      banner.textContent = "⏱ " + slot.label;
-    }
-  }
-
   function loadCycleAndCalendar(session) {
     var client = getClient();
     var iso = state.browseDate || todayHK();
-    renderHeroChrome(session);
+    renderHomeBar(session);
 
     if (!client || !session || session.method !== "supabase") {
       state.browseCycleDay = null;
@@ -534,7 +461,7 @@
       state.calendarItems = [];
       state.deadlineItems = [];
       if (!state.selectedDay) state.selectedDay = 1;
-      renderHeroChrome(session);
+      renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
       return;
@@ -577,12 +504,10 @@
         state.todayCycleDay = state.browseCycleDay;
       } else if (todayRes && !todayRes.error && todayRes.data && todayRes.data.cycle_day) {
         state.todayCycleDay = todayRes.data.cycle_day;
-      } else {
-        state.todayCycleDay = state.todayCycleDay; // keep prior if any
       }
+
       window.__todayCycleDay = state.todayCycleDay;
 
-      // Default selected day: today's cycle, else browse cycle, else 1
       if (!state.selectedDay) {
         state.selectedDay = state.todayCycleDay || state.browseCycleDay || 1;
       } else if (iso === realToday && state.browseCycleDay && !window.__userPickedDay) {
@@ -599,7 +524,7 @@
 
       function finishDeadlines(items) {
         state.deadlineItems = items || [];
-        renderHeroChrome(session);
+        renderHomeBar(session);
         buildDayGrid();
         renderTimetableSection(session);
         startClock();
@@ -629,7 +554,7 @@
       state.cycleNote = "未能讀取循環日";
       state.calendarItems = [];
       state.deadlineItems = [];
-      renderHeroChrome(session);
+      renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
     });
@@ -723,14 +648,8 @@
     var box = $("home-periods");
     var meta = $("home-tt-meta");
     var result = $("home-tt-result");
-    var title = $("home-day-title");
     var countEl = $("home-lesson-count");
     if (!box) return;
-
-    var sched = scheduleForDay(day);
-    if (title) {
-      title.textContent = "Day " + day + " · " + ((sched && sched.label) || "一般上課時間");
-    }
 
     if (!teacher || !day) {
       box.innerHTML = "";
@@ -804,10 +723,9 @@
 
     if (countEl) {
       countEl.hidden = false;
-      countEl.textContent = busy + " 節課 / " + maxp + " 節";
+      countEl.textContent = busy + " / " + maxp + " 節";
     }
     if (result) result.classList.remove("hidden");
-    updateNowBanner();
   }
 
   function showSelectedTeacher() {
@@ -818,19 +736,12 @@
     var result = $("home-tt-result");
     var day = state.selectedDay;
 
-    var title = $("home-day-title");
-    if (title && day) {
-      var sched = scheduleForDay(day);
-      title.textContent = "Day " + day + " · " + ((sched && sched.label) || "一般上課時間");
-    }
-
     if (!day) {
       if (msg) {
         msg.textContent = "請選擇循環日";
         msg.classList.remove("hidden");
       }
       if (result) result.classList.add("hidden");
-      updateNowBanner();
       return;
     }
 
@@ -840,8 +751,6 @@
         msg.classList.remove("hidden");
       }
       if (result) result.classList.add("hidden");
-      // Still show empty period shells? Prefer message only.
-      updateNowBanner();
       return;
     }
 
@@ -874,7 +783,6 @@
       if (msg) msg.classList.add("hidden");
       var countEl = $("home-lesson-count");
       if (countEl) countEl.hidden = true;
-      updateNowBanner();
       return;
     }
 
@@ -967,7 +875,7 @@
     startClock();
     bindTeacherSelect();
     bindDatePicker();
-    renderHeroChrome(session);
+    renderHomeBar(session);
     loadCycleAndCalendar(session);
     if (session.role === "staff") loadTimetableCloud(session);
     else renderTimetableSection(session);
