@@ -344,7 +344,6 @@
     renderWho(session);
 
     var cycleEl = $("home-cycle");
-    var subEl = $("home-sched-label");
     var day = effectiveCycleDay();
     if (cycleEl) {
       if (day) {
@@ -355,14 +354,6 @@
         cycleEl.classList.add("is-off");
       }
     }
-    if (subEl) {
-      if (day) {
-        var sched = scheduleForDay(day);
-        subEl.textContent = (sched && sched.label) || "一般上課時間";
-      } else {
-        subEl.textContent = state.cycleNote || "";
-      }
-    }
 
     renderNotes(session);
   }
@@ -370,7 +361,6 @@
   function renderNotes(session) {
     var section = $("home-notes");
     var list = $("home-notes-list");
-    var allLink = $("home-notes-all");
     if (!list || !section) return;
 
     var items = [];
@@ -394,9 +384,6 @@
         if (!title) return;
         items.push({ kind: "deadline", title: title });
       });
-      if (allLink) allLink.hidden = false;
-    } else if (allLink) {
-      allLink.hidden = true;
     }
 
     if (!items.length) {

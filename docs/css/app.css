@@ -326,6 +326,38 @@ a:hover { text-decoration: underline; }
   font-size: 0.75rem;
   padding: 20px 12px 8px;
 }
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+.footer-nav a,
+.footer-nav-btn {
+  color: var(--primary-dark);
+  background: #eef6f1;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.3;
+}
+.footer-nav a:hover,
+.footer-nav a.active,
+.footer-nav-btn:hover {
+  background: #d8eee3;
+  text-decoration: none !important;
+}
+.footer-note {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
 
 .google-slot {
   display: flex;
@@ -519,7 +551,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   .deadline-item { grid-template-columns: 1fr; gap: 4px; }
 }
 
-/* ——— Homepage: ONE top card (nav + when + notes) + mods + timetable ——— */
+/* ——— Homepage: top card (when + notes) + mods + timetable; nav in footer ——— */
 .home-section { margin-bottom: 18px; }
 .home-section-title {
   font-size: 1.05rem;
@@ -537,7 +569,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 14px 14px 28px;
 }
 
-/* Single top card — school green; no school logo / school-name branding */
+/* Single top card — school green; date/time/Day/status/who/notes/date-pick only */
 .home-top {
   background: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
   color: #fff;
@@ -545,32 +577,6 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 12px 14px 14px;
   margin-bottom: 14px;
   box-shadow: 0 4px 16px rgba(13, 82, 56, 0.28);
-}
-.home-top-nav {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-.home-top-nav a,
-.home-top-nav-btn {
-  color: #fff;
-  background: rgba(255,255,255,0.14);
-  padding: 5px 11px;
-  border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-decoration: none !important;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  line-height: 1.3;
-}
-.home-top-nav a:hover,
-.home-top-nav a.active,
-.home-top-nav-btn:hover {
-  background: rgba(255,255,255,0.28);
-  text-decoration: none !important;
 }
 .home-top-signed-sr {
   position: absolute;
@@ -699,13 +705,6 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   background: #d4e8ff;
   color: #0f3460;
 }
-.home-bar-sched {
-  margin-top: 6px;
-  font-size: 0.75rem !important;
-  opacity: 0.85;
-  color: rgba(255,255,255,0.88) !important;
-}
-
 /* Today's notes — inset inside the same top card */
 .home-top-notes {
   margin-top: 12px;
@@ -728,14 +727,6 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: var(--primary-dark);
   margin: 0;
 }
-.home-notes-all {
-  font-size: 0.72rem;
-  font-weight: 600;
-  white-space: nowrap;
-  text-decoration: none !important;
-  color: var(--primary) !important;
-}
-.home-notes-all:hover { text-decoration: underline !important; }
 .home-notes-list {
   list-style: none;
   margin: 0;
@@ -1002,6 +993,3 @@ html[data-app-role="student"] .home-mods {
 }
 html[data-app-role="staff"] .tt-student-block { display: none !important; }
 html[data-app-role="student"] a[data-staff-only],
-html[data-app-role="student"] .home-notes-all[data-staff-only] {
-  display: none !important;
-}

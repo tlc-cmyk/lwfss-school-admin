@@ -22,15 +22,8 @@
 
   <div id="app" class="hidden">
     <main class="wrap wrap-home">
-      <!-- One top section: nav + date/time/Day/user + today’s items (no school branding) -->
+      <!-- Top card only: 日期、時間、Day、狀態、姓名角色、今日事項、改日期 -->
       <section id="home-top" class="home-top" aria-label="今日概況" aria-live="polite">
-        <nav class="home-top-nav" aria-label="主選單">
-          <a href="index.html" class="active">主頁</a>
-          <a href="timetable.html" data-staff-only>時間表</a>
-          <a href="staff-deadlines.html" data-staff-only>文件</a>
-          <button type="button" id="sign-out" class="home-top-nav-btn">登出</button>
-        </nav>
-
         <div class="home-top-when-row">
           <div class="home-bar-when">
             <span id="home-date" class="home-bar-date">載入日期…</span>
@@ -47,12 +40,10 @@
           <span id="home-status" class="home-status-chip" hidden></span>
           <span id="home-who" class="home-bar-who"></span>
         </div>
-        <div id="home-sched-label" class="home-bar-sched muted"></div>
 
         <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
           <div class="home-notes-head">
             <h2 class="home-notes-title">今日事項</h2>
-            <a id="home-notes-all" class="home-notes-all" href="staff-deadlines.html" data-staff-only>全部文件遞交</a>
           </div>
           <ul id="home-notes-list" class="home-notes-list"></ul>
         </div>
@@ -97,7 +88,13 @@
     </main>
 
     <footer class="footer">
-      世界龍岡學校劉皇發中學 · 須以 @g.lwfss.edu.hk 登入 · 時間表資料來自 Supabase
+      <nav class="footer-nav" aria-label="主選單">
+        <a href="index.html" class="active">主頁</a>
+        <a href="timetable.html" data-staff-only>時間表</a>
+        <a href="staff-deadlines.html" data-staff-only>文件</a>
+        <button type="button" id="sign-out" class="footer-nav-btn">登出</button>
+      </nav>
+      <p class="footer-note">須以 @g.lwfss.edu.hk 登入</p>
     </footer>
   </div>
 
