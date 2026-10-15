@@ -537,14 +537,14 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 14px 14px 28px;
 }
 
-/* Single top card — no school logo / school-name branding */
+/* Single top card — school green; no school logo / school-name branding */
 .home-top {
-  background: linear-gradient(135deg, #1a3a6c 0%, #0d2848 100%);
+  background: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
   color: #fff;
   border-radius: 16px;
   padding: 12px 14px 14px;
   margin-bottom: 14px;
-  box-shadow: 0 4px 16px rgba(13, 40, 72, 0.28);
+  box-shadow: 0 4px 16px rgba(13, 82, 56, 0.28);
 }
 .home-top-nav {
   display: flex;
@@ -609,7 +609,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
   line-height: 1.15;
-  color: #f0f6ff;
+  color: #e8f8f0;
 }
 .home-bar-pick {
   position: relative;
@@ -659,12 +659,12 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-weight: 700;
   padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(160, 200, 255, 0.32);
-  color: #e8f0fe;
+  background: rgba(160, 220, 190, 0.35);
+  color: #e0f2ea;
 }
 .home-status-chip.is-period { background: rgba(220, 70, 60, 0.55); }
 .home-status-chip.is-break { background: rgba(255, 200, 80, 0.4); color: #fff8e0; }
-.home-status-chip.is-after { background: rgba(160, 200, 255, 0.32); }
+.home-status-chip.is-after { background: rgba(160, 220, 190, 0.35); }
 .home-bar-who {
   margin-left: auto;
   font-size: 0.78rem;
