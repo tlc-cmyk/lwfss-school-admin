@@ -160,6 +160,51 @@
     return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
   }
 
+  /** Seconds from midnight in Asia/Hong_Kong. */
+  function nowHKTSeconds() {
+    var p = nowHKTParts();
+    return p.hour * 3600 + p.minute * 60 + p.second;
+  }
+
+  /** Whole seconds remaining until HH:MM end (HKT). Null if unknown/over. */
+  function secondsUntilEnd(hmEnd) {
+    var endM = hmToMinutes(hmEnd);
+    if (endM == null) return null;
+    var left = endM * 60 - nowHKTSeconds();
+    return left > 0 ? left : 0;
+  }
+
+  function formatCountdown(secLeft) {
+    if (secLeft == null) return "";
+    if (secLeft <= 0) return "結束";
+    var m = Math.floor(secLeft / 60);
+    var s = secLeft % 60;
+    if (m >= 60) {
+      var h = Math.floor(m / 60);
+      m = m % 60;
+      return "剩 " + h + " 時 " + m + " 分";
+    }
+    if (m >= 1) return "剩 " + m + " 分";
+    return "剩 " + s + " 秒";
+  }
+
+  function countdownHtml(hmEnd) {
+    var left = secondsUntilEnd(hmEnd);
+    if (left == null) return "";
+    return '<span class="tt-period-countdown" data-end="' + escapeHtml(hmEnd) + '" aria-live="polite">' +
+      escapeHtml(formatCountdown(left)) +
+      "</span>";
+  }
+
+  function updateLiveCountdowns() {
+    var nodes = document.querySelectorAll("#home-periods .tt-period-countdown[data-end]");
+    if (!nodes.length) return;
+    Array.prototype.forEach.call(nodes, function (el) {
+      var left = secondsUntilEnd(el.getAttribute("data-end"));
+      el.textContent = formatCountdown(left);
+    });
+  }
+
   function scheduleIdForDay(d) {
     return (BELLS.byCycleDay && BELLS.byCycleDay[String(d)]) || "general";
   }
@@ -293,16 +338,23 @@
         }
       }
 
-      // Refresh period past/current when the minute flips
+      // Refresh period past/current when the minute or current period flips
       if (browseIsToday() && state.selectedDay && state.selectedDay === state.todayCycleDay) {
-        if (window.__homePeriodMark !== parts.hm) {
-          window.__homePeriodMark = parts.hm;
+        var slotNow = state.todayCycleDay ? findCurrentSlot(state.todayCycleDay) : null;
+        var periodKey = slotNow && slotNow.kind === "period" ? String(slotNow.period) : (slotNow ? slotNow.kind + ":" + (slotNow.key || "") : "none");
+        var mark = parts.hm + "|" + periodKey;
+        if (window.__homePeriodMark !== mark) {
+          window.__homePeriodMark = mark;
           var result = $("home-tt-result");
           if (result && !result.classList.contains("hidden") && state.viewingCode) {
             var t = findTeacher(state.viewingCode);
             if (t) renderPeriods(t, state.selectedDay);
           }
+        } else {
+          updateLiveCountdowns();
         }
+      } else {
+        updateLiveCountdowns();
       }
     }
     tick();
@@ -690,9 +742,12 @@
       var bell = periodBell(day, p);
       var row = document.createElement("div");
       var extra = "";
+      var isCurrent = false;
       if (live) {
-        if (curPeriod === p) extra = " is-current";
-        else if (bell) {
+        if (curPeriod === p) {
+          extra = " is-current";
+          isCurrent = true;
+        } else if (bell) {
           var endM = hmToMinutes(bell.end);
           if (endM != null && nowMins >= endM) extra = " is-past";
         }
@@ -700,6 +755,7 @@
       var timeHtml = bell
         ? '<span class="tt-period-time">' + escapeHtml(bell.start) + " — " + escapeHtml(bell.end) + "</span>"
         : "";
+      var cdHtml = (isCurrent && bell) ? countdownHtml(bell.end) : "";
 
       if (cell) {
         busy++;
@@ -708,6 +764,7 @@
           '<div class="tt-period-left">' +
             '<span class="tt-pnum">P' + p + "</span>" +
             timeHtml +
+            cdHtml +
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
@@ -722,13 +779,14 @@
           '<div class="tt-period-left">' +
             '<span class="tt-pnum">P' + p + "</span>" +
             timeHtml +
+            cdHtml +
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj free-label">空堂</div>' +
             '<div class="detail-free">Free period</div>' +
           "</div>";
       }
-      if (extra.indexOf("is-current") >= 0) row.setAttribute("aria-current", "true");
+      if (isCurrent) row.setAttribute("aria-current", "true");
       box.appendChild(row);
     }
 
