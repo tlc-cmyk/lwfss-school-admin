@@ -77,6 +77,7 @@
       btn.dataset.day = String(d);
       btn.addEventListener("click", function (ev) {
         var day = parseInt(ev.currentTarget.dataset.day, 10);
+        window.__userPickedDay = true;
         var t = window.__currentTeacher;
         if (t) renderSchedule(t, day);
       });
@@ -148,7 +149,8 @@
       return;
     }
     renderSuggestions([]);
-    renderSchedule(t, window.__currentDay || 1);
+    var day = window.__currentDay || window.__todayCycleDay || 1;
+    renderSchedule(t, day);
   }
 
   function doSearch() {
@@ -287,6 +289,92 @@
     return next();
   }
 
+
+  function todayHK() {
+    try {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Hong_Kong",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+    } catch (e) {
+      var d = new Date();
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+  }
+
+  function weekdayLabelHK(iso) {
+    try {
+      var parts = iso.split("-").map(function (x) { return parseInt(x, 10); });
+      var dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 4, 0, 0)); // HK morning-ish
+      return new Intl.DateTimeFormat("zh-HK", { timeZone: "Asia/Hong_Kong", weekday: "long" }).format(dt);
+    } catch (e) {
+      return "";
+    }
+  }
+
+  function setTodayBanner(cycleDay, note) {
+    var main = $("today-banner-text");
+    var sub = $("today-banner-sub");
+    var banner = $("today-banner");
+    if (!main) return;
+    var iso = todayHK();
+    var wd = weekdayLabelHK(iso);
+    if (cycleDay) {
+      main.innerHTML =
+        "今日：<strong>" + iso + "</strong>" +
+        (wd ? "（" + wd + "）" : "") +
+        " · <strong class=\"today-day\">Day " + cycleDay + "</strong>";
+      if (sub) sub.textContent = note || "已自動選取今日循環日課表";
+      if (banner) banner.classList.remove("is-off");
+      window.__todayCycleDay = cycleDay;
+      // Auto-select this day when showing a teacher
+      if (!window.__userPickedDay) {
+        window.__currentDay = cycleDay;
+        var t = window.__currentTeacher;
+        if (t) renderSchedule(t, cycleDay);
+      }
+    } else {
+      main.innerHTML =
+        "今日：<strong>" + iso + "</strong>" +
+        (wd ? "（" + wd + "）" : "") +
+        " · <strong>今日無上課／假期</strong>";
+      if (sub) sub.textContent = note || "校曆未標示循環日（週末、假期、考試日或活動日）";
+      if (banner) banner.classList.add("is-off");
+      window.__todayCycleDay = null;
+    }
+  }
+
+  function loadTodayCycleDay() {
+    var auth = window.SchoolAdminAuth;
+    var supabase = (auth && auth.getClient && auth.getClient()) || window.__supabaseClient;
+    var session = auth && auth.getSession ? auth.getSession() : window.__schoolAdminSession;
+    var iso = todayHK();
+    if (!supabase || !session || session.method !== "supabase") {
+      setTodayBanner(null, "登入後可顯示今日循環日");
+      return;
+    }
+    supabase
+      .from("cycle_days")
+      .select("cycle_day,note")
+      .eq("day_date", iso)
+      .maybeSingle()
+      .then(function (res) {
+        if (res.error) {
+          setTodayBanner(null, "未能讀取循環日：" + (res.error.message || ""));
+          return;
+        }
+        var row = res.data;
+        if (row && row.cycle_day) setTodayBanner(row.cycle_day, row.note || "");
+        else setTodayBanner(null, "");
+      })
+      .catch(function (e) {
+        setTodayBanner(null, "未能讀取循環日");
+      });
+  }
+
+
   function useLocalBackup() {
     setCloudNote("雲端暫不可用，使用本地備份");
     bindLocal("本地備份");
@@ -381,6 +469,7 @@
       return;
     }
     prefillOwnCode(session);
+    loadTodayCycleDay();
     if (session.method === "supabase") {
       var client = (window.SchoolAdminAuth && SchoolAdminAuth.getClient && SchoolAdminAuth.getClient()) || window.__supabaseClient;
       if (client) loadFromCloud();

@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **首個模組**：教師時間表查詢
+- **模組**：教師時間表查詢；文件遞交清單及校務會議（教職員）；時間表顯示今日循環日
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75 職員允許名單） |
+| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events` |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -37,6 +37,8 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_lessons`
 - `school_read_meta`
 - `school_read_staff`
+- `school_read_cycle_days` / `school_read_calendar_events`（本校 `@g.lwfss.edu.hk`）
+- `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 
 條件（約）：
 
@@ -66,16 +68,22 @@ school-admin/
 │   ├── schema.sql          # 本機 SQLite 結構（與雲端欄位對應）
 │   ├── staff.sql           # 雲端 staff 允許名單 DDL
 │   ├── seed_staff.sql      # staff upsert 種子
+│   ├── calendar_staff_deadlines.sql  # calendar_events / cycle_days / staff_deadlines
+│   ├── seed_staff_deadlines.sql
+│   ├── seed_cycle_days.sql
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
 │   └── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
 ├── docs/                   # GitHub Pages 網站根目錄
 │   ├── index.html
 │   ├── timetable.html
+│   ├── staff-deadlines.html
+│   ├── assets/校曆表-2026-2027.pdf
 │   ├── css/app.css
 │   ├── js/config.js        # Supabase URL、anon key、allowedDomain
 │   ├── js/auth.js          # Supabase Google 登入
-│   ├── js/timetable.js     # 優先讀雲端，失敗才用本地備份
+│   ├── js/timetable.js     # 雲端時間表 + 今日循環日
+│   ├── js/staff-deadlines.js
 │   └── data/
 │       ├── timetable.json  # 本地備份
 │       └── timetable.js
