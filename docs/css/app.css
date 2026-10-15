@@ -519,7 +519,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   .deadline-item { grid-template-columns: 1fr; gap: 4px; }
 }
 
-/* ——— Homepage: compact bar + notes + mods + timetable (once) ——— */
+/* ——— Homepage: ONE top card (nav + when + notes) + mods + timetable ——— */
 .home-section { margin-bottom: 18px; }
 .home-section-title {
   font-size: 1.05rem;
@@ -537,16 +537,54 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 14px 14px 28px;
 }
 
-/* Compact today bar — navy, single strip */
-.home-bar {
+/* Single top card — no school logo / school-name branding */
+.home-top {
   background: linear-gradient(135deg, #1a3a6c 0%, #0d2848 100%);
   color: #fff;
-  border-radius: 14px;
-  padding: 12px 14px;
+  border-radius: 16px;
+  padding: 12px 14px 14px;
   margin-bottom: 14px;
   box-shadow: 0 4px 16px rgba(13, 40, 72, 0.28);
 }
-.home-bar-top {
+.home-top-nav {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.home-top-nav a,
+.home-top-nav-btn {
+  color: #fff;
+  background: rgba(255,255,255,0.14);
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.3;
+}
+.home-top-nav a:hover,
+.home-top-nav a.active,
+.home-top-nav-btn:hover {
+  background: rgba(255,255,255,0.28);
+  text-decoration: none !important;
+}
+.home-top-signed-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.home-top-when-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -632,7 +670,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-size: 0.78rem;
   opacity: 0.92;
   text-align: right;
-  max-width: 45%;
+  max-width: 52%;
   word-break: break-word;
 }
 .home-who-code {
@@ -645,6 +683,22 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-size: 0.68rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+.home-who-role {
+  display: inline-block;
+  margin-left: 4px;
+  margin-top: 2px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: #ffe8a3;
+  color: #6b4e00;
+  font-weight: 700;
+  font-size: 0.65rem;
+  vertical-align: middle;
+}
+.home-who-role.is-student {
+  background: #d4e8ff;
+  color: #0f3460;
+}
 .home-bar-sched {
   margin-top: 6px;
   font-size: 0.75rem !important;
@@ -652,33 +706,34 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: rgba(255,255,255,0.88) !important;
 }
 
-/* Today's notes — once, light card */
-.home-notes {
-  background: var(--card);
-  border: 1px solid var(--border);
+/* Today's notes — inset inside the same top card */
+.home-top-notes {
+  margin-top: 12px;
+  padding: 10px 12px;
   border-radius: 12px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow);
+  background: rgba(255,255,255,0.96);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 .home-notes-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .home-notes-title {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: var(--primary-dark);
   margin: 0;
 }
 .home-notes-all {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
   text-decoration: none !important;
+  color: var(--primary) !important;
 }
 .home-notes-all:hover { text-decoration: underline !important; }
 .home-notes-list {
@@ -687,20 +742,24 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 .home-note-item {
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   line-height: 1.35;
-  padding: 6px 0;
+  padding: 5px 0;
   border-bottom: 1px solid #eef2f6;
 }
 .home-note-item:last-child { border-bottom: none; padding-bottom: 0; }
 .home-note-icon { flex: 0 0 auto; line-height: 1.35; }
 .home-note-title { flex: 1; min-width: 0; word-break: break-word; color: var(--text); }
+
+/* Legacy class kept for any leftover markup */
+.home-notes { /* unused standalone; notes live in .home-top-notes */ }
+.home-bar { /* unused; replaced by .home-top */ }
 
 /* Slim module pills — no self-referential「循環日課表」tab */
 .home-mods {

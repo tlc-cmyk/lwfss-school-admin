@@ -7,7 +7,7 @@
   <meta name="description" content="世界龍岡學校劉皇發中學 · 學校行政系統" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="學校行政" />
-  <title>劉皇發中學 · 學校行政系統</title>
+  <title>學校行政系統</title>
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
@@ -21,27 +21,17 @@
   </div>
 
   <div id="app" class="hidden">
-    <header class="app-header app-header-slim">
-      <div class="brand brand-slim">
-        <div class="brand-mark">龍</div>
-        <div>
-          <h1>劉皇發中學</h1>
-          <div class="sub">學校行政系統</div>
-        </div>
-      </div>
-      <nav class="nav" aria-label="主選單">
-        <a href="index.html" class="active">主頁</a>
-        <a href="timetable.html" data-staff-only>時間表查詢</a>
-        <a href="staff-deadlines.html" data-staff-only>文件／會議</a>
-        <button type="button" id="sign-out" class="nav-btn">登出</button>
-      </nav>
-      <div id="signed-in-as" class="signed-in"></div>
-    </header>
-
     <main class="wrap wrap-home">
-      <!-- 1) Compact today bar: date · time · Day · status · name (once) -->
-      <section id="home-bar" class="home-bar" aria-label="今日概況" aria-live="polite">
-        <div class="home-bar-top">
+      <!-- One top section: nav + date/time/Day/user + today’s items (no school branding) -->
+      <section id="home-top" class="home-top" aria-label="今日概況" aria-live="polite">
+        <nav class="home-top-nav" aria-label="主選單">
+          <a href="index.html" class="active">主頁</a>
+          <a href="timetable.html" data-staff-only>時間表</a>
+          <a href="staff-deadlines.html" data-staff-only>文件</a>
+          <button type="button" id="sign-out" class="home-top-nav-btn">登出</button>
+        </nav>
+
+        <div class="home-top-when-row">
           <div class="home-bar-when">
             <span id="home-date" class="home-bar-date">載入日期…</span>
             <span id="home-clock" class="home-bar-clock" aria-label="現在時間">--:--</span>
@@ -51,24 +41,27 @@
             <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
           </label>
         </div>
+
         <div class="home-bar-meta">
           <span id="home-cycle" class="home-bar-day">載入循環日…</span>
           <span id="home-status" class="home-status-chip" hidden></span>
           <span id="home-who" class="home-bar-who"></span>
         </div>
         <div id="home-sched-label" class="home-bar-sched muted"></div>
-      </section>
 
-      <!-- 2) Today's notes once -->
-      <section id="home-notes" class="home-notes" aria-label="今日事項" hidden>
-        <div class="home-notes-head">
-          <h2 class="home-notes-title">今日事項</h2>
-          <a id="home-notes-all" class="home-notes-all" href="staff-deadlines.html" data-staff-only>全部文件遞交</a>
+        <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
+          <div class="home-notes-head">
+            <h2 class="home-notes-title">今日事項</h2>
+            <a id="home-notes-all" class="home-notes-all" href="staff-deadlines.html" data-staff-only>全部文件遞交</a>
+          </div>
+          <ul id="home-notes-list" class="home-notes-list"></ul>
         </div>
-        <ul id="home-notes-list" class="home-notes-list"></ul>
+
+        <!-- auth.js fills this; visually folded into home-who above -->
+        <div id="signed-in-as" class="home-top-signed-sr" aria-live="polite"></div>
       </section>
 
-      <!-- 3) Slim module row (no「循環日課表」tab — bottom already is the timetable) -->
+      <!-- Slim module row -->
       <nav class="home-mods" aria-label="其他模組" data-role-view="staff">
         <a class="home-mod" href="timetable.html">完整時間表</a>
         <a class="home-mod" href="staff-deadlines.html">文件／會議</a>
@@ -76,7 +69,7 @@
         <span class="home-mod is-soon" title="稍後">約開會<span class="home-mod-soon">稍後</span></span>
       </nav>
 
-      <!-- 4) Timetable once: D1–D10 + teacher + period cards -->
+      <!-- Timetable: D1–D10 + teacher + period cards -->
       <section class="home-tt" aria-label="課節時間表">
         <div id="home-day-grid" class="tt-day-grid" role="tablist" aria-label="循環日 D1–D10"></div>
 

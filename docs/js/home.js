@@ -305,6 +305,16 @@
     clockTimer = setInterval(tick, 1000);
   }
 
+  function compactRoleLabel(session) {
+    if (!session) return "";
+    if (session.role === "staff") {
+      var title = session.staff && session.staff.role_title;
+      return title ? String(title) : "教職員";
+    }
+    if (session.role === "student") return "學生";
+    return "";
+  }
+
   function renderWho(session) {
     var el = $("home-who");
     if (!el) return;
@@ -316,8 +326,11 @@
     var short = session.staff && session.staff.short_name
       ? String(session.staff.short_name).toUpperCase()
       : "";
+    var role = compactRoleLabel(session);
+    var roleClass = session.role === "student" ? "home-who-role is-student" : "home-who-role";
     el.innerHTML = escapeHtml(name) +
-      (short ? ' <span class="home-who-code">' + escapeHtml(short) + "</span>" : "");
+      (short ? ' <span class="home-who-code">' + escapeHtml(short) + "</span>" : "") +
+      (role ? ' <span class="' + roleClass + '">' + escapeHtml(role) + "</span>" : "");
   }
 
   function renderHomeBar(session) {
@@ -365,6 +378,7 @@
     // Calendar remarks / events (once)
     (state.calendarItems || []).forEach(function (it) {
       if (!it || !it.title) return;
+      if (items.length >= NOTES_DEADLINE_MAX) return;
       var isRemark = !it.type || it.type === "remark";
       items.push({
         kind: isRemark ? "remark" : (it.type === "meeting" ? "meeting" : "event"),
@@ -372,15 +386,13 @@
       });
     });
 
-    // Staff deadlines — at most NOTES_DEADLINE_MAX
+    // Staff deadlines — fill remaining slots up to NOTES_DEADLINE_MAX total
     if (session && session.role === "staff") {
-      var dlCount = 0;
       (state.deadlineItems || []).forEach(function (it) {
-        if (dlCount >= NOTES_DEADLINE_MAX) return;
+        if (items.length >= NOTES_DEADLINE_MAX) return;
         var title = (it && it.title) || "";
         if (!title) return;
         items.push({ kind: "deadline", title: title });
-        dlCount++;
       });
       if (allLink) allLink.hidden = false;
     } else if (allLink) {
