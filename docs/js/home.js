@@ -330,6 +330,11 @@
     return state.browseCycleDay;
   }
 
+  /** Message when browse date has no cycle day (holiday / non-school day). */
+  function noCycleDayMessage() {
+    return browseIsToday() ? "今日無上課／假期" : "是日無上課／假期";
+  }
+
   function startClock() {
     function tick() {
       var parts = nowHKTParts();
@@ -434,7 +439,7 @@
         cycleEl.classList.remove("is-off");
         cycleEl.classList.toggle("is-bf", scheduleIdForDay(day) === "bf");
       } else {
-        cycleEl.textContent = browseIsToday() ? "今日無上課／假期" : "是日無上課／假期";
+        cycleEl.textContent = noCycleDayMessage();
         cycleEl.classList.add("is-off");
         cycleEl.classList.remove("is-bf");
       }
@@ -537,11 +542,13 @@
   }
 
   function scrollTodayDayIntoView() {
-    if (!state.todayCycleDay) return;
+    // Prefer the Day driven by sticky date (or manual chip), else today's mark.
+    var focusDay = state.selectedDay || state.todayCycleDay;
+    if (!focusDay) return;
     Array.prototype.forEach.call(dayGridNodes(), function (grid) {
-      var chip = grid.querySelector('.tt-day-chip[data-day="' + state.todayCycleDay + '"]');
+      var chip = grid.querySelector('.tt-day-chip[data-day="' + focusDay + '"]');
       if (!chip) return;
-      // Center today's Day chip in the horizontal scroller after layout.
+      // Center the active Day chip in the horizontal scroller after layout.
       requestAnimationFrame(function () {
         var target = chip.offsetLeft + chip.offsetWidth / 2 - grid.clientWidth / 2;
         grid.scrollLeft = Math.max(0, target);
@@ -674,10 +681,11 @@
 
       window.__todayCycleDay = state.todayCycleDay;
 
-      if (!state.selectedDay) {
-        state.selectedDay = state.todayCycleDay || state.browseCycleDay || 1;
-      } else if (iso === realToday && state.browseCycleDay && !window.__userPickedDay) {
-        state.selectedDay = state.browseCycleDay;
+      // Sticky 改日期 drives D1–D10 for 時間表／班別／課室 unless user tapped a Day chip.
+      if (!window.__userPickedDay) {
+        state.selectedDay = state.browseCycleDay || null;
+      } else if (!state.selectedDay) {
+        state.selectedDay = state.browseCycleDay || state.todayCycleDay || 1;
       }
 
       var calItems = [];
@@ -1028,7 +1036,9 @@
 
     if (!day) {
       if (msg) {
-        msg.textContent = "請選擇循環日";
+        msg.textContent = (!state.browseCycleDay && !window.__userPickedDay)
+          ? noCycleDayMessage()
+          : "請選擇循環日";
         msg.classList.remove("hidden");
       }
       if (result) result.classList.add("hidden");
@@ -1485,7 +1495,9 @@
 
     if (!day) {
       if (msg) {
-        msg.textContent = "請選擇循環日";
+        msg.textContent = (!state.browseCycleDay && !window.__userPickedDay)
+          ? noCycleDayMessage()
+          : "請選擇循環日";
         msg.classList.remove("hidden");
       }
       if (result) result.classList.add("hidden");
