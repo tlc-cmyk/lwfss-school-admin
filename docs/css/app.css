@@ -1347,23 +1347,68 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   align-self: flex-start;
 }
 
-/* Split-group / co-taught: compact teacher · room chips */
+/* Split-group / elective: tidy chip grids with aligned columns */
 .tt-groups {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
   margin-top: 4px;
+  width: 100%;
+  gap: 3px;
+}
+/* Elective options: stacked full-width rows (subject · teacher · room) */
+.tt-groups--elective {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+/* Co-taught / split: equal-width 2-col grid (no jagged wrap) */
+.tt-groups--split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .tt-g {
-  display: inline-block;
+  display: grid;
+  align-items: baseline;
+  column-gap: 0.4em;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
   font-size: 0.72rem;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1.3;
   background: rgba(0,0,0,0.06);
-  padding: 2px 7px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 5px;
   color: var(--text);
+}
+.tt-groups--elective .tt-g {
+  grid-template-columns: 5em 3.75em minmax(0, 1fr);
+}
+.tt-groups--elective .tt-g:not(:has(.tt-g-r)) {
+  grid-template-columns: 5em minmax(0, 1fr);
+}
+.tt-groups--split .tt-g {
+  grid-template-columns: minmax(2.75em, max-content) minmax(0, 1fr);
+}
+.tt-groups--split .tt-g:not(:has(.tt-g-r)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.tt-g-s,
+.tt-g-t {
   white-space: nowrap;
+}
+.tt-g-r {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* · separators before non-first columns */
+.tt-g-t:not(:first-child)::before,
+.tt-g-r:not(:first-child)::before {
+  content: "·";
+  display: inline-block;
+  margin-right: 0.35em;
+  opacity: 0.42;
+  font-weight: 600;
 }
 .tt-g.is-mine {
   background: rgba(47, 95, 184, 0.14);

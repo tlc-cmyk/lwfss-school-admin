@@ -1465,20 +1465,37 @@
   }
 
   /**
-   * Compact chips. Elective: "GEO · CCC · ROOM"; split: "AYWS · 402".
+   * Structured chips with aligned columns.
+   * Elective: subject · teacher · room (full-width rows).
+   * Split: teacher · room (equal 2-col grid).
    * preferCode marked is-mine.
    */
   function splitGroupsHtml(groups, preferCode) {
     var list = orderSplitGroups(groups, preferCode);
     if (!list.length) return "";
-    var html = '<div class="tt-groups" aria-label="分組">';
+    var isElective = false;
+    var i;
+    for (i = 0; i < list.length; i++) {
+      if (list[i].isElective || list[i].label) {
+        isElective = true;
+        break;
+      }
+    }
+    var mod = isElective ? " tt-groups--elective" : " tt-groups--split";
+    var html = '<div class="tt-groups' + mod + '" aria-label="分組">';
     list.forEach(function (g) {
       var mine = preferCode && g.code === preferCode ? " is-mine" : "";
-      var bits = [];
-      if (g.label) bits.push(g.label);
-      if (g.code) bits.push(g.code);
-      if (g.room) bits.push(g.room);
-      html += '<span class="tt-g' + mine + '">' + escapeHtml(bits.join(" · ")) + "</span>";
+      var parts = "";
+      if (g.label) {
+        parts += '<span class="tt-g-s">' + escapeHtml(g.label) + "</span>";
+      }
+      if (g.code) {
+        parts += '<span class="tt-g-t">' + escapeHtml(g.code) + "</span>";
+      }
+      if (g.room) {
+        parts += '<span class="tt-g-r">' + escapeHtml(g.room) + "</span>";
+      }
+      html += '<span class="tt-g' + mine + '">' + parts + "</span>";
     });
     html += "</div>";
     return html;
