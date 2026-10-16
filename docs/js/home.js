@@ -5,7 +5,7 @@
   var cloudStarted = false;
   var clockTimer = null;
   var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
-  var NOTES_DEADLINE_MAX = 3;
+  var NOTES_DEADLINE_MAX = 2;
   // Hide from homepage「今日事項」only (still listed on 全部文件遞交).
   var HOME_NOTES_HIDDEN_DEADLINE_TITLES = {
     "中、英文科老師完成修改中六學生申報聯招及個人概覽自述文章/學會活動計劃書/行政會議": true
@@ -570,25 +570,6 @@
     el.hidden = false;
   }
 
-  function noteKindFromType(t) {
-    t = String(t || "remark").toLowerCase();
-    if (t === "deadline") return "deadline";
-    if (t === "meeting") return "meeting";
-    if (t === "holiday") return "holiday";
-    if (t === "exam") return "exam";
-    if (t === "event") return "event";
-    return "remark";
-  }
-
-  function noteIcon(kind) {
-    if (kind === "deadline") return "📋";
-    if (kind === "meeting") return "🗓️";
-    if (kind === "holiday") return "🎌";
-    if (kind === "exam") return "📝";
-    if (kind === "event") return "📅";
-    return "📌";
-  }
-
   function renderNotes(session) {
     var section = $("home-notes");
     var list = $("home-notes-list");
@@ -597,14 +578,14 @@
     var items = [];
     var seen = {};
 
-    // Prefer calendar_events for the selected / today date (compact one-line).
+    // Prefer calendar_events, then staff_deadlines — up to two separate rows.
     (state.calendarItems || []).forEach(function (it) {
       if (!it || !it.title) return;
       if (items.length >= NOTES_DEADLINE_MAX) return;
       var title = String(it.title);
       if (seen[title]) return;
       seen[title] = true;
-      items.push({ kind: noteKindFromType(it.type), title: title });
+      items.push(title);
     });
 
     // Staff deadlines — fill remaining slots only
@@ -614,7 +595,7 @@
         var title = (it && it.title) || "";
         if (!title || seen[title]) return;
         seen[title] = true;
-        items.push({ kind: "deadline", title: title });
+        items.push(title);
       });
     }
 
@@ -624,17 +605,11 @@
       return;
     }
 
-    var parts = [];
-    items.forEach(function (it, i) {
-      if (i) parts.push('<span class="home-note-sep" aria-hidden="true"> · </span>');
-      parts.push(
-        '<span class="home-note-item">' +
-          '<span aria-hidden="true">' + noteIcon(it.kind) + "</span>" +
-          escapeHtml(it.title) +
-        "</span>"
-      );
-    });
-    list.innerHTML = parts.join("");
+    list.innerHTML = items
+      .map(function (title) {
+        return '<div class="home-note-item">' + escapeHtml(title) + "</div>";
+      })
+      .join("");
     section.hidden = false;
   }
 
