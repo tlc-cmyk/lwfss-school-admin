@@ -11,7 +11,8 @@
     "中、英文科老師完成修改中六學生申報聯招及個人概覽自述文章/學會活動計劃書/行政會議": true
   };
 
-  // Bell times (一般／BF) — same source as timetable-app bells.json
+  // Bell times (一般／BF) — Day 5／10 = BF; other cycle days = 一般
+  // Times from teacher timetable bell columns (一般上課時間／BF上課時間).
   var BELLS = {
     byCycleDay: {
       "1": "general", "2": "general", "3": "general", "4": "general", "5": "bf",
@@ -22,31 +23,30 @@
         id: "general",
         label: "一般上課時間",
         slots: [
-          { key: "homeroom", label: "班主任／早會", start: "07:55", end: "08:30", period: null },
-          { key: "p1", label: "第1節", start: "08:30", end: "09:15", period: 1 },
-          { key: "p2", label: "第2節", start: "09:15", end: "10:00", period: 2 },
-          { key: "recess", label: "小息", start: "10:00", end: "10:20", period: null },
-          { key: "p3", label: "第3節", start: "10:20", end: "11:05", period: 3 },
-          { key: "p4", label: "第4節", start: "11:05", end: "11:50", period: 4 },
-          { key: "p5", label: "第5節", start: "11:50", end: "12:35", period: 5 },
-          { key: "lunch", label: "午飯", start: "12:35", end: "13:45", period: null },
-          { key: "reading", label: "閱讀時段", start: "13:45", end: "14:05", period: null },
-          { key: "p6", label: "第6節", start: "14:05", end: "14:50", period: 6 },
-          { key: "p7", label: "第7節", start: "14:50", end: "15:35", period: 7 }
+          { key: "homeroom", label: "班主任／早會", start: "07:55", end: "08:20", period: null },
+          { key: "p1", label: "第1節", start: "08:20", end: "09:00", period: 1 },
+          { key: "p2", label: "第2節", start: "09:00", end: "09:40", period: 2 },
+          { key: "recess", label: "小息", start: "09:40", end: "09:55", period: null },
+          { key: "p3", label: "第3節", start: "09:55", end: "10:35", period: 3 },
+          { key: "p4", label: "第4節", start: "10:35", end: "11:15", period: 4 },
+          { key: "p5", label: "第5節", start: "11:15", end: "11:55", period: 5 },
+          { key: "lunch", label: "午飯", start: "11:55", end: "12:10", period: null },
+          { key: "p6", label: "第6節", start: "12:10", end: "12:50", period: 6 },
+          { key: "p7", label: "第7節", start: "12:50", end: "13:30", period: 7 }
         ],
         periods: {
-          "1": { start: "08:30", end: "09:15" },
-          "2": { start: "09:15", end: "10:00" },
-          "3": { start: "10:20", end: "11:05" },
-          "4": { start: "11:05", end: "11:50" },
-          "5": { start: "11:50", end: "12:35" },
-          "6": { start: "14:05", end: "14:50" },
-          "7": { start: "14:50", end: "15:35" }
+          "1": { start: "08:20", end: "09:00" },
+          "2": { start: "09:00", end: "09:40" },
+          "3": { start: "09:55", end: "10:35" },
+          "4": { start: "10:35", end: "11:15" },
+          "5": { start: "11:15", end: "11:55" },
+          "6": { start: "12:10", end: "12:50" },
+          "7": { start: "12:50", end: "13:30" }
         }
       },
       bf: {
         id: "bf",
-        label: "BF 上課時間表",
+        label: "BF上課時間",
         slots: [
           { key: "homeroom", label: "班主任／早會", start: "07:55", end: "08:30", period: null },
           { key: "p1", label: "第1節", start: "08:30", end: "09:15", period: 1 },
@@ -212,6 +212,12 @@
 
   function scheduleForDay(d) {
     return BELLS.schedules[scheduleIdForDay(d)] || BELLS.schedules.general;
+  }
+
+  function bellLabelForDay(d) {
+    if (d == null) return "";
+    var sched = scheduleForDay(d);
+    return (sched && sched.label) || "";
   }
 
   function periodBell(d, p) {
@@ -405,11 +411,14 @@
     var day = effectiveCycleDay();
     if (cycleEl) {
       if (day) {
-        cycleEl.textContent = "Day " + day;
+        var bellLab = bellLabelForDay(day);
+        cycleEl.textContent = "Day " + day + (bellLab ? " · " + bellLab : "");
         cycleEl.classList.remove("is-off");
+        cycleEl.classList.toggle("is-bf", scheduleIdForDay(day) === "bf");
       } else {
         cycleEl.textContent = browseIsToday() ? "今日無上課／假期" : "是日無上課／假期";
         cycleEl.classList.add("is-off");
+        cycleEl.classList.remove("is-bf");
       }
     }
 
@@ -486,6 +495,24 @@
     section.hidden = false;
   }
 
+  function renderBellLabel() {
+    var el = $("home-bell-label");
+    if (!el) return;
+    var day = state.selectedDay;
+    if (!day) {
+      el.textContent = "";
+      el.hidden = true;
+      el.classList.remove("is-bf");
+      return;
+    }
+    var label = bellLabelForDay(day);
+    var isBf = scheduleIdForDay(day) === "bf";
+    el.textContent = label || "";
+    el.hidden = !label;
+    el.classList.toggle("is-bf", isBf);
+    el.setAttribute("aria-label", label ? ("鐘聲：" + label) : "");
+  }
+
   function buildDayGrid() {
     var grid = $("home-day-grid");
     if (!grid) return;
@@ -495,7 +522,7 @@
       (function (day) {
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "tt-day-chip";
+        btn.className = "tt-day-chip" + (day === 5 || day === 10 ? " is-bf" : "");
         btn.dataset.day = String(day);
         btn.setAttribute("role", "tab");
         btn.textContent = "D" + day;
@@ -510,11 +537,13 @@
           window.__userPickedDay = true;
           state.selectedDay = day;
           refreshDayGridActive();
+          renderBellLabel();
           showSelectedTeacher();
         });
         grid.appendChild(btn);
       })(d);
     }
+    renderBellLabel();
   }
 
   function refreshDayGridActive() {
@@ -527,6 +556,7 @@
       chip.setAttribute("aria-selected", on ? "true" : "false");
       chip.classList.toggle("has-today-mark", state.todayCycleDay === day);
     });
+    renderBellLabel();
   }
 
   function loadCycleAndCalendar(session) {

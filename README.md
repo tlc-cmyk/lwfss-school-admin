@@ -57,7 +57,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
 3. **今日事項**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；嵌喺頂卡內白底 inset。當值**未有真 DB 資料就唔顯示**。
 4. **功能欄（sticky tabs）**：循環日課表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
-5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡；**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；其他 tab 而家用 placeholder（可連去完整頁）。
+5. **下方面板**：預設＝D1–D10 選擇器＋鐘聲標籤（**一般上課時間**／**BF上課時間**）＋教師下拉＋P1… 節卡（時間、現正節 highlight、倒數依選取／今日循環日揀 BF 或一般）；**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；其他 tab 而家用 placeholder（可連去完整頁）。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 

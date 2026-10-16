@@ -662,6 +662,9 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-weight: 700;
   opacity: 0.88;
 }
+.home-bar-day.is-bf {
+  color: #b8f0d0;
+}
 .home-status-chip {
   font-size: 0.7rem;
   font-weight: 700;
@@ -925,6 +928,28 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   margin-top: 1px;
 }
 .tt-day-chip.active.has-today-mark::after { color: #cce0ff; }
+
+.tt-day-chip.is-bf {
+  border-color: #2a9d6a;
+  color: #1a6b48;
+}
+.tt-day-chip.is-bf.active {
+  background: #1f8f5f;
+  border-color: #1f8f5f;
+  color: #fff;
+}
+.tt-day-chip.is-bf.active.has-today-mark::after { color: #c8f5de; }
+
+.home-bell-label {
+  margin: -6px 0 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  letter-spacing: 0.01em;
+}
+.home-bell-label.is-bf {
+  color: #1a6b48;
+}
 
 .tt-teacher-row {
   display: flex;
