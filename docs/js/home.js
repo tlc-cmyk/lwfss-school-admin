@@ -464,30 +464,50 @@
     el.hidden = false;
   }
 
+  function noteKindFromType(t) {
+    t = String(t || "remark").toLowerCase();
+    if (t === "deadline") return "deadline";
+    if (t === "meeting") return "meeting";
+    if (t === "holiday") return "holiday";
+    if (t === "exam") return "exam";
+    if (t === "event") return "event";
+    return "remark";
+  }
+
+  function noteIcon(kind) {
+    if (kind === "deadline") return "📋";
+    if (kind === "meeting") return "🗓️";
+    if (kind === "holiday") return "🎌";
+    if (kind === "exam") return "📝";
+    if (kind === "event") return "📅";
+    return "📌";
+  }
+
   function renderNotes(session) {
     var section = $("home-notes");
     var list = $("home-notes-list");
     if (!list || !section) return;
 
     var items = [];
+    var seen = {};
 
-    // Calendar remarks / events (once)
+    // Prefer calendar_events for the selected / today date (compact one-line).
     (state.calendarItems || []).forEach(function (it) {
       if (!it || !it.title) return;
       if (items.length >= NOTES_DEADLINE_MAX) return;
-      var isRemark = !it.type || it.type === "remark";
-      items.push({
-        kind: isRemark ? "remark" : (it.type === "meeting" ? "meeting" : "event"),
-        title: it.title
-      });
+      var title = String(it.title);
+      if (seen[title]) return;
+      seen[title] = true;
+      items.push({ kind: noteKindFromType(it.type), title: title });
     });
 
-    // Staff deadlines — fill remaining slots up to NOTES_DEADLINE_MAX total
+    // Staff deadlines — fill remaining slots only
     if (session && session.role === "staff") {
       (state.deadlineItems || []).forEach(function (it) {
         if (items.length >= NOTES_DEADLINE_MAX) return;
         var title = (it && it.title) || "";
-        if (!title) return;
+        if (!title || seen[title]) return;
+        seen[title] = true;
         items.push({ kind: "deadline", title: title });
       });
     }
@@ -500,12 +520,11 @@
 
     var parts = [];
     items.forEach(function (it, i) {
-      var icon = it.kind === "deadline" ? "📋" : (it.kind === "meeting" ? "🗓️" : "📌");
       if (i) parts.push('<span class="home-note-sep" aria-hidden="true"> · </span>');
       parts.push(
         '<span class="home-note-item">' +
-          '<span aria-hidden="true">' + icon + "</span>" +
-          "「" + escapeHtml(it.title) + "」" +
+          '<span aria-hidden="true">' + noteIcon(it.kind) + "</span>" +
+          escapeHtml(it.title) +
         "</span>"
       );
     });

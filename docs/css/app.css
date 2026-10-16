@@ -737,7 +737,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   background: #d4e8ff;
   color: #0f3460;
 }
-/* Today's notes — one-line inset inside the same top card */
+/* Today's notes — compact single-line inset inside the same top card */
 /* Morning assembly line under Day / status / who */
 .home-assembly {
   margin-top: 8px;
@@ -760,21 +760,21 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 }
 
 .home-top-notes {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0 2px;
+  display: block;
   margin-top: 8px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: 10px;
   background: rgba(255,255,255,0.96);
   color: var(--text);
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  font-size: 0.82rem;
-  line-height: 1.4;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .home-notes-title {
-  flex: 0 0 auto;
+  display: inline;
   font-size: inherit;
   font-weight: 700;
   color: var(--primary-dark);
@@ -786,16 +786,13 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: var(--muted, #6b7c8f);
 }
 .home-notes-list {
-  flex: 1 1 auto;
-  min-width: 0;
+  display: inline;
   margin: 0;
   padding: 0;
-  display: inline;
 }
 .home-note-item {
   display: inline;
   color: var(--text);
-  word-break: break-word;
 }
 .home-note-sep {
   color: var(--muted, #6b7c8f);
