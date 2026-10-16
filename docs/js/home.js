@@ -12,7 +12,8 @@
   };
 
   // Bell times (一般／BF) — Day 5／10 = BF; other cycle days = 一般
-  // Times from teacher timetable bell columns (一般上課時間／BF上課時間).
+  // Source: teacher timetable columns 一般上課時間／BF上課時間 (same as timetable-app bells.json).
+  // Do not use 特別上課時間表 times for 一般.
   var BELLS = {
     byCycleDay: {
       "1": "general", "2": "general", "3": "general", "4": "general", "5": "bf",
@@ -23,25 +24,26 @@
         id: "general",
         label: "一般上課時間",
         slots: [
-          { key: "homeroom", label: "班主任／早會", start: "07:55", end: "08:20", period: null },
-          { key: "p1", label: "第1節", start: "08:20", end: "09:00", period: 1 },
-          { key: "p2", label: "第2節", start: "09:00", end: "09:40", period: 2 },
-          { key: "recess", label: "小息", start: "09:40", end: "09:55", period: null },
-          { key: "p3", label: "第3節", start: "09:55", end: "10:35", period: 3 },
-          { key: "p4", label: "第4節", start: "10:35", end: "11:15", period: 4 },
-          { key: "p5", label: "第5節", start: "11:15", end: "11:55", period: 5 },
-          { key: "lunch", label: "午膳", start: "11:55", end: "12:10", period: null },
-          { key: "p6", label: "第6節", start: "12:10", end: "12:50", period: 6 },
-          { key: "p7", label: "第7節", start: "12:50", end: "13:30", period: 7 }
+          { key: "homeroom", label: "班主任／早會", start: "07:55", end: "08:30", period: null },
+          { key: "p1", label: "第1節", start: "08:30", end: "09:15", period: 1 },
+          { key: "p2", label: "第2節", start: "09:15", end: "10:00", period: 2 },
+          { key: "recess", label: "小息", start: "10:00", end: "10:20", period: null },
+          { key: "p3", label: "第3節", start: "10:20", end: "11:05", period: 3 },
+          { key: "p4", label: "第4節", start: "11:05", end: "11:50", period: 4 },
+          { key: "p5", label: "第5節", start: "11:50", end: "12:35", period: 5 },
+          { key: "lunch", label: "午膳", start: "12:35", end: "13:45", period: null },
+          { key: "reading", label: "閱讀時段", start: "13:45", end: "14:05", period: null },
+          { key: "p6", label: "第6節", start: "14:05", end: "14:50", period: 6 },
+          { key: "p7", label: "第7節", start: "14:50", end: "15:35", period: 7 }
         ],
         periods: {
-          "1": { start: "08:20", end: "09:00" },
-          "2": { start: "09:00", end: "09:40" },
-          "3": { start: "09:55", end: "10:35" },
-          "4": { start: "10:35", end: "11:15" },
-          "5": { start: "11:15", end: "11:55" },
-          "6": { start: "12:10", end: "12:50" },
-          "7": { start: "12:50", end: "13:30" }
+          "1": { start: "08:30", end: "09:15" },
+          "2": { start: "09:15", end: "10:00" },
+          "3": { start: "10:20", end: "11:05" },
+          "4": { start: "11:05", end: "11:50" },
+          "5": { start: "11:50", end: "12:35" },
+          "6": { start: "14:05", end: "14:50" },
+          "7": { start: "14:50", end: "15:35" }
         }
       },
       bf: {
@@ -968,7 +970,7 @@
 
 
   function isBreakSlot(s) {
-    return !!(s && s.period == null && (s.key === "homeroom" || s.key === "recess" || s.key === "lunch"));
+    return !!(s && s.period == null && (s.key === "homeroom" || s.key === "recess" || s.key === "lunch" || s.key === "reading"));
   }
 
   /** Compact display names for non-lesson bell slots. */
@@ -977,6 +979,7 @@
     if (s.key === "homeroom") return "早會";
     if (s.key === "recess") return "小息";
     if (s.key === "lunch") return "午膳";
+    if (s.key === "reading") return "閱讀";
     return s.label || "休息";
   }
 
