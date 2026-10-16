@@ -495,6 +495,18 @@
     section.hidden = false;
   }
 
+  function scrollTodayDayIntoView() {
+    var grid = $("home-day-grid");
+    if (!grid || !state.todayCycleDay) return;
+    var chip = grid.querySelector('.tt-day-chip[data-day="' + state.todayCycleDay + '"]');
+    if (!chip) return;
+    // Center today's Day chip in the horizontal scroller after layout.
+    requestAnimationFrame(function () {
+      var target = chip.offsetLeft + chip.offsetWidth / 2 - grid.clientWidth / 2;
+      grid.scrollLeft = Math.max(0, target);
+    });
+  }
+
   function buildDayGrid() {
     var grid = $("home-day-grid");
     if (!grid) return;
@@ -524,6 +536,7 @@
         grid.appendChild(btn);
       })(d);
     }
+    scrollTodayDayIntoView();
   }
 
   function refreshDayGridActive() {
