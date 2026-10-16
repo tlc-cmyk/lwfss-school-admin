@@ -638,8 +638,447 @@
     section.hidden = false;
   }
 
+  var DAY_COUNT = 10;
+  var DAY_LOOP_COPIES = 3;
+  /** Per-grid circular Day scroller controllers (WeakMap-like via dataset id). */
+  var dayScrollers = {};
+  var dayScrollerSeq = 0;
+
   function dayGridNodes() {
     return document.querySelectorAll("#home-panels .tt-day-grid");
+  }
+
+  function selectDayFromScroller(day, opts) {
+    opts = opts || {};
+    day = parseInt(day, 10);
+    if (!(day >= 1 && day <= DAY_COUNT)) return;
+    if (!opts.fromDateSync) window.__userPickedDay = true;
+    var changed = state.selectedDay !== day;
+    state.selectedDay = day;
+    refreshDayGridActive();
+    // Keep every Day strip centered on the same Day (時間表 + 班別／課室).
+    if (!opts.skipSyncScroll) {
+      Array.prototype.forEach.call(dayGridNodes(), function (grid) {
+        if (opts.sourceGrid && grid === opts.sourceGrid) return;
+        var scroller = getDayScroller(grid);
+        if (scroller) scroller.scrollToDay(day, { animate: !!opts.animateSync, select: false });
+      });
+    }
+    if (changed || opts.force) {
+      showSelectedTeacher();
+      showClassRoomView();
+    }
+  }
+
+  function getDayScroller(grid) {
+    if (!grid) return null;
+    var id = grid.dataset.dayScrollerId;
+    return id ? dayScrollers[id] : null;
+  }
+
+  /**
+   * Circular D1–D10 chip scroller: tripled track + transform, touch inertia,
+   * snap-to-center. Click still selects; 改日期 sync via scrollToDay.
+   */
+  function createDayScroller(grid) {
+    var prev = getDayScroller(grid);
+    if (prev) prev.destroy();
+
+    var id = String(++dayScrollerSeq);
+    grid.dataset.dayScrollerId = id;
+
+    var track = document.createElement("div");
+    track.className = "tt-day-track";
+    grid.innerHTML = "";
+    grid.appendChild(track);
+    grid.classList.add("is-loop");
+
+    var x = 0;
+    var velocity = 0;
+    var dragging = false;
+    var moved = false;
+    var lastPointerX = 0;
+    var lastPointerT = 0;
+    var pointerId = null;
+    var moveSamples = []; // recent {t,x} for flick velocity
+    var rafId = 0;
+    var snapRaf = 0;
+    var setWidth = 0;
+    var chipCenters = []; // relative to track start for one set (copy 0)
+    var reducedMotion = false;
+    try {
+      reducedMotion = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    } catch (e) { /* ignore */ }
+
+    var FRICTION = 0.960;
+    var MIN_COAST_V = 0.035; // px/ms
+    var MAX_V = 3.2; // px/ms
+
+    function makeChip(day, copyIndex) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tt-day-chip" + (day === 5 || day === 10 ? " is-bf" : "");
+      btn.dataset.day = String(day);
+      btn.dataset.copy = String(copyIndex);
+      btn.setAttribute("role", "tab");
+      btn.textContent = "D" + day;
+      btn.setAttribute("aria-selected", "false");
+      btn.tabIndex = -1;
+      return btn;
+    }
+
+    function rebuildChips() {
+      track.innerHTML = "";
+      for (var c = 0; c < DAY_LOOP_COPIES; c++) {
+        for (var d = 1; d <= DAY_COUNT; d++) {
+          track.appendChild(makeChip(d, c));
+        }
+      }
+      applyActiveClasses();
+    }
+
+    function applyActiveClasses() {
+      var todayMark = state.todayCycleDay;
+      Array.prototype.forEach.call(track.querySelectorAll(".tt-day-chip"), function (chip) {
+        var day = parseInt(chip.dataset.day, 10);
+        var on = day === state.selectedDay;
+        chip.classList.toggle("active", on);
+        chip.setAttribute("aria-selected", on ? "true" : "false");
+        chip.classList.toggle("has-today-mark", todayMark === day);
+      });
+    }
+
+    function measure() {
+      var chips = track.querySelectorAll(".tt-day-chip");
+      if (chips.length < DAY_COUNT) return;
+      chipCenters = [];
+      for (var i = 0; i < DAY_COUNT; i++) {
+        var chip = chips[i];
+        chipCenters.push(chip.offsetLeft + chip.offsetWidth / 2);
+      }
+      // Width of one D1–D10 set (gap included via offset of first chip of copy 1).
+      var firstOfCopy1 = chips[DAY_COUNT];
+      setWidth = firstOfCopy1 ? firstOfCopy1.offsetLeft : 0;
+      if (!setWidth && chips[DAY_COUNT - 1]) {
+        var last = chips[DAY_COUNT - 1];
+        setWidth = last.offsetLeft + last.offsetWidth + 6; // gap fallback
+      }
+    }
+
+    function wrapX(raw) {
+      if (!setWidth) return raw;
+      // x and x±setWidth center the same Day; keep x in [-setWidth, 0).
+      var midBase = -setWidth;
+      var rel = raw - midBase;
+      rel = ((rel % setWidth) + setWidth) % setWidth;
+      return midBase + rel;
+    }
+
+    function applyTransform() {
+      track.style.transform = "translate3d(" + x + "px,0,0)";
+    }
+
+    function gridCenter() {
+      return grid.clientWidth / 2;
+    }
+
+    /** translateX that centers a chip whose center (in track coords) is chipCenter. */
+    function xForChipCenter(chipCenter) {
+      return gridCenter() - chipCenter;
+    }
+
+    function nearestDayAtX(tx) {
+      if (!chipCenters.length || !setWidth) return state.selectedDay || 1;
+      // Effective center position on infinite track:
+      // viewport center maps to track coord = gridCenter - tx
+      var trackPos = gridCenter() - tx;
+      // Normalize into copy 0 metric space [0, setWidth)
+      var local = ((trackPos % setWidth) + setWidth) % setWidth;
+      var bestDay = 1;
+      var bestDist = Infinity;
+      for (var i = 0; i < chipCenters.length; i++) {
+        var c = chipCenters[i];
+        var d0 = Math.abs(c - local);
+        // also consider wrap around set edges
+        var d1 = Math.abs(c + setWidth - local);
+        var d2 = Math.abs(c - setWidth - local);
+        var dist = Math.min(d0, d1, d2);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestDay = i + 1;
+        }
+      }
+      return bestDay;
+    }
+
+    function chipCenterForDay(day, preferCopy) {
+      // Middle copy by default
+      var copy = preferCopy != null ? preferCopy : 1;
+      var idx = copy * DAY_COUNT + (day - 1);
+      var chips = track.querySelectorAll(".tt-day-chip");
+      var chip = chips[idx];
+      if (!chip) return chipCenters[day - 1] + copy * setWidth;
+      return chip.offsetLeft + chip.offsetWidth / 2;
+    }
+
+    function stopCoast() {
+      if (rafId) {
+        cancelAnimationFrame(rafId);
+        rafId = 0;
+      }
+      if (snapRaf) {
+        cancelAnimationFrame(snapRaf);
+        snapRaf = 0;
+      }
+      velocity = 0;
+    }
+
+    function settleToNearest(select) {
+      if (!setWidth || !chipCenters.length) return;
+      var day = nearestDayAtX(x);
+      var targetCenter = chipCenterForDay(day, 1);
+      var targetX = wrapX(xForChipCenter(targetCenter));
+      // Pick nearest equivalent target among wrapped positions
+      var candidates = [targetX, targetX + setWidth, targetX - setWidth];
+      var best = candidates[0];
+      var bestD = Math.abs(candidates[0] - x);
+      for (var i = 1; i < candidates.length; i++) {
+        var dd = Math.abs(candidates[i] - x);
+        if (dd < bestD) {
+          bestD = dd;
+          best = candidates[i];
+        }
+      }
+      animateTo(best, function () {
+        x = wrapX(x);
+        applyTransform();
+        if (select !== false) selectDayFromScroller(day, { sourceGrid: grid });
+        else applyActiveClasses();
+      });
+    }
+
+    function animateTo(targetX, done) {
+      stopCoast();
+      if (reducedMotion) {
+        x = targetX;
+        applyTransform();
+        if (done) done();
+        return;
+      }
+      var startX = x;
+      var dist = targetX - startX;
+      if (Math.abs(dist) < 0.5) {
+        x = targetX;
+        applyTransform();
+        if (done) done();
+        return;
+      }
+      var startT = performance.now();
+      var dur = Math.min(420, Math.max(180, Math.abs(dist) * 0.55));
+      function step(now) {
+        var t = Math.min(1, (now - startT) / dur);
+        // ease-out cubic
+        var e = 1 - Math.pow(1 - t, 3);
+        x = startX + dist * e;
+        applyTransform();
+        if (t < 1) {
+          snapRaf = requestAnimationFrame(step);
+        } else {
+          snapRaf = 0;
+          x = targetX;
+          applyTransform();
+          if (done) done();
+        }
+      }
+      snapRaf = requestAnimationFrame(step);
+    }
+
+    function coast() {
+      var last = performance.now();
+      function step(now) {
+        var dt = Math.max(1, now - last);
+        last = now;
+        if (Math.abs(velocity) < MIN_COAST_V) {
+          rafId = 0;
+          velocity = 0;
+          settleToNearest(true);
+          return;
+        }
+        x += velocity * dt;
+        x = wrapX(x);
+        applyTransform();
+        // Friction per frame normalized to ~16ms
+        velocity *= Math.pow(FRICTION, dt / 16.67);
+        rafId = requestAnimationFrame(step);
+      }
+      rafId = requestAnimationFrame(step);
+    }
+
+    function onPointerDown(e) {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+      stopCoast();
+      dragging = true;
+      moved = false;
+      pointerId = e.pointerId;
+      lastPointerX = e.clientX;
+      lastPointerT = performance.now();
+      velocity = 0;
+      moveSamples = [{ t: lastPointerT, x: e.clientX }];
+      grid.classList.add("is-dragging");
+      try { grid.setPointerCapture(pointerId); } catch (err) { /* ignore */ }
+    }
+
+    function onPointerMove(e) {
+      if (!dragging || e.pointerId !== pointerId) return;
+      var now = performance.now();
+      var dx = e.clientX - lastPointerX;
+      var dt = Math.max(1, now - lastPointerT);
+      if (Math.abs(dx) > 2) moved = true;
+      x += dx;
+      x = wrapX(x);
+      applyTransform();
+      lastPointerX = e.clientX;
+      lastPointerT = now;
+      moveSamples.push({ t: now, x: e.clientX });
+      while (moveSamples.length > 6) moveSamples.shift();
+      // Drop samples older than 100ms
+      while (moveSamples.length > 2 && now - moveSamples[0].t > 100) moveSamples.shift();
+      if (moveSamples.length >= 2) {
+        var a = moveSamples[0];
+        var b = moveSamples[moveSamples.length - 1];
+        var span = Math.max(1, b.t - a.t);
+        velocity = (b.x - a.x) / span;
+        if (velocity > MAX_V) velocity = MAX_V;
+        if (velocity < -MAX_V) velocity = -MAX_V;
+      }
+      if (moved) e.preventDefault();
+    }
+
+    function onPointerUp(e) {
+      if (!dragging || e.pointerId !== pointerId) return;
+      dragging = false;
+      grid.classList.remove("is-dragging");
+      try { grid.releasePointerCapture(pointerId); } catch (err) { /* ignore */ }
+      pointerId = null;
+
+      var target = e.target && e.target.closest ? e.target.closest(".tt-day-chip") : null;
+      if (!moved && target && grid.contains(target)) {
+        var day = parseInt(target.dataset.day, 10);
+        scrollToDay(day, { animate: true, select: true });
+        return;
+      }
+
+      if (Math.abs(velocity) >= MIN_COAST_V) {
+        coast();
+      } else {
+        settleToNearest(true);
+      }
+    }
+
+    function onPointerCancel(e) {
+      if (!dragging || (pointerId != null && e.pointerId !== pointerId)) return;
+      dragging = false;
+      pointerId = null;
+      grid.classList.remove("is-dragging");
+      settleToNearest(true);
+    }
+
+    function onClickCapture(e) {
+      // Suppress native button click after a drag; we handle selection ourselves.
+      if (moved) {
+        e.preventDefault();
+        e.stopPropagation();
+        moved = false;
+      }
+    }
+
+    function scrollToDay(day, opts) {
+      opts = opts || {};
+      day = parseInt(day, 10);
+      if (!(day >= 1 && day <= DAY_COUNT)) return;
+      measure();
+      if (!setWidth) {
+        requestAnimationFrame(function () { scrollToDay(day, opts); });
+        return;
+      }
+      stopCoast();
+      var targetCenter = chipCenterForDay(day, 1);
+      var targetX = wrapX(xForChipCenter(targetCenter));
+      function after() {
+        x = wrapX(x);
+        applyTransform();
+        if (opts.select) selectDayFromScroller(day, { sourceGrid: grid });
+        else applyActiveClasses();
+      }
+      if (opts.animate && !reducedMotion) {
+        // Choose shortest path among wrapped targets relative to current x
+        var cands = [targetX, targetX + setWidth, targetX - setWidth];
+        var best = cands[0];
+        var bestD = Math.abs(cands[0] - x);
+        for (var i = 1; i < cands.length; i++) {
+          var dd = Math.abs(cands[i] - x);
+          if (dd < bestD) { bestD = dd; best = cands[i]; }
+        }
+        animateTo(best, after);
+      } else {
+        x = targetX;
+        applyTransform();
+        after();
+      }
+    }
+
+    function onResize() {
+      var day = state.selectedDay || state.todayCycleDay || nearestDayAtX(x);
+      measure();
+      if (!setWidth) return;
+      x = wrapX(xForChipCenter(chipCenterForDay(day, 1)));
+      applyTransform();
+    }
+
+    var ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(function () { onResize(); });
+      ro.observe(grid);
+    } else {
+      window.addEventListener("resize", onResize);
+    }
+
+    rebuildChips();
+    // Layout then center
+    requestAnimationFrame(function () {
+      measure();
+      var focus = state.selectedDay || state.todayCycleDay || 1;
+      if (setWidth) {
+        x = wrapX(xForChipCenter(chipCenterForDay(focus, 1)));
+        applyTransform();
+      }
+    });
+
+    grid.addEventListener("pointerdown", onPointerDown);
+    grid.addEventListener("pointermove", onPointerMove);
+    grid.addEventListener("pointerup", onPointerUp);
+    grid.addEventListener("pointercancel", onPointerCancel);
+    grid.addEventListener("click", onClickCapture, true);
+
+    var api = {
+      scrollToDay: scrollToDay,
+      refreshActive: applyActiveClasses,
+      destroy: function () {
+        stopCoast();
+        grid.removeEventListener("pointerdown", onPointerDown);
+        grid.removeEventListener("pointermove", onPointerMove);
+        grid.removeEventListener("pointerup", onPointerUp);
+        grid.removeEventListener("pointercancel", onPointerCancel);
+        grid.removeEventListener("click", onClickCapture, true);
+        if (ro) ro.disconnect();
+        else window.removeEventListener("resize", onResize);
+        delete dayScrollers[id];
+        delete grid.dataset.dayScrollerId;
+        grid.classList.remove("is-loop", "is-dragging");
+      }
+    };
+    dayScrollers[id] = api;
+    return api;
   }
 
   function scrollTodayDayIntoView() {
@@ -647,9 +1086,13 @@
     var focusDay = state.selectedDay || state.todayCycleDay;
     if (!focusDay) return;
     Array.prototype.forEach.call(dayGridNodes(), function (grid) {
+      var scroller = getDayScroller(grid);
+      if (scroller) {
+        scroller.scrollToDay(focusDay, { animate: false, select: false });
+        return;
+      }
       var chip = grid.querySelector('.tt-day-chip[data-day="' + focusDay + '"]');
       if (!chip) return;
-      // Center the active Day chip in the horizontal scroller after layout.
       requestAnimationFrame(function () {
         var target = chip.offsetLeft + chip.offsetWidth / 2 - grid.clientWidth / 2;
         grid.scrollLeft = Math.max(0, target);
@@ -659,33 +1102,7 @@
 
   function fillOneDayGrid(grid) {
     if (!grid) return;
-    grid.innerHTML = "";
-    var todayMark = state.todayCycleDay;
-    for (var d = 1; d <= 10; d++) {
-      (function (day) {
-        var btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "tt-day-chip" + (day === 5 || day === 10 ? " is-bf" : "");
-        btn.dataset.day = String(day);
-        btn.setAttribute("role", "tab");
-        btn.textContent = "D" + day;
-        if (todayMark === day) btn.classList.add("has-today-mark");
-        if (state.selectedDay === day) {
-          btn.classList.add("active");
-          btn.setAttribute("aria-selected", "true");
-        } else {
-          btn.setAttribute("aria-selected", "false");
-        }
-        btn.addEventListener("click", function () {
-          window.__userPickedDay = true;
-          state.selectedDay = day;
-          refreshDayGridActive();
-          showSelectedTeacher();
-          showClassRoomView();
-        });
-        grid.appendChild(btn);
-      })(d);
-    }
+    createDayScroller(grid);
   }
 
   function buildDayGrid() {
@@ -697,6 +1114,11 @@
 
   function refreshDayGridActive() {
     Array.prototype.forEach.call(dayGridNodes(), function (grid) {
+      var scroller = getDayScroller(grid);
+      if (scroller) {
+        scroller.refreshActive();
+        return;
+      }
       Array.prototype.forEach.call(grid.querySelectorAll(".tt-day-chip"), function (chip) {
         var day = parseInt(chip.dataset.day, 10);
         var on = day === state.selectedDay;
