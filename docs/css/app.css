@@ -598,6 +598,33 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   gap: 10px;
   margin-bottom: 8px;
 }
+.home-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.home-sign-out {
+  flex: 0 0 auto;
+  height: 2.4rem;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
+}
+.home-sign-out:hover,
+.home-sign-out:focus-visible {
+  background: rgba(255,255,255,0.26);
+  outline: none;
+}
 .home-bar-when {
   display: flex;
   flex-direction: column;
@@ -1004,26 +1031,107 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   min-height: 64px;
 }
 .tt-period.lesson {
-  border-color: #b8cce8;
-  background: #fff;
+  border-color: var(--subj-border, #b8cce8);
+  background: var(--subj-bg, #fff);
+}
+.tt-period.lesson .tt-period-left {
+  background: var(--subj-left, rgba(232, 240, 254, 0.55));
+  border-right-color: var(--subj-border, rgba(144, 180, 232, 0.4));
+}
+.tt-period.lesson .tt-pnum {
+  background: var(--subj-accent, var(--primary));
 }
 .tt-period.free {
-  border-color: var(--free-border);
-  background: #f5f8fc;
+  min-height: 0;
+  border-color: #c8d0d8;
+  background: #eef1f5;
+  opacity: 0.92;
 }
+.tt-period.free .tt-period-left {
+  padding: 5px 12px;
+  min-width: 118px;
+  background: rgba(200, 208, 216, 0.28);
+  border-right-color: rgba(160, 170, 180, 0.35);
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+}
+.tt-period.free .tt-period-body {
+  padding: 5px 12px;
+  justify-content: center;
+}
+.tt-period.free .tt-pnum {
+  background: #9aa5b2;
+}
+.tt-period.free .tt-period-time {
+  color: #6a7684;
+}
+.tt-period.free .subj.free-label {
+  color: #7a8694;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.tt-period.free .detail-free { display: none; }
+
+/* Subject colour palette — soft pastels, accent for P badge */
+.tt-period.lesson.tt-subj-chin  { --subj-bg: #fdeceb; --subj-border: #e5a39a; --subj-left: #f8d9d5; --subj-accent: #c0392b; }
+.tt-period.lesson.tt-subj-eng   { --subj-bg: #eaf1ff; --subj-border: #9db6e8; --subj-left: #d6e3fb; --subj-accent: #2f5fb8; }
+.tt-period.lesson.tt-subj-math  { --subj-bg: #efeaff; --subj-border: #b5a3e5; --subj-left: #ddd2f7; --subj-accent: #6b4fcf; }
+.tt-period.lesson.tt-subj-sci   { --subj-bg: #e7f7f2; --subj-border: #8ecfba; --subj-left: #cfeee4; --subj-accent: #1f8a6a; }
+.tt-period.lesson.tt-subj-chem  { --subj-bg: #f3eaff; --subj-border: #c2a6e8; --subj-left: #e4d4f8; --subj-accent: #7a3db8; }
+.tt-period.lesson.tt-subj-bio   { --subj-bg: #eaf8e6; --subj-border: #9dcf8e; --subj-left: #d4efcb; --subj-accent: #3d8f2f; }
+.tt-period.lesson.tt-subj-phy   { --subj-bg: #fff0e4; --subj-border: #e4b48a; --subj-left: #f7dfc8; --subj-accent: #c46a1c; }
+.tt-period.lesson.tt-subj-hist  { --subj-bg: #f7efe4; --subj-border: #d4b896; --subj-left: #eddfcc; --subj-accent: #8a5a28; }
+.tt-period.lesson.tt-subj-chis  { --subj-bg: #fce8ef; --subj-border: #e3a0b5; --subj-left: #f5d0dc; --subj-accent: #b8325c; }
+.tt-period.lesson.tt-subj-geog  { --subj-bg: #eaf6e8; --subj-border: #9ec99a; --subj-left: #d5ebd2; --subj-accent: #3d7a38; }
+.tt-period.lesson.tt-subj-eco   { --subj-bg: #fff8e4; --subj-border: #e0c86a; --subj-left: #f5ebc4; --subj-accent: #b08900; }
+.tt-period.lesson.tt-subj-bafs  { --subj-bg: #e8eef8; --subj-border: #9aafc8; --subj-left: #d4deec; --subj-accent: #3a5278; }
+.tt-period.lesson.tt-subj-ict   { --subj-bg: #e6f7fb; --subj-border: #8ecbda; --subj-left: #cdebf0; --subj-accent: #1a7f96; }
+.tt-period.lesson.tt-subj-pe    { --subj-bg: #eefce6; --subj-border: #a5d98a; --subj-left: #daf5c8; --subj-accent: #4a9a22; }
+.tt-period.lesson.tt-subj-mus   { --subj-bg: #f8eaff; --subj-border: #d0a6e5; --subj-left: #ecd4f6; --subj-accent: #8e3bb0; }
+.tt-period.lesson.tt-subj-va    { --subj-bg: #ffeaf4; --subj-border: #e5a6c4; --subj-left: #f7d4e4; --subj-accent: #c23a7a; }
+.tt-period.lesson.tt-subj-he    { --subj-bg: #fff0ea; --subj-border: #e5b39a; --subj-left: #f7ddd2; --subj-accent: #c45e32; }
+.tt-period.lesson.tt-subj-pth   { --subj-bg: #ffe9e4; --subj-border: #e5a890; --subj-left: #f7d5ca; --subj-accent: #c24e2e; }
+.tt-period.lesson.tt-subj-stem  { --subj-bg: #e6f0ff; --subj-border: #92b4ef; --subj-left: #d0e0fb; --subj-accent: #2a5fcf; }
+.tt-period.lesson.tt-subj-ces   { --subj-bg: #eef1f5; --subj-border: #a8b4c4; --subj-left: #dde3eb; --subj-accent: #4a5c72; }
+.tt-period.lesson.tt-subj-cl    { --subj-bg: #f8e8ec; --subj-border: #d4a0ae; --subj-left: #efd2da; --subj-accent: #9a3a52; }
+.tt-period.lesson.tt-subj-csd   { --subj-bg: #f0f5e6; --subj-border: #b4c98a; --subj-left: #e0ebc8; --subj-accent: #6a8a28; }
+.tt-period.lesson.tt-subj-hmsc  { --subj-bg: #e6f8f0; --subj-border: #8ecfb0; --subj-left: #cfefdf; --subj-accent: #2a8a62; }
+.tt-period.lesson.tt-subj-ths   { --subj-bg: #e6f6f6; --subj-border: #8ec8c8; --subj-left: #cfeded; --subj-accent: #2a7a7a; }
+.tt-period.lesson.tt-subj-other { --subj-bg: #f0f3f7; --subj-border: #b0bcc8; --subj-left: #e0e6ee; --subj-accent: #5a6a7a; }
+.tt-period.lesson.tt-subj-h0 { --subj-bg: #eaf4ff; --subj-border: #9abee0; --subj-left: #d4e8f7; --subj-accent: #3a7ab0; }
+.tt-period.lesson.tt-subj-h1 { --subj-bg: #f5eaff; --subj-border: #c0a0e0; --subj-left: #e8d4f7; --subj-accent: #7a4ab0; }
+.tt-period.lesson.tt-subj-h2 { --subj-bg: #eafaf0; --subj-border: #9ad0b0; --subj-left: #d4efdf; --subj-accent: #3a8a5a; }
+.tt-period.lesson.tt-subj-h3 { --subj-bg: #fff5e8; --subj-border: #e0c09a; --subj-left: #f7e8d4; --subj-accent: #b07a3a; }
+.tt-period.lesson.tt-subj-h4 { --subj-bg: #ffeef2; --subj-border: #e0a0b4; --subj-left: #f7d4de; --subj-accent: #b03a5a; }
+.tt-period.lesson.tt-subj-h5 { --subj-bg: #eef8ff; --subj-border: #9ac8e0; --subj-left: #d4ebf7; --subj-accent: #3a8ab0; }
+.tt-period.lesson.tt-subj-h6 { --subj-bg: #f8f0e8; --subj-border: #d0b89a; --subj-left: #efe4d4; --subj-accent: #8a6a3a; }
+.tt-period.lesson.tt-subj-h7 { --subj-bg: #f0eef8; --subj-border: #b8b0d0; --subj-left: #e4e0ef; --subj-accent: #5a4a8a; }
 .tt-period.is-past { opacity: 0.48; filter: grayscale(0.15); }
+/* is-current must beat .tt-period.lesson.tt-subj-* (3 classes) */
+.tt-period.lesson.is-current,
+.tt-period.free.is-current,
 .tt-period.is-current {
+  --subj-bg: #fff5f3;
+  --subj-border: #c0392b;
+  --subj-left: rgba(192, 57, 43, 0.10);
+  --subj-accent: #c0392b;
   border-color: #c0392b;
   background: linear-gradient(135deg, #fff5f3 0%, #ffe8e4 100%);
   box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.22), 0 4px 14px rgba(192, 57, 43, 0.12);
 }
-.tt-period.is-current.free {
+.tt-period.free.is-current {
   background: linear-gradient(135deg, #fff8f6 0%, #ffece8 100%);
 }
+.tt-period.lesson.is-current .tt-period-left,
+.tt-period.free.is-current .tt-period-left,
 .tt-period.is-current .tt-period-left {
   background: rgba(192, 57, 43, 0.10);
   border-right-color: rgba(192, 57, 43, 0.28);
 }
+.tt-period.lesson.is-current .tt-pnum,
+.tt-period.free.is-current .tt-pnum,
 .tt-period.is-current .tt-pnum {
   background: #c0392b;
 }
@@ -1065,7 +1173,6 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-size: 0.75rem;
   font-weight: 800;
 }
-.tt-period.lesson .tt-pnum { background: var(--primary); }
 .tt-period-time {
   font-size: 0.78rem;
   font-weight: 700;
@@ -1088,7 +1195,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-size: 1rem;
   color: var(--text);
 }
-.tt-period-body .subj.free-label { color: var(--primary); }
+.tt-period-body .subj.free-label { color: #7a8694; }
 .tt-period-body .detail {
   font-size: 0.85rem;
   color: var(--muted);

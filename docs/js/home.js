@@ -765,6 +765,57 @@
     }
   }
 
+
+  /** Map subject_short / subject to a stable family key for colouring. */
+  function subjectFamily(short, full) {
+    var raw = String(short || full || "").trim();
+    if (!raw) return "other";
+    var s = raw.toUpperCase().replace(/\s+/g, " ");
+    if (/流行聲樂/.test(raw)) return "mus";
+    if (/^BF\s*AI|AI\s*900/.test(s)) return "stem";
+    if (/^C\s*&\s*SD|^C&SD/.test(s)) return "csd";
+    if (/^CHIN/.test(s)) return "chin";
+    if (/^CHIS|^CHIST/.test(s)) return "chis";
+    if (/^ENG/.test(s)) return "eng";
+    if (/^MATH|^MAM/.test(s)) return "math";
+    if (/^CHEM|^CHE[^A-Z]|^CHE$/.test(s) || s.indexOf("CHEM") === 0) return "chem";
+    if (/^BIO/.test(s)) return "bio";
+    if (/^PHY/.test(s)) return "phy";
+    if (/^SCI/.test(s)) return "sci";
+    if (/^GEO/.test(s)) return "geog";
+    if (/^ECO/.test(s)) return "eco";
+    if (s === "BA" || /^BAF|^BA\b/.test(s)) return "bafs";
+    if (/^ICT/.test(s)) return "ict";
+    if (s === "PE" || /^PE\b/.test(s)) return "pe";
+    if (/^MUS/.test(s)) return "mus";
+    if (s === "VA" || /^VA\b|^VA-/.test(s)) return "va";
+    if (s === "HE" || /^HE\b/.test(s)) return "he";
+    if (/^PTH/.test(s)) return "pth";
+    if (/^STEM/.test(s)) return "stem";
+    if (/^CES/.test(s)) return "ces";
+    if (/^HMS/.test(s)) return "hmsc";
+    if (/^THS/.test(s)) return "ths";
+    if (/^HIST|^HIS-/.test(s)) return "hist";
+    if (/^CL(-|$|\b)/.test(s)) return "cl";
+    var m = s.match(/^([A-Z]{2,6})/);
+    return m ? m[1].toLowerCase() : "other";
+  }
+
+  /** CSS class suffix for a subject family (tt-subj-*). */
+  function subjectClass(short, full) {
+    var fam = subjectFamily(short, full);
+    var known = {
+      chin: 1, eng: 1, math: 1, sci: 1, chem: 1, bio: 1, phy: 1,
+      hist: 1, chis: 1, geog: 1, eco: 1, bafs: 1, ict: 1, pe: 1,
+      mus: 1, va: 1, he: 1, pth: 1, stem: 1, ces: 1, cl: 1, csd: 1,
+      hmsc: 1, ths: 1, other: 1
+    };
+    if (known[fam]) return "tt-subj-" + fam;
+    var h = 0;
+    for (var i = 0; i < fam.length; i++) h = ((h << 5) - h + fam.charCodeAt(i)) | 0;
+    return "tt-subj-h" + (Math.abs(h) % 8);
+  }
+
   function renderPeriods(teacher, day) {
     var box = $("home-periods");
     var result = $("home-tt-result");
@@ -809,7 +860,9 @@
 
       if (cell) {
         busy++;
-        row.className = ("tt-period lesson" + extra).trim();
+        var subjCls = subjectClass(cell.subjectShort, cell.subject);
+        row.className = ("tt-period lesson " + subjCls + extra).trim();
+        row.setAttribute("data-subj", subjectFamily(cell.subjectShort, cell.subject));
         row.innerHTML =
           '<div class="tt-period-left">' +
             '<span class="tt-pnum">P' + p + "</span>" +
@@ -833,7 +886,6 @@
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj free-label">空堂</div>' +
-            '<div class="detail-free">Free period</div>' +
           "</div>";
       }
       if (isCurrent) row.setAttribute("aria-current", "true");

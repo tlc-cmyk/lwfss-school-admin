@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：主頁 sticky 頂卡＋功能欄；下方面板跟 tab 轉（預設循環日課表）；教師時間表查詢；文件遞交清單及校務會議（教職員）
+- **模組**：主頁 sticky 頂卡＋功能欄；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -54,10 +54,10 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 
 設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
-1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋**早會主題**（`assembly_by_day`）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。主選單喺 footer。
+1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋**早會主題**（`assembly_by_day`）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。登出喺頂卡右上角；唔再顯示底欄 footer。
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
 3. **今日事項**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；嵌喺頂卡內白底 inset。當值**未有真 DB 資料就唔顯示**。
-4. **功能欄（sticky tabs）**：循環日課表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
+4. **功能欄（sticky tabs）**：時間表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
 5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡（時間、現正節 highlight、倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；其他 tab 而家用 placeholder（可連去完整頁）。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。

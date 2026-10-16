@@ -30,10 +30,13 @@
               <span id="home-date" class="home-bar-date">載入日期…</span>
               <span id="home-clock" class="home-bar-clock" aria-label="現在時間">--:--</span>
             </div>
-            <label class="home-bar-pick" for="home-date-input" title="改日期">
-              <span class="home-bar-pick-icon" aria-hidden="true">📅</span>
-              <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
-            </label>
+            <div class="home-top-actions">
+              <label class="home-bar-pick" for="home-date-input" title="改日期">
+                <span class="home-bar-pick-icon" aria-hidden="true">📅</span>
+                <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
+              </label>
+              <button type="button" id="sign-out" class="home-sign-out" title="登出">登出</button>
+            </div>
           </div>
 
           <div class="home-bar-meta">
@@ -54,7 +57,7 @@
         </section>
 
         <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄" data-role-view="staff">
-          <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">循環日課表</button>
+          <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">時間表</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-full-tt" id="home-tab-full-tt" data-panel="full-tt">完整時間表</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs">文件／會議</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free">即時空堂</button>
@@ -130,15 +133,6 @@
       </div>
     </main>
 
-    <footer class="footer">
-      <nav class="footer-nav" aria-label="主選單">
-        <a href="index.html" class="active">主頁</a>
-        <a href="timetable.html" data-staff-only>時間表</a>
-        <a href="staff-deadlines.html" data-staff-only>文件</a>
-        <button type="button" id="sign-out" class="footer-nav-btn">登出</button>
-      </nav>
-      <p class="footer-note">須以 @g.lwfss.edu.hk 登入</p>
-    </footer>
   </div>
 
   <script src="js/config.js"></script>
