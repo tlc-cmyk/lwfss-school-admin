@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`、`assembly_by_day`（10） |
+| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49） |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -38,6 +38,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_meta`
 - `school_read_staff`
 - `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day`（本校 `@g.lwfss.edu.hk`）
+- `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 
 條件（約）：
@@ -70,6 +71,17 @@ Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不
 
 結構見 `db/staff.sql`；種子資料來自「2627職員名單」Google Sheet（另加 IT 主任 `tlc@g.lwfss.edu.hk`）。
 
+### 學生資料庫（2026-2027）
+
+| 表 | 列數 | 說明 |
+|----|------|------|
+| `students` | 755 | 班別 `class_code`＋學號 `class_no`；英／中文姓名、性別、社；`email` 可空 |
+| `student_groups` | 2542 | S2–S6 科目分組（含教師 shortcode）；S4 兩份 xls 已去重 |
+| `class_teachers` | 49 | 各班班主任 shortcode（來自 `staff.class_teacher`） |
+
+結構／RLS：`db/students.sql`；種子：`db/seed_students.sql`（由 `scripts/parse_students.py` 從班名單 xlsx＋分組 xls 產生）。
+
+
 ---
 
 ## 目錄結構
@@ -85,9 +97,12 @@ school-admin/
 │   ├── seed_cycle_days.sql
 │   ├── assembly_by_day.sql # 早會日程（Day 1–10）
 │   ├── seed_assembly_by_day.sql
+│   ├── students.sql        # students / student_groups / class_teachers DDL+RLS
+│   ├── seed_students.sql   # 2026-2027 學生＋分組種子
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
-│   └── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
+│   ├── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
+│   └── parse_students.py   # 從班名單／分組 Excel 產生 seed_students.sql
 ├── docs/                   # GitHub Pages 網站根目錄
 │   ├── index.html
 │   ├── timetable.html
