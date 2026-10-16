@@ -62,6 +62,7 @@
         <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄" data-role-view="staff">
           <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">時間表</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-class-room" id="home-tab-class-room" data-panel="class-room">班別／課室</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-seating" id="home-tab-seating" data-panel="seating">座位表</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs">文件／會議</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free">即時空堂</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet">約開會</button>
@@ -126,6 +127,59 @@
           </div>
         </section>
 
+
+        <section id="home-panel-seating" class="home-panel home-panel-seating hidden" role="tabpanel" aria-labelledby="home-tab-seating" data-panel="seating" hidden>
+          <div id="seat-staff-ui" data-role-view="staff">
+            <div class="seat-toolbar">
+              <div class="seat-toolbar-row">
+                <label class="tt-teacher-label" for="seat-class-select">班別</label>
+                <select id="seat-class-select" class="home-teacher-select" aria-label="選擇班別">
+                  <option value="">選擇班別…</option>
+                </select>
+                <label class="tt-teacher-label" for="seat-chart-select">座位表</label>
+                <select id="seat-chart-select" class="home-teacher-select" aria-label="選擇座位表">
+                  <option value="">＋ 新增座位表</option>
+                </select>
+              </div>
+              <p id="seat-status" class="muted seat-status" aria-live="polite"></p>
+            </div>
+
+            <p id="seat-pick-hint" class="muted">揀一個班別開始編座位表。任教／班主任班會優先列出。</p>
+
+            <div id="seat-editor" class="seat-editor hidden">
+              <div class="seat-editor-bar">
+                <label class="seat-title-label" for="seat-title">標題
+                  <input type="text" id="seat-title" class="seat-title-input" maxlength="80" placeholder="例如：1A 座位表" />
+                </label>
+                <label class="seat-dim-label" for="seat-rows">行
+                  <input type="number" id="seat-rows" min="1" max="20" class="seat-dim-input" />
+                </label>
+                <label class="seat-dim-label" for="seat-cols">列
+                  <input type="number" id="seat-cols" min="1" max="20" class="seat-dim-input" />
+                </label>
+                <span id="seat-dirty" class="seat-dirty" hidden>未儲存</span>
+              </div>
+              <div class="seat-actions" role="group" aria-label="座位表操作">
+                <button type="button" class="chip" data-seat-action="autofill">按學號入座</button>
+                <button type="button" class="chip" data-seat-action="clear-all">清空座位</button>
+                <button type="button" class="chip seat-btn-save" data-seat-action="save">儲存</button>
+                <button type="button" class="chip seat-btn-pdf" data-seat-action="pdf">匯出 PDF</button>
+                <button type="button" class="chip seat-btn-danger" data-seat-action="delete">刪除</button>
+              </div>
+              <p class="muted seat-hint">撳空位再撳名單學生編入；再撳已選座位可清空。亦支援拖曳學生到座位。</p>
+              <div class="seat-workspace">
+                <div id="seat-grid" class="seat-grid" aria-label="座位表格"></div>
+                <aside id="seat-roster" class="seat-roster" aria-label="未編座位學生"></aside>
+              </div>
+            </div>
+          </div>
+
+          <div id="seat-student-note" class="staff-only-note hidden" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">座位表</h2>
+            <p>座位表編輯只供教職員使用。學生介面稍後或會開放查閱。</p>
+          </div>
+        </section>
+
         <section id="home-panel-docs" class="home-panel home-panel-docs hidden" role="tabpanel" aria-labelledby="home-tab-docs" data-panel="docs" hidden>
           <div class="home-docs-card" data-role-view="staff">
             <div class="deadlines-toolbar">
@@ -175,6 +229,7 @@
   <script src="js/auth.js"></script>
   <script src="data/timetable.js"></script>
   <script src="js/home.js"></script>
+  <script src="js/seating.js"></script>
   <script src="js/staff-deadlines.js"></script>
 </body>
 </html>

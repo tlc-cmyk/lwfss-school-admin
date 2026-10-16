@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：主頁 sticky 頂卡＋功能欄；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；文件遞交清單及校務會議（教職員）
+- **模組**：主頁 sticky 頂卡＋功能欄；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；座位表；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49） |
+| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts` |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -40,6 +40,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day`（本校 `@g.lwfss.edu.hk`）
 - `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
+- `seating_charts_*`（教職員：INSERT／UPDATE／DELETE 僅 `owner_email`＝自己；SELECT 自己嘅表，或任教該班亦可讀）
 
 條件（約）：
 
@@ -47,7 +48,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 ```
 
-沒有 INSERT / UPDATE / DELETE 政策，所以即使資料表 GRANT 給了 `anon` 和 `authenticated`，未登入或非本校電郵的請求也讀不到列（實測 anon key 查 `teachers` 回傳 `[]`），也不能改資料。  
+時間表／學生等讀取表只有 SELECT 政策；`seating_charts` 另有教職員 INSERT／UPDATE／DELETE（僅 owner）。未登入或非本校電郵讀唔到列（實測 anon key 查 `teachers` 回傳 `[]`）。  
 **不要**把 `service_role` key 或 Google Client Secret 放進這個倉庫。
 
 ### 主頁（登入後 · sticky 頂卡＋功能欄，唔顯示校網）
@@ -57,8 +58,8 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋**早會主題**（`assembly_by_day`）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。登出喺頂卡右上角；唔再顯示底欄 footer。
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
-4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／文件／會議／即時空堂／約開會。切換只換下方面板。
-5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；約開會而家用 placeholder。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
+4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**座位表**／文件／會議／即時空堂／約開會。切換只換下方面板。
+5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；約開會而家用 placeholder。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 
@@ -81,6 +82,13 @@ Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不
 
 結構／RLS：`db/students.sql`；種子：`db/seed_students.sql`（由 `scripts/parse_students.py` 從班名單 xlsx＋分組 xls 產生）。
 
+### 座位表（2026-2027）
+
+| 表 | 說明 |
+|----|------|
+| `seating_charts` | 教師自有座位表：`class_code`、`teacher_code`、`owner_email`、`title`、`rows`／`cols`、JSON `layout`（`{r,c,student_id,class_no,name_zh,name_en,notes}`） |
+
+DDL／RLS：`db/seating_charts.sql`。前端：主頁功能欄「座位表」→ 揀班 → 編格 → 儲存；「匯出 PDF」開列印預覽（橫向 A4，系統中文字型）。
 
 ---
 
@@ -99,6 +107,7 @@ school-admin/
 │   ├── seed_assembly_by_day.sql
 │   ├── students.sql        # students / student_groups / class_teachers DDL+RLS
 │   ├── seed_students.sql   # 2026-2027 學生＋分組種子
+│   ├── seating_charts.sql  # seating_charts DDL+RLS
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
 │   ├── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
@@ -113,6 +122,7 @@ school-admin/
 │   ├── js/auth.js          # Supabase Google 登入
 │   ├── js/home.js          # 主頁精簡：今日條、今日事項、模組 pill、課表
 │   ├── js/timetable.js     # 雲端時間表 + 今日循環日
+│   ├── js/seating.js       # 座位表編輯／儲存／PDF
 │   ├── js/staff-deadlines.js
 │   └── data/
 │       ├── timetable.json  # 本地備份

@@ -2531,6 +2531,11 @@
     if (panelId === "free") {
       renderFreePanel();
     }
+    if (panelId === "seating") {
+      if (window.SchoolAdminSeating && typeof window.SchoolAdminSeating.show === "function") {
+        window.SchoolAdminSeating.show();
+      }
+    }
   }
 
   function bindFuncBar() {
