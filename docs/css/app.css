@@ -1057,7 +1057,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .tt-periods {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 .tt-period {
   display: flex;
@@ -1111,7 +1111,51 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   font-size: 0.85rem;
   font-weight: 700;
 }
+
 .tt-period.free .detail-free { display: none; }
+
+/* Compact 早會／小息／午膳 rows between periods */
+.tt-period.break {
+  min-height: 0;
+  border-color: #d4c8a8;
+  background: #f6f2e6;
+  opacity: 0.95;
+}
+.tt-period.break .tt-period-left {
+  flex: 1;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding: 2px 10px;
+  min-width: 0;
+  min-height: 0;
+  background: transparent;
+  border-right: none;
+}
+.tt-period.break .tt-pnum {
+  background: #b89a5a;
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  min-width: 0;
+  letter-spacing: 0.02em;
+}
+.tt-period.break .tt-period-time {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #7a6e52;
+}
+.tt-period.break .tt-period-countdown,
+.tt-period.break .tt-break-cd {
+  margin-top: 0;
+  margin-left: auto;
+  padding: 0 5px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.4;
+  box-shadow: none;
+}
+
 
 /* Subject colour palette — soft pastels, accent for P badge */
 .tt-period.lesson.tt-subj-chin  { --subj-bg: #fdeceb; --subj-border: #e5a39a; --subj-left: #f8d9d5; --subj-accent: #c0392b; }
@@ -1188,6 +1232,28 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: #fff;
   background: #c0392b;
   box-shadow: 0 1px 3px rgba(192, 57, 43, 0.35);
+}
+
+/* Break rows: beat general .tt-period.is-current / .is-past */
+.tt-period.break.is-current {
+  min-height: 0;
+  border-color: #c0392b;
+  background: linear-gradient(135deg, #fff8f0 0%, #ffe8dc 100%);
+  box-shadow: 0 0 0 1.5px rgba(192, 57, 43, 0.2);
+}
+.tt-period.break.is-current .tt-period-left {
+  padding: 2px 10px;
+  background: transparent;
+  border-right: none;
+  flex-direction: row;
+  align-items: center;
+}
+.tt-period.break.is-current .tt-pnum {
+  background: #c0392b;
+}
+.tt-period.break.is-past {
+  opacity: 0.42;
+  filter: grayscale(0.2);
 }
 .tt-period-left {
   display: flex;

@@ -30,7 +30,7 @@
           { key: "p3", label: "第3節", start: "09:55", end: "10:35", period: 3 },
           { key: "p4", label: "第4節", start: "10:35", end: "11:15", period: 4 },
           { key: "p5", label: "第5節", start: "11:15", end: "11:55", period: 5 },
-          { key: "lunch", label: "午飯", start: "11:55", end: "12:10", period: null },
+          { key: "lunch", label: "午膳", start: "11:55", end: "12:10", period: null },
           { key: "p6", label: "第6節", start: "12:10", end: "12:50", period: 6 },
           { key: "p7", label: "第7節", start: "12:50", end: "13:30", period: 7 }
         ],
@@ -55,7 +55,7 @@
           { key: "p3", label: "第3節", start: "10:20", end: "11:05", period: 3 },
           { key: "p4", label: "第4節", start: "11:05", end: "11:50", period: 4 },
           { key: "p5", label: "第5節", start: "11:50", end: "12:35", period: 5 },
-          { key: "lunch", label: "午飯", start: "12:35", end: "13:45", period: null },
+          { key: "lunch", label: "午膳", start: "12:35", end: "13:45", period: null },
           { key: "p6", label: "第6節", start: "13:45", end: "14:30", period: 6 },
           { key: "p7", label: "第7節", start: "14:30", end: "15:15", period: 7 },
           { key: "p8", label: "第8節（BF）", start: "15:15", end: "16:45", period: 8 }
@@ -266,7 +266,7 @@
         }
         var label = "小息";
         if (s.key === "recess") label = "小息";
-        else if (s.key === "lunch") label = "午飯";
+        else if (s.key === "lunch") label = "午膳";
         else if (s.key === "homeroom") label = "早會";
         else if (s.key === "reading") label = "閱讀";
         else label = s.label || "休息";
@@ -851,6 +851,55 @@
     return "tt-subj-h" + (Math.abs(h) % 8);
   }
 
+
+  function isBreakSlot(s) {
+    return !!(s && s.period == null && (s.key === "homeroom" || s.key === "recess" || s.key === "lunch"));
+  }
+
+  /** Compact display names for non-lesson bell slots. */
+  function breakSlotLabel(s) {
+    if (!s) return "";
+    if (s.key === "homeroom") return "早會";
+    if (s.key === "recess") return "小息";
+    if (s.key === "lunch") return "午膳";
+    return s.label || "休息";
+  }
+
+  /** Tiny countdown markup for break rows (same live updater as periods). */
+  function breakCountdownHtml(hmEnd) {
+    var left = secondsUntilEnd(hmEnd);
+    if (left == null) return "";
+    return '<span class="tt-period-countdown tt-break-cd" data-end="' + escapeHtml(hmEnd) + '" aria-live="polite">' +
+      escapeHtml(formatCountdown(left)) +
+      "</span>";
+  }
+
+  function makeBreakRow(slot, live, curSlot, nowMins) {
+    var extra = "";
+    var isCurrent = false;
+    if (live) {
+      if (curSlot && curSlot.kind === "break" && curSlot.key === slot.key) {
+        extra = " is-current";
+        isCurrent = true;
+      } else {
+        var endM = hmToMinutes(slot.end);
+        if (endM != null && nowMins >= endM) extra = " is-past";
+      }
+    }
+    var row = document.createElement("div");
+    row.className = ("tt-period break" + extra).trim();
+    row.setAttribute("data-break", slot.key || "");
+    var label = breakSlotLabel(slot);
+    row.innerHTML =
+      '<div class="tt-period-left">' +
+        '<span class="tt-pnum">' + escapeHtml(label) + "</span>" +
+        '<span class="tt-period-time">' + escapeHtml(slot.start) + " — " + escapeHtml(slot.end) + "</span>" +
+        (isCurrent ? breakCountdownHtml(slot.end) : "") +
+      "</div>";
+    if (isCurrent) row.setAttribute("aria-current", "true");
+    return row;
+  }
+
   function renderPeriods(teacher, day) {
     var box = $("home-periods");
     var result = $("home-tt-result");
@@ -872,10 +921,26 @@
     var curSlot = live ? findCurrentSlot(day) : null;
     var curPeriod = (curSlot && curSlot.kind === "period") ? curSlot.period : null;
     var nowMins = nowHKTParts().minutes;
+    var sched = scheduleForDay(day);
+    var slots = (sched && sched.slots && sched.slots.length)
+      ? sched.slots
+      : (function () {
+          var syn = [];
+          for (var i = 1; i <= maxp; i++) {
+            syn.push({ key: "p" + i, label: "第" + i + "節", period: i, start: "", end: "" });
+          }
+          return syn;
+        })();
 
-    for (var p = 1; p <= maxp; p++) {
+    slots.forEach(function (s) {
+      if (isBreakSlot(s)) {
+        box.appendChild(makeBreakRow(s, live, curSlot, nowMins));
+        return;
+      }
+      if (s.period == null) return;
+      var p = s.period;
       var cell = schedule[String(p)];
-      var bell = periodBell(day, p);
+      var bell = periodBell(day, p) || (s.start && s.end ? { start: s.start, end: s.end } : null);
       var row = document.createElement("div");
       var extra = "";
       var isCurrent = false;
@@ -925,7 +990,7 @@
       }
       if (isCurrent) row.setAttribute("aria-current", "true");
       box.appendChild(row);
-    }
+    });
 
     if (countEl) {
       countEl.hidden = false;
@@ -1278,8 +1343,25 @@
       byPeriod[p].push(l);
     });
 
-    for (var p = 1; p <= maxp; p++) {
-      var bell = periodBell(day, p);
+    var sched = scheduleForDay(day);
+    var slots = (sched && sched.slots && sched.slots.length)
+      ? sched.slots
+      : (function () {
+          var syn = [];
+          for (var i = 1; i <= maxp; i++) {
+            syn.push({ key: "p" + i, label: "第" + i + "節", period: i, start: "", end: "" });
+          }
+          return syn;
+        })();
+
+    slots.forEach(function (s) {
+      if (isBreakSlot(s)) {
+        box.appendChild(makeBreakRow(s, live, curSlot, nowMins));
+        return;
+      }
+      if (s.period == null) return;
+      var p = s.period;
+      var bell = periodBell(day, p) || (s.start && s.end ? { start: s.start, end: s.end } : null);
       var extra = "";
       var isCurrent = false;
       if (live) {
@@ -1311,7 +1393,7 @@
           "</div>";
         if (isCurrent) freeRow.setAttribute("aria-current", "true");
         box.appendChild(freeRow);
-        continue;
+        return;
       }
 
       busy++;
@@ -1351,7 +1433,7 @@
         if (isCurrent && gi === 0) row.setAttribute("aria-current", "true");
         box.appendChild(row);
       });
-    }
+    });
 
     if (countEl) {
       countEl.hidden = false;
