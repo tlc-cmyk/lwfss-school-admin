@@ -418,11 +418,9 @@
     var short = session.staff && session.staff.short_name
       ? String(session.staff.short_name).toUpperCase()
       : "";
-    var role = compactRoleLabel(session);
-    var roleClass = session.role === "student" ? "home-who-role is-student" : "home-who-role";
+    // Sticky top keeps name (+ short code); role title dropped to save height.
     el.innerHTML = escapeHtml(name) +
-      (short ? ' <span class="home-who-code">' + escapeHtml(short) + "</span>" : "") +
-      (role ? ' <span class="' + roleClass + '">' + escapeHtml(role) + "</span>" : "");
+      (short ? ' <span class="home-who-code">' + escapeHtml(short) + "</span>" : "");
   }
 
   /** Logged-in staff short code (not the 「查看教師」picker). */
@@ -510,6 +508,18 @@
     el.className = "home-next-lesson" + (done ? " is-done" : "");
   }
 
+  /** Sticky bar background tone: holiday=red, normal=blue, bf=green. */
+  function topToneForDay(day) {
+    if (!day) return "holiday";
+    return scheduleIdForDay(day) === "bf" ? "bf" : "normal";
+  }
+
+  function applyHomeTopTone(day) {
+    var top = $("home-top");
+    if (!top) return;
+    top.setAttribute("data-tone", topToneForDay(day));
+  }
+
   function renderHomeBar(session) {
     var iso = state.browseDate || todayHK();
     var dateEl = $("home-date");
@@ -522,6 +532,7 @@
 
     var cycleEl = $("home-cycle");
     var day = effectiveCycleDay();
+    applyHomeTopTone(day);
     if (cycleEl) {
       if (day) {
         var bellLab = bellLabelForDay(day);
@@ -535,7 +546,7 @@
       }
     }
 
-    renderAssembly();
+    // Assembly / next-lesson removed from sticky top (keep-only compact bar).
     renderNotes(session);
   }
 

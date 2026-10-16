@@ -24,35 +24,35 @@
     <main class="wrap wrap-home">
       <!-- Sticky chrome: top info + function bar always stay; only bottom panel swaps -->
       <div class="home-sticky">
-        <section id="home-top" class="home-top" aria-label="今日概況" aria-live="polite">
-          <div class="home-top-when-row">
+        <section id="home-top" class="home-top" data-tone="normal" aria-label="今日概況" aria-live="polite">
+          <!-- Row 1: date · time · Day/status · name -->
+          <div class="home-top-row home-top-row-main">
             <div class="home-bar-when">
               <span id="home-date" class="home-bar-date">載入日期…</span>
+              <span class="home-bar-sep" aria-hidden="true">·</span>
               <span id="home-clock" class="home-bar-clock" aria-label="現在時間">--:--</span>
+            </div>
+            <div class="home-bar-cycle-status">
+              <span id="home-cycle" class="home-bar-day">載入循環日…</span>
+              <span id="home-status" class="home-status-chip" hidden></span>
+            </div>
+            <span id="home-who" class="home-bar-who"></span>
+          </div>
+
+          <!-- Row 2: 今日事項 + 改日期 / 登出 -->
+          <div class="home-top-row home-top-row-tools">
+            <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
+              <h2 class="home-notes-title">今日事項</h2>
+              <div id="home-notes-list" class="home-notes-list"></div>
             </div>
             <div class="home-top-actions">
               <label class="home-bar-pick" for="home-date-input" title="改日期">
                 <span class="home-bar-pick-icon" aria-hidden="true">📅</span>
+                <span class="home-bar-pick-label">改日期</span>
                 <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
               </label>
               <button type="button" id="sign-out" class="home-sign-out" title="登出">登出</button>
             </div>
-          </div>
-
-          <div class="home-bar-meta">
-            <span id="home-cycle" class="home-bar-day">載入循環日…</span>
-            <span id="home-status" class="home-status-chip" hidden></span>
-            <div class="home-bar-who-wrap">
-              <span id="home-who" class="home-bar-who"></span>
-              <span id="home-next-lesson" class="home-next-lesson" hidden aria-live="polite"></span>
-            </div>
-          </div>
-
-          <div id="home-assembly" class="home-assembly" aria-label="早會" hidden></div>
-
-          <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
-            <h2 class="home-notes-title">今日事項</h2>
-            <div id="home-notes-list" class="home-notes-list"></div>
           </div>
 
           <!-- auth.js fills this; visually folded into home-who above -->
