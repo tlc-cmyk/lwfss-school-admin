@@ -1705,18 +1705,53 @@ html[data-app-role="student"] a[data-staff-only],
   align-items: center;
   justify-content: center;
   gap: 1px;
-  cursor: pointer;
+  cursor: grab;
   font: inherit;
-  touch-action: manipulation;
-  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+  /* none: allow pointer-drag swap on touch; page still scrolls from gaps/labels */
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s, opacity 0.12s;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+}
+.seat-cell > * {
+  pointer-events: none; /* hit-test the cell, not name spans */
 }
 .seat-cell.is-filled {
   background: #eff8ff;
   border-color: #84caff;
+  cursor: grab;
 }
 .seat-cell.is-selected {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(26, 58, 108, 0.2);
+}
+.seat-cell.is-dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+.seat-cell.is-drag-over {
+  border-color: #12b76a;
+  background: #ecfdf3;
+  box-shadow: 0 0 0 2px rgba(18, 183, 106, 0.35);
+}
+.home-panel-seating.is-seat-dragging,
+.home-panel-seating.is-seat-dragging * {
+  cursor: grabbing !important;
+}
+.home-panel-seating .seat-board,
+.home-panel-seating .seat-workspace,
+.home-panel-seating .seat-grid {
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
+  touch-action: pan-y;
+}
+.home-panel-seating .seat-board-grid {
+  touch-action: none; /* drag within grid */
 }
 .seat-cell-empty {
   font-size: 0.7rem;
@@ -1772,8 +1807,13 @@ html[data-app-role="student"] a[data-staff-only],
   border: 1px solid #eaecf0;
   background: #f9fafb;
   cursor: grab;
-  touch-action: manipulation;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  position: relative;
+  z-index: 1;
 }
+.seat-roster-item > * { pointer-events: none; }
 .seat-roster-item:active { cursor: grabbing; }
 .seat-roster-item:hover,
 .seat-roster-item:focus {

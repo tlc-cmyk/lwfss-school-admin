@@ -30,7 +30,10 @@
     selectedSeat: null,
     dirty: false,
     saving: false,
-    statusMsg: ""
+    statusMsg: "",
+    /** pointer drag: { kind:'seat'|'roster', r,c, studentId, pointerId, startX, startY, moved, fromEl } */
+    ptrDrag: null,
+    suppressClick: false
   };
 
   function $(id) { return document.getElementById(id); }
@@ -722,8 +725,11 @@
         } else {
           label = '<span class="seat-cell-empty">空</span>';
         }
-        html += '<button type="button" class="' + cls + '" data-r="' + r + '" data-c="' + c +
-          '" aria-label="座位 R' + (r + 1) + " C" + (c + 1) + '">' + label + "</button>";
+        var filled = !!(seat && seat.student_id);
+        html += '<div role="button" tabindex="0" class="' + cls + '" data-r="' + r + '" data-c="' + c +
+          '" data-filled="' + (filled ? "1" : "0") + '"' +
+          (filled ? ' draggable="true"' : "") +
+          ' aria-label="座位 R' + (r + 1) + " C" + (c + 1) + '">' + label + "</div>";
       }
     }
     html += "</div>";
@@ -764,22 +770,8 @@
     return null;
   }
 
-  function placeStudent(r, c, studentId) {
-    var stu = findStudent(studentId);
-    if (!stu) {
-      setStatus("只可以編入呢個班別／分組嘅學生。", true);
-      return;
-    }
-    if (!state.rosterIdSet[String(stu.id)]) {
-      setStatus("學生唔喺任教名單內。", true);
-      return;
-    }
-    Object.keys(state.seats).forEach(function (k) {
-      if (state.seats[k] && String(state.seats[k].student_id) === String(studentId)) {
-        delete state.seats[k];
-      }
-    });
-    state.seats[seatKey(r, c)] = {
+  function seatObjFromStudent(stu, r, c) {
+    return {
       r: r,
       c: c,
       student_id: stu.id,
@@ -788,9 +780,59 @@
       name_en: stu.english_name || "",
       notes: ""
     };
+  }
+
+  function cloneSeatAt(seat, r, c) {
+    if (!seat) return null;
+    return {
+      r: r,
+      c: c,
+      student_id: seat.student_id,
+      class_no: seat.class_no,
+      name_zh: seat.name_zh || "",
+      name_en: seat.name_en || "",
+      notes: seat.notes || ""
+    };
+  }
+
+  function placeStudent(r, c, studentId) {
+    var stu = findStudent(studentId);
+    if (!stu) {
+      setStatus("只可以編入呢個班別／分組嘅學生。", true);
+      return false;
+    }
+    if (!state.rosterIdSet[String(stu.id)]) {
+      setStatus("學生唔喺任教名單內。", true);
+      return false;
+    }
+    Object.keys(state.seats).forEach(function (k) {
+      if (state.seats[k] && String(state.seats[k].student_id) === String(studentId)) {
+        delete state.seats[k];
+      }
+    });
+    state.seats[seatKey(r, c)] = seatObjFromStudent(stu, r, c);
     state.dirty = true;
     state.selectedSeat = null;
     renderAll();
+    return true;
+  }
+
+  /** Move or swap occupants between two seats. */
+  function swapOrMoveSeat(r1, c1, r2, c2) {
+    if (r1 === r2 && c1 === c2) return false;
+    var k1 = seatKey(r1, c1);
+    var k2 = seatKey(r2, c2);
+    var a = state.seats[k1] || null;
+    var b = state.seats[k2] || null;
+    if (!a && !b) return false;
+    if (a) state.seats[k2] = cloneSeatAt(a, r2, c2);
+    else delete state.seats[k2];
+    if (b) state.seats[k1] = cloneSeatAt(b, r1, c1);
+    else delete state.seats[k1];
+    state.dirty = true;
+    state.selectedSeat = null;
+    renderAll();
+    return true;
   }
 
   function clearSeat(r, c) {
@@ -798,6 +840,42 @@
     state.dirty = true;
     state.selectedSeat = null;
     renderAll();
+  }
+
+  function handleSeatTap(r, c) {
+    var key = seatKey(r, c);
+    var sel = state.selectedSeat;
+    if (sel && (sel.r !== r || sel.c !== c)) {
+      var fromFilled = !!(state.seats[seatKey(sel.r, sel.c)] && state.seats[seatKey(sel.r, sel.c)].student_id);
+      var toFilled = !!(state.seats[key] && state.seats[key].student_id);
+      if (fromFilled || toFilled) {
+        swapOrMoveSeat(sel.r, sel.c, r, c);
+        if (fromFilled && toFilled) setStatus("已互換座位。");
+        else if (fromFilled) setStatus("已移到新座位。");
+        else setStatus("已移到所選座位。");
+        return;
+      }
+    }
+    if (sel && sel.r === r && sel.c === c) {
+      // Second tap on same seat: clear if occupied, else deselect
+      if (state.seats[key] && state.seats[key].student_id) {
+        clearSeat(r, c);
+        setStatus("已清空座位。");
+      } else {
+        state.selectedSeat = null;
+        renderGrid();
+        setStatus("已取消選擇。");
+      }
+      return;
+    }
+    state.selectedSeat = { r: r, c: c };
+    renderGrid();
+    var filled = state.seats[key] && state.seats[key].student_id;
+    setStatus(
+      filled
+        ? ("已選 R" + (r + 1) + " C" + (c + 1) + " — 再撳另一座位互換／搬位；再撳同一格清空。")
+        : ("已選空位 R" + (r + 1) + " C" + (c + 1) + " — 再撳名單學生編入，或撳有人座位搬過來。")
+    );
   }
 
   function autoFill() {
@@ -1087,6 +1165,63 @@
     if (!root || root.dataset.seatBound === "1") return;
     root.dataset.seatBound = "1";
 
+    function cellFromPoint(x, y) {
+      var el = document.elementFromPoint(x, y);
+      return el ? el.closest(".seat-cell") : null;
+    }
+
+    function clearDragOver() {
+      Array.prototype.forEach.call(root.querySelectorAll(".seat-cell.is-drag-over"), function (el) {
+        el.classList.remove("is-drag-over");
+      });
+      Array.prototype.forEach.call(root.querySelectorAll(".seat-cell.is-dragging"), function (el) {
+        el.classList.remove("is-dragging");
+      });
+    }
+
+    function endPtrDrag(apply) {
+      var d = state.ptrDrag;
+      state.ptrDrag = null;
+      root.classList.remove("is-seat-dragging");
+      clearDragOver();
+      if (!d) return;
+      if (d.fromEl && d.fromEl.releasePointerCapture) {
+        try { d.fromEl.releasePointerCapture(d.pointerId); } catch (err) { /* ignore */ }
+      }
+      if (!apply) return;
+      // Prevent duplicate click handler after pointerup
+      state.suppressClick = true;
+      setTimeout(function () { state.suppressClick = false; }, 80);
+      if (!d.moved) {
+        // Tap: seat select / swap, or roster place into selected
+        if (d.kind === "seat") {
+          handleSeatTap(d.r, d.c);
+        } else if (d.kind === "roster" && d.studentId) {
+          if (!state.selectedSeat) {
+            setStatus("請先撳一個座位，再選學生；或拖學生到座位。", true);
+            return;
+          }
+          if (placeStudent(state.selectedSeat.r, state.selectedSeat.c, d.studentId)) {
+            setStatus("已編入座位。");
+          }
+        }
+        return;
+      }
+      // Drag completed
+      if (d.kind === "seat" && d.targetR != null) {
+        if (swapOrMoveSeat(d.r, d.c, d.targetR, d.targetC)) {
+          var tok = state.seats[seatKey(d.targetR, d.targetC)];
+          var other = state.seats[seatKey(d.r, d.c)];
+          if (tok && other) setStatus("已拖拉互換座位。");
+          else setStatus("已拖拉搬位。");
+        }
+      } else if (d.kind === "roster" && d.studentId && d.targetR != null) {
+        if (placeStudent(d.targetR, d.targetC, d.studentId)) {
+          setStatus("已拖入座位。");
+        }
+      }
+    }
+
     root.addEventListener("change", function (e) {
       var t = e.target;
       if (t.id === "seat-class-select") {
@@ -1118,7 +1253,13 @@
       }
     });
 
+    // Toolbar clicks (not seats — seats use pointer)
     root.addEventListener("click", function (e) {
+      if (state.suppressClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
       var btn = e.target.closest("[data-seat-action]");
       if (btn) {
         var act = btn.getAttribute("data-seat-action");
@@ -1134,58 +1275,178 @@
         } else if (act === "delete") deleteChart();
         return;
       }
-
+      // Fallback click for seats (keyboard / no pointer)
       var cell = e.target.closest(".seat-cell");
-      if (cell) {
+      if (cell && !state.ptrDrag) {
         var r = parseInt(cell.getAttribute("data-r"), 10);
         var c = parseInt(cell.getAttribute("data-c"), 10);
-        var key = seatKey(r, c);
-        if (state.selectedSeat && state.selectedSeat.r === r && state.selectedSeat.c === c) {
-          if (state.seats[key] && state.seats[key].student_id) {
-            clearSeat(r, c);
-            return;
-          }
-        }
-        state.selectedSeat = { r: r, c: c };
-        renderGrid();
-        setStatus("已選座位 R" + (r + 1) + " C" + (c + 1) + " — 再撳名單學生編入，或再撳座位清空。");
+        handleSeatTap(r, c);
         return;
       }
-
       var item = e.target.closest(".seat-roster-item");
-      if (item) {
+      if (item && !state.ptrDrag) {
         var sid = item.getAttribute("data-student-id");
         if (!state.selectedSeat) {
-          setStatus("請先撳一個空位，再選學生。", true);
+          setStatus("請先撳一個座位，再選學生；或拖學生到座位。", true);
           return;
         }
-        placeStudent(state.selectedSeat.r, state.selectedSeat.c, sid);
-        setStatus("已編入座位。");
+        if (placeStudent(state.selectedSeat.r, state.selectedSeat.c, sid)) {
+          setStatus("已編入座位。");
+        }
       }
     });
 
-    root.addEventListener("dragstart", function (e) {
+    root.addEventListener("keydown", function (e) {
+      var cell = e.target.closest(".seat-cell");
+      if (!cell) return;
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault();
+      handleSeatTap(
+        parseInt(cell.getAttribute("data-r"), 10),
+        parseInt(cell.getAttribute("data-c"), 10)
+      );
+    });
+
+    // Pointer drag: seat↔seat swap / roster→seat (works on phone)
+    root.addEventListener("pointerdown", function (e) {
+      if (e.button != null && e.button !== 0) return;
+      var cell = e.target.closest(".seat-cell");
       var item = e.target.closest(".seat-roster-item");
-      if (!item || !e.dataTransfer) return;
-      e.dataTransfer.setData("text/student-id", item.getAttribute("data-student-id"));
-      e.dataTransfer.effectAllowed = "copy";
+      if (cell) {
+        var r = parseInt(cell.getAttribute("data-r"), 10);
+        var c = parseInt(cell.getAttribute("data-c"), 10);
+        var filled = cell.getAttribute("data-filled") === "1";
+        // Allow drag from any seat (empty can receive via tap); drag source only if filled
+        state.ptrDrag = {
+          kind: "seat",
+          r: r,
+          c: c,
+          filled: filled,
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          moved: false,
+          fromEl: cell,
+          targetR: null,
+          targetC: null
+        };
+        try { cell.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+        return;
+      }
+      if (item) {
+        state.ptrDrag = {
+          kind: "roster",
+          studentId: item.getAttribute("data-student-id"),
+          pointerId: e.pointerId,
+          startX: e.clientX,
+          startY: e.clientY,
+          moved: false,
+          fromEl: item,
+          targetR: null,
+          targetC: null
+        };
+        try { item.setPointerCapture(e.pointerId); } catch (err2) { /* ignore */ }
+      }
+    });
+
+    root.addEventListener("pointermove", function (e) {
+      var d = state.ptrDrag;
+      if (!d || e.pointerId !== d.pointerId) return;
+      var dx = e.clientX - d.startX;
+      var dy = e.clientY - d.startY;
+      if (!d.moved && (dx * dx + dy * dy) > 64) {
+        // Only start seat-drag if source has a student
+        if (d.kind === "seat" && !d.filled) {
+          endPtrDrag(false);
+          state.ptrDrag = null;
+          return;
+        }
+        d.moved = true;
+        root.classList.add("is-seat-dragging");
+        if (d.fromEl) d.fromEl.classList.add("is-dragging");
+      }
+      if (!d.moved) return;
+      e.preventDefault();
+      clearDragOver();
+      if (d.fromEl) d.fromEl.classList.add("is-dragging");
+      var over = cellFromPoint(e.clientX, e.clientY);
+      if (over) {
+        var tr = parseInt(over.getAttribute("data-r"), 10);
+        var tc = parseInt(over.getAttribute("data-c"), 10);
+        if (d.kind === "seat" && tr === d.r && tc === d.c) {
+          d.targetR = null;
+          d.targetC = null;
+        } else {
+          over.classList.add("is-drag-over");
+          d.targetR = tr;
+          d.targetC = tc;
+        }
+      } else {
+        d.targetR = null;
+        d.targetC = null;
+      }
+    }, { passive: false });
+
+    root.addEventListener("pointerup", function (e) {
+      var d = state.ptrDrag;
+      if (!d || e.pointerId !== d.pointerId) return;
+      endPtrDrag(true);
+    });
+    root.addEventListener("pointercancel", function (e) {
+      var d = state.ptrDrag;
+      if (!d || e.pointerId !== d.pointerId) return;
+      endPtrDrag(false);
+    });
+
+    // Desktop HTML5 DnD fallback (roster + filled seats)
+    root.addEventListener("dragstart", function (e) {
+      var cell = e.target.closest(".seat-cell");
+      var item = e.target.closest(".seat-roster-item");
+      if (cell && cell.getAttribute("data-filled") === "1" && e.dataTransfer) {
+        e.dataTransfer.setData("text/seat", cell.getAttribute("data-r") + "," + cell.getAttribute("data-c"));
+        e.dataTransfer.effectAllowed = "move";
+        cell.classList.add("is-dragging");
+        return;
+      }
+      if (item && e.dataTransfer) {
+        e.dataTransfer.setData("text/student-id", item.getAttribute("data-student-id"));
+        e.dataTransfer.effectAllowed = "copyMove";
+      }
+    });
+    root.addEventListener("dragend", function () {
+      clearDragOver();
     });
     root.addEventListener("dragover", function (e) {
       if (e.target.closest(".seat-cell")) {
         e.preventDefault();
-        e.dataTransfer.dropEffect = "copy";
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
       }
+    });
+    root.addEventListener("dragenter", function (e) {
+      var cell = e.target.closest(".seat-cell");
+      if (cell) cell.classList.add("is-drag-over");
+    });
+    root.addEventListener("dragleave", function (e) {
+      var cell = e.target.closest(".seat-cell");
+      if (cell) cell.classList.remove("is-drag-over");
     });
     root.addEventListener("drop", function (e) {
       var cell = e.target.closest(".seat-cell");
       if (!cell) return;
       e.preventDefault();
-      var sid = e.dataTransfer.getData("text/student-id");
-      if (!sid) return;
+      clearDragOver();
       var r = parseInt(cell.getAttribute("data-r"), 10);
       var c = parseInt(cell.getAttribute("data-c"), 10);
-      placeStudent(r, c, sid);
-      setStatus("已拖入座位。");
+      var seatData = e.dataTransfer.getData("text/seat");
+      if (seatData) {
+        var parts = seatData.split(",");
+        var r0 = parseInt(parts[0], 10);
+        var c0 = parseInt(parts[1], 10);
+        if (swapOrMoveSeat(r0, c0, r, c)) setStatus("已拖拉互換／搬位。");
+        return;
+      }
+      var sid = e.dataTransfer.getData("text/student-id");
+      if (sid && placeStudent(r, c, sid)) setStatus("已拖入座位。");
     });
   }
 
