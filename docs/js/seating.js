@@ -148,9 +148,12 @@
   }
 
   /**
-   * Build picker options from 班主任 + lessons (exact single-class) + student_groups.
-   * Multi-class lesson tokens (2A,2B / 4A-D) do NOT expand into whole classes;
-   * those students come only via matching subject groups.
+   * Build seating picker scopes.
+   * If the teacher has any student_groups (Excel 分組名單) rows, ONLY those
+   * group scopes are listed (+ 班主任 whole-class if they are class teacher).
+   * Lesson-based whole-class / split scopes are skipped in that case so e.g. TLC
+   * only sees S4 ICT / S5 MATH / S6 MATH from the grouping sheet — not full 4A.
+   * Teachers with no group rows fall back to 班主任 + lessons (S1 etc.).
    */
   async function loadTaughtScopes(session) {
     var client = getClient();
@@ -213,11 +216,44 @@
       }
     }
 
-    // 1) 班主任 / class_teachers → whole class
-    if (session && session.staff && session.staff.class_teacher) {
-      addClassScope(session.staff.class_teacher, "班主任");
+    function finalizeAndReturn() {
+      var list = Object.keys(map).map(function (k) { return map[k]; });
+      list.forEach(function (s) {
+        var reason = (s.reasons || []).join("·") || (
+          s.kind === "group" ? "分組" : (s.kind === "split" ? "合班" : "任教")
+        );
+        if (s.kind === "group") {
+          var classPart = (s.classCodes && s.classCodes.length)
+            ? s.classCodes.join(",")
+            : "";
+          s.label = s.form + " " + s.subject + " · " + s.groupName +
+            (classPart ? "（" + classPart + "）" : "") +
+            " · " + reason;
+        } else if (s.kind === "split") {
+          s.label = s.classCode + " · " + (s.subject || "課") + "（" + reason + "）";
+        } else {
+          s.label = s.classCode + "（" + reason + "）";
+        }
+      });
+      list.sort(function (a, b) {
+        var order = { group: 0, class: 1, split: 2 };
+        var ao = order[a.kind] != null ? order[a.kind] : 9;
+        var bo = order[b.kind] != null ? order[b.kind] : 9;
+        if (ao !== bo) return ao - bo;
+        return a.label.localeCompare(b.label, "zh-HK");
+      });
+      state.scopes = list;
+      return list;
     }
-    if (client && code) {
+
+    function addHomeroomScopes() {
+      if (session && session.staff && session.staff.class_teacher) {
+        addClassScope(session.staff.class_teacher, "班主任");
+      }
+    }
+
+    async function addHomeroomFromCloud() {
+      if (!client || !code) return;
       try {
         var ct = await client
           .from("class_teachers")
@@ -230,8 +266,8 @@
       } catch (e0) { /* ignore */ }
     }
 
-    // 2) student_groups this teacher owns → group scopes (split / elective / streaming)
-    var groupCoveredClassSubject = {}; // "2A|ENG" → true (has group roster for that class+subject)
+    // --- student_groups (Excel 分組名單) first ---
+    var hasGroups = false;
     if (client && code) {
       try {
         var sg = await client
@@ -241,6 +277,7 @@
           .eq("academic_year", ACADEMIC_YEAR)
           .limit(5000);
         if (sg.data && sg.data.length) {
+          hasGroups = true;
           var byGroup = {};
           var studentIds = [];
           sg.data.forEach(function (r) {
@@ -256,7 +293,6 @@
             byGroup[gk].studentIds.push(r.student_id);
             studentIds.push(r.student_id);
           });
-          // Resolve class codes for members (chunked)
           var idToClass = {};
           var uniq = [];
           var seenId = {};
@@ -286,16 +322,24 @@
               if (!cc || seenC[cc]) return;
               seenC[cc] = true;
               codes.push(cc);
-              groupCoveredClassSubject[String(cc).toUpperCase() + "|" + String(g.subject).toUpperCase()] = true;
             });
-            addGroupScope(g.form, g.subject, g.groupName, codes, "分組");
+            addGroupScope(g.form, g.subject, g.groupName, codes, "分組名單");
           });
         }
       } catch (e1) { /* ignore */ }
     }
 
-    // 3) lessons: exact single-class only → whole class (if not already a group for that subject)
-    //    Multi-class tokens rely on student_groups above; do not expand to full classes.
+    // Prefer Excel groups only when present (TLC / streaming teachers).
+    if (hasGroups) {
+      addHomeroomScopes();
+      await addHomeroomFromCloud();
+      return finalizeAndReturn();
+    }
+
+    // No group rows → 班主任 + lesson-based class/split (e.g. S1 whole classes).
+    addHomeroomScopes();
+    await addHomeroomFromCloud();
+
     if (client && code) {
       try {
         var lessons = await client
@@ -309,21 +353,10 @@
             var raw = String(l.class_short || l.class_name || "").replace(/\s+/g, "");
             if (!raw) return;
             var subj = String(l.subject_short || l.subject || "");
-            var subjKey = subj;
-            var subjBase = subj.split("-")[0].toUpperCase();
-
-            // Multi-class comma tokens (2A,2B / 1A,1B): use student_groups if present;
-            // otherwise a split scope whose roster is those classes only (not whole form).
             if (raw.indexOf(",") >= 0 || raw.indexOf("，") >= 0) {
               var token = raw.replace(/，/g, ",").toUpperCase();
               var parts = token.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
-              var coveredByGroup = parts.some(function (cc) {
-                return groupCoveredClassSubject[cc + "|" + subjBase] ||
-                  groupCoveredClassSubject[cc + "|" + subj.toUpperCase()] ||
-                  (subjBase.indexOf("ENG") === 0 && groupCoveredClassSubject[cc + "|ENG"]);
-              });
-              if (coveredByGroup) return;
-              var sk = scopeKeySplit(token, subjKey);
+              var sk = scopeKeySplit(token, subj);
               if (sawSplit[sk]) return;
               sawSplit[sk] = true;
               map[sk] = {
@@ -331,35 +364,21 @@
                 key: sk,
                 classCode: token,
                 form: formFromClassCode(parts[0] || ""),
-                subject: subjKey,
+                subject: subj,
                 groupName: "",
                 classCodes: parts.filter(function (c) { return CLASS_CODES.indexOf(c) >= 0; }),
-                label: token + " · " + (subjKey || "課") + "（合班／分班）",
+                label: token + " · " + (subj || "課") + "（合班／分班）",
                 reasons: ["任教"]
               };
               return;
             }
-
-            // Form ranges like 4A-D: only via student_groups (already added). Do not expand.
             if (/[A-D]-[A-D]/.test(raw)) return;
-
             if (!isSingleClassToken(raw)) return;
-            var classCode = raw.toUpperCase();
-            if (
-              groupCoveredClassSubject[classCode + "|" + subj.toUpperCase()] ||
-              groupCoveredClassSubject[classCode + "|" + subjBase] ||
-              (groupCoveredClassSubject[classCode + "|ENG"] && subjBase.indexOf("ENG") === 0)
-            ) {
-              return;
-            }
-            addClassScope(classCode, "任教");
+            addClassScope(raw, "任教");
           });
         }
       } catch (e2) { /* ignore */ }
-    }
-
-    // Fallback from local timetable if cloud lessons empty
-    if (!client && code) {
+    } else if (code) {
       var data = window.TIMETABLE_DATA;
       if (data && data.teachers) {
         var t = null;
@@ -384,34 +403,7 @@
       }
     }
 
-    // Finalize labels
-    var list = Object.keys(map).map(function (k) { return map[k]; });
-    list.forEach(function (s) {
-      var reason = (s.reasons || []).join("·") || (
-        s.kind === "group" ? "分組" : (s.kind === "split" ? "合班" : "任教")
-      );
-      if (s.kind === "group") {
-        var classPart = (s.classCodes && s.classCodes.length)
-          ? s.classCodes.join(",")
-          : "";
-        s.label = s.form + " " + s.subject + " · " + s.groupName +
-          (classPart ? "（" + classPart + "）" : "") +
-          " · " + reason;
-      } else if (s.kind === "split") {
-        s.label = s.classCode + " · " + (s.subject || "課") + "（" + reason + "）";
-      } else {
-        s.label = s.classCode + "（" + reason + "）";
-      }
-    });
-    list.sort(function (a, b) {
-      var order = { class: 0, group: 1, split: 2 };
-      var ao = order[a.kind] != null ? order[a.kind] : 9;
-      var bo = order[b.kind] != null ? order[b.kind] : 9;
-      if (ao !== bo) return ao - bo;
-      return a.label.localeCompare(b.label, "zh-HK");
-    });
-    state.scopes = list;
-    return list;
+    return finalizeAndReturn();
   }
 
   async function loadRosterForScope(scope) {
@@ -626,8 +618,8 @@
     var opt0 = document.createElement("option");
     opt0.value = "";
     opt0.textContent = state.scopes.length
-      ? "選擇任教班別／分組…"
-      : "未有任教班別／分組";
+      ? "選擇分組／班別…"
+      : "未有分組／班別";
     sel.appendChild(opt0);
 
     var classScopes = state.scopes.filter(function (s) { return s.kind === "class"; });
@@ -647,8 +639,8 @@
       sel.appendChild(og);
     }
 
-    appendGroup("任教／班主任班別", classScopes);
-    appendGroup("任教科目分組", groupScopes);
+    appendGroup("分組名單（Excel）", groupScopes);
+    appendGroup("班主任班別", classScopes);
     appendGroup("合班／分班（無分組名單）", splitScopes);
 
     if (prev && findScopeByKey(prev)) sel.value = prev;
@@ -1221,8 +1213,8 @@
     var hint = $("seat-pick-hint");
     if (hint) {
       hint.textContent = state.scopes.length
-        ? "只顯示你任教／班主任嘅班別，同埋你名下嘅科目分組（例如 2A,2B ENG）。唔可以揀無關班別。"
-        : "系統未找到你任教嘅班別或分組。若你係班主任或有分組課，請聯絡 IT 核對 staff／student_groups。";
+        ? "有分組名單嘅老師只顯示 Excel 分組（例如 S4 ICT、S5 MATH）；班主任另加自己班。冇分組先會用時間表整班。"
+        : "未找到你嘅分組名單或任教班別。請聯絡 IT 核對 student_groups／時間表。";
     }
     if (state.scope && findScopeByKey(state.scope.key)) {
       await onScopeChange(state.scope.key);

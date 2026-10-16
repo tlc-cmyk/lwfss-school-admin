@@ -88,7 +88,7 @@ Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不
 |----|------|
 | `seating_charts` | 教師自有座位表：`scope_kind`（`class`／`group`／`split`）、`class_code`、`form`／`subject`／`group_name`、`owner_email`、`title`、`rows`／`cols`、JSON `layout` |
 
-DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；layout 學生必須屬該範圍）。前端：功能欄「座位表」→ 只列任教／班主任班別＋`student_groups` 分組（合班如 `2A,2B ENG` 用分組名單，唔展開成無關全班）→ 編格 → 儲存；「匯出 PDF」列印預覽。
+DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；layout 學生必須屬該範圍）。前端：功能欄「座位表」→ **若老師喺 `student_groups`（Excel 分組名單）有列，只顯示嗰啲分組**（例如 TLC：S4 ICT／S5 MATH／S6 MATH）；班主任先另加整班；冇分組先用時間表整班／合班 → 編格 → 儲存；「匯出 PDF」列印預覽。
 
 ---
 
