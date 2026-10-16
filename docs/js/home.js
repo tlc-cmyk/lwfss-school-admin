@@ -495,24 +495,6 @@
     section.hidden = false;
   }
 
-  function renderBellLabel() {
-    var el = $("home-bell-label");
-    if (!el) return;
-    var day = state.selectedDay;
-    if (!day) {
-      el.textContent = "";
-      el.hidden = true;
-      el.classList.remove("is-bf");
-      return;
-    }
-    var label = bellLabelForDay(day);
-    var isBf = scheduleIdForDay(day) === "bf";
-    el.textContent = label || "";
-    el.hidden = !label;
-    el.classList.toggle("is-bf", isBf);
-    el.setAttribute("aria-label", label ? ("鐘聲：" + label) : "");
-  }
-
   function buildDayGrid() {
     var grid = $("home-day-grid");
     if (!grid) return;
@@ -537,13 +519,11 @@
           window.__userPickedDay = true;
           state.selectedDay = day;
           refreshDayGridActive();
-          renderBellLabel();
           showSelectedTeacher();
         });
         grid.appendChild(btn);
       })(d);
     }
-    renderBellLabel();
   }
 
   function refreshDayGridActive() {
@@ -556,7 +536,6 @@
       chip.setAttribute("aria-selected", on ? "true" : "false");
       chip.classList.toggle("has-today-mark", state.todayCycleDay === day);
     });
-    renderBellLabel();
   }
 
   function loadCycleAndCalendar(session) {
@@ -775,7 +754,6 @@
 
   function renderPeriods(teacher, day) {
     var box = $("home-periods");
-    var meta = $("home-tt-meta");
     var result = $("home-tt-result");
     var countEl = $("home-lesson-count");
     if (!box) return;
@@ -785,13 +763,6 @@
       if (result) result.classList.add("hidden");
       if (countEl) countEl.hidden = true;
       return;
-    }
-
-    if (meta) {
-      meta.innerHTML =
-        '<span class="code">' + escapeHtml(teacher.code) + "</span>" +
-        '<span class="name-chi">' + escapeHtml(teacher.chi || "—") + "</span>" +
-        '<span class="name-eng">' + escapeHtml(teacher.eng || "") + "</span>";
     }
 
     box.innerHTML = "";
