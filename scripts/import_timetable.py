@@ -253,7 +253,7 @@ def default_src() -> Path | None:
     if env and Path(env).exists():
         return Path(env)
     candidates = [
-        Path("/workspace/agent-tools/4826237e-2f5e-4603-b3a5-9f9eeaa85cc7.txt"),
+        Path("/workspace/agent-tools/8894c011-f084-41c7-bd5b-45ef92354c91.txt"),
         ROOT / "data" / "timetablegrok.json",
         ROOT / "exports" / "timetablegrok.json",
     ]
