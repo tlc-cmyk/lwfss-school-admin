@@ -1766,19 +1766,52 @@
         var slots = cell.groupSlots || [];
         var isSplit = slots.length > 1;
         var isElective = !!cell.isElective;
-        var subjCls = isElective
-          ? "tt-subj-elective"
-          : subjectClass(cell.subjectShort, cell.subject);
+        // Room view usually has one option — keep that subject's colour/name visible.
+        var focusSlot = slots.length === 1 ? slots[0] : null;
+        var focusLabel = "";
+        if (isElective) {
+          if (focusSlot && focusSlot.label) {
+            focusLabel = focusSlot.label;
+          } else if (cell.subjectShort || cell.subject) {
+            focusLabel = electiveOptionLabel(cell.subjectShort, cell.subject);
+          }
+        }
+        var subjCls;
+        var dataSubj;
+        if (isElective && focusLabel && (mode === "room" || !isSplit)) {
+          subjCls = subjectClass(
+            (focusSlot && focusSlot.subjectShort) || cell.subjectShort,
+            (focusSlot && focusSlot.subject) || cell.subject
+          );
+          dataSubj = subjectFamily(
+            (focusSlot && focusSlot.subjectShort) || cell.subjectShort,
+            (focusSlot && focusSlot.subject) || cell.subject
+          );
+        } else if (isElective) {
+          subjCls = "tt-subj-elective";
+          dataSubj = "elective";
+        } else {
+          subjCls = subjectClass(cell.subjectShort, cell.subject);
+          dataSubj = subjectFamily(cell.subjectShort, cell.subject);
+        }
         row.className = ("tt-period lesson " + subjCls + extra +
           (isSplit ? " is-split" : "") + (isElective ? " is-elective" : "")).trim();
-        row.setAttribute("data-subj", isElective ? "elective" : subjectFamily(cell.subjectShort, cell.subject));
-        var titleText = isElective
-          ? electiveBlockTitle(cell.blockKey)
-          : (cell.subjectShort || cell.subject || "—");
+        row.setAttribute("data-subj", dataSubj);
+        var titleText;
+        if (isElective) {
+          titleText = electiveBlockTitle(cell.blockKey);
+          // Room panel (or single-option cell): always show this room's subject.
+          if (focusLabel && (mode === "room" || !isSplit)) {
+            titleText += " · " + focusLabel;
+          }
+        } else {
+          titleText = cell.subjectShort || cell.subject || "—";
+        }
         var detailBits = [];
         if (mode === "room") {
           if (cell.classShort || cell.class) detailBits.push(cell.classShort || cell.class);
-          if (!isSplit && cell.teachers && cell.teachers.length) {
+          // Teacher goes on the elective chip when we show one; else keep in detail.
+          if (!isSplit && !(isElective && focusSlot) && cell.teachers && cell.teachers.length) {
             detailBits.push(cell.teachers.join(", "));
           }
         } else {
@@ -1794,6 +1827,13 @@
         var trailing = "";
         if (isSplit) {
           trailing = splitGroupsHtml(slots, null);
+        } else if (isElective && mode === "room" && focusSlot) {
+          // Explicit chip: 「ECO · CKH」(room omitted — already viewing that room)
+          trailing = splitGroupsHtml([{
+            code: focusSlot.code,
+            room: "",
+            label: focusSlot.label || focusLabel
+          }], null);
         } else if (mode === "class" && cell.room) {
           trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
         } else if (mode === "room" && cell.room && groups.length > 1) {
