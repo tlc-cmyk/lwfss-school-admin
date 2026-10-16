@@ -40,7 +40,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day`（本校 `@g.lwfss.edu.hk`）
 - `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
-- `seating_charts_*`（教職員：INSERT／UPDATE／DELETE 僅 `owner_email`＝自己；SELECT 自己嘅表，或任教該班亦可讀）
+- `seating_charts_*`（教職員：INSERT／UPDATE 僅 `owner_email`＝自己 **且** 任教該 `scope`（整班／科目分組／合班 token）；layout 學生必須屬該範圍；DELETE 僅 owner；SELECT 自己或任教同 scope）
 
 條件（約）：
 
@@ -86,9 +86,9 @@ Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不
 
 | 表 | 說明 |
 |----|------|
-| `seating_charts` | 教師自有座位表：`class_code`、`teacher_code`、`owner_email`、`title`、`rows`／`cols`、JSON `layout`（`{r,c,student_id,class_no,name_zh,name_en,notes}`） |
+| `seating_charts` | 教師自有座位表：`scope_kind`（`class`／`group`／`split`）、`class_code`、`form`／`subject`／`group_name`、`owner_email`、`title`、`rows`／`cols`、JSON `layout` |
 
-DDL／RLS：`db/seating_charts.sql`。前端：主頁功能欄「座位表」→ 揀班 → 編格 → 儲存；「匯出 PDF」開列印預覽（橫向 A4，系統中文字型）。
+DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；layout 學生必須屬該範圍）。前端：功能欄「座位表」→ 只列任教／班主任班別＋`student_groups` 分組（合班如 `2A,2B ENG` 用分組名單，唔展開成無關全班）→ 編格 → 儲存；「匯出 PDF」列印預覽。
 
 ---
 

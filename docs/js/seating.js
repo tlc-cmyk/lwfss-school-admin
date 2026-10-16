@@ -1,6 +1,6 @@
 /**
  * 座位表 — teacher seating charts
- * Staff: list taught classes → edit grid → save to Supabase → print/PDF.
+ * Picker/roster limited to classes & subject groups the signed-in teacher teaches.
  */
 (function () {
   "use strict";
@@ -16,19 +16,20 @@
 
   var state = {
     ready: false,
-    classCode: "",
+    /** @type {{kind:string,key:string,label:string,classCode?:string,form?:string,subject?:string,groupName?:string,classCodes?:string[],reasons?:string[]}|null} */
+    scope: null,
+    scopes: [],
     charts: [],
     chartId: null,
     title: "",
     rows: 6,
     cols: 6,
-    // map key "r,c" → seat object
     seats: {},
     roster: [],
-    selectedSeat: null, // {r,c}
+    rosterIdSet: {},
+    selectedSeat: null,
     dirty: false,
     saving: false,
-    taughtClasses: [],
     statusMsg: ""
   };
 
@@ -86,7 +87,6 @@
     el.classList.toggle("is-err", !!isErr);
   }
 
-  /** Parse class tokens from lessons.class_short / class_name (1A, 2A,2B, 4A-D). */
   function expandClassToken(token) {
     token = String(token || "").toUpperCase().replace(/\s+/g, "");
     if (!token) return [];
@@ -102,38 +102,270 @@
     return [];
   }
 
-  function collectTaughtClasses(session) {
-    var seen = {};
-    var list = [];
-    function add(code, reason) {
-      code = String(code || "").toUpperCase();
-      if (CLASS_CODES.indexOf(code) < 0) return;
-      if (!seen[code]) {
-        seen[code] = { code: code, reasons: [] };
-        list.push(seen[code]);
-      }
-      if (reason && seen[code].reasons.indexOf(reason) < 0) {
-        seen[code].reasons.push(reason);
-      }
-    }
+  function isSingleClassToken(token) {
+    return /^[1-6][A-D]$/.test(String(token || "").toUpperCase().replace(/\s+/g, ""));
+  }
 
+  function formFromClassCode(classCode) {
+    var m = String(classCode || "").match(/^([1-6])/);
+    return m ? ("S" + m[1]) : "";
+  }
+
+  function scopeKeyClass(classCode) {
+    return "class:" + String(classCode || "").toUpperCase();
+  }
+
+  function scopeKeyGroup(form, subject, groupName) {
+    return "group:" + form + "|" + subject + "|" + groupName;
+  }
+
+  function scopeKeySplit(token, subject) {
+    return "split:" + String(token || "").toUpperCase().replace(/\s+/g, "") + "|" + String(subject || "");
+  }
+
+  function parseScopeKey(key) {
+    key = String(key || "");
+    if (key.indexOf("class:") === 0) {
+      return { kind: "class", classCode: key.slice(6).toUpperCase() };
+    }
+    if (key.indexOf("group:") === 0) {
+      var rest = key.slice(6).split("|");
+      return {
+        kind: "group",
+        form: rest[0] || "",
+        subject: rest[1] || "",
+        groupName: rest.slice(2).join("|") || ""
+      };
+    }
+    return null;
+  }
+
+  function findScopeByKey(key) {
+    for (var i = 0; i < state.scopes.length; i++) {
+      if (state.scopes[i].key === key) return state.scopes[i];
+    }
+    return null;
+  }
+
+  /**
+   * Build picker options from 班主任 + lessons (exact single-class) + student_groups.
+   * Multi-class lesson tokens (2A,2B / 4A-D) do NOT expand into whole classes;
+   * those students come only via matching subject groups.
+   */
+  async function loadTaughtScopes(session) {
+    var client = getClient();
     var code = teacherCode(session);
-    if (session && session.staff && session.staff.class_teacher) {
-      add(session.staff.class_teacher, "班主任");
+    var map = {};
+
+    function addClassScope(classCode, reason) {
+      classCode = String(classCode || "").toUpperCase();
+      if (CLASS_CODES.indexOf(classCode) < 0) return;
+      var key = scopeKeyClass(classCode);
+      if (!map[key]) {
+        map[key] = {
+          kind: "class",
+          key: key,
+          classCode: classCode,
+          form: formFromClassCode(classCode),
+          subject: "",
+          groupName: "",
+          classCodes: [classCode],
+          label: classCode,
+          reasons: []
+        };
+      }
+      if (reason && map[key].reasons.indexOf(reason) < 0) {
+        map[key].reasons.push(reason);
+      }
     }
 
-    // From cloud/local timetable lessons
-    var rows = null;
-    try {
-      if (window.__homeLessonRows) rows = window.__homeLessonRows;
-    } catch (e) { /* ignore */ }
-    if (!rows) {
+    function addGroupScope(form, subject, groupName, classCodes, reason) {
+      form = String(form || "");
+      subject = String(subject || "");
+      groupName = String(groupName || "");
+      if (!form || !subject || !groupName) return;
+      var key = scopeKeyGroup(form, subject, groupName);
+      var codes = (classCodes || []).map(function (c) {
+        return String(c || "").toUpperCase();
+      }).filter(function (c) { return CLASS_CODES.indexOf(c) >= 0; });
+      codes.sort();
+      if (!map[key]) {
+        map[key] = {
+          kind: "group",
+          key: key,
+          classCode: codes.length ? codes.join(",") : form,
+          form: form,
+          subject: subject,
+          groupName: groupName,
+          classCodes: codes,
+          label: "",
+          reasons: []
+        };
+      } else {
+        codes.forEach(function (c) {
+          if (map[key].classCodes.indexOf(c) < 0) map[key].classCodes.push(c);
+        });
+        map[key].classCodes.sort();
+        map[key].classCode = map[key].classCodes.join(",") || form;
+      }
+      if (reason && map[key].reasons.indexOf(reason) < 0) {
+        map[key].reasons.push(reason);
+      }
+    }
+
+    // 1) 班主任 / class_teachers → whole class
+    if (session && session.staff && session.staff.class_teacher) {
+      addClassScope(session.staff.class_teacher, "班主任");
+    }
+    if (client && code) {
+      try {
+        var ct = await client
+          .from("class_teachers")
+          .select("class_code")
+          .ilike("teacher_short_name", code)
+          .eq("academic_year", ACADEMIC_YEAR);
+        if (ct.data) {
+          ct.data.forEach(function (r) { addClassScope(r.class_code, "班主任"); });
+        }
+      } catch (e0) { /* ignore */ }
+    }
+
+    // 2) student_groups this teacher owns → group scopes (split / elective / streaming)
+    var groupCoveredClassSubject = {}; // "2A|ENG" → true (has group roster for that class+subject)
+    if (client && code) {
+      try {
+        var sg = await client
+          .from("student_groups")
+          .select("student_id,form,subject,group_name")
+          .ilike("teacher_short_name", code)
+          .eq("academic_year", ACADEMIC_YEAR)
+          .limit(5000);
+        if (sg.data && sg.data.length) {
+          var byGroup = {};
+          var studentIds = [];
+          sg.data.forEach(function (r) {
+            var gk = r.form + "\0" + r.subject + "\0" + r.group_name;
+            if (!byGroup[gk]) {
+              byGroup[gk] = {
+                form: r.form,
+                subject: r.subject,
+                groupName: r.group_name,
+                studentIds: []
+              };
+            }
+            byGroup[gk].studentIds.push(r.student_id);
+            studentIds.push(r.student_id);
+          });
+          // Resolve class codes for members (chunked)
+          var idToClass = {};
+          var uniq = [];
+          var seenId = {};
+          studentIds.forEach(function (id) {
+            if (id == null || seenId[id]) return;
+            seenId[id] = true;
+            uniq.push(id);
+          });
+          for (var i = 0; i < uniq.length; i += 400) {
+            var chunk = uniq.slice(i, i + 400);
+            var st = await client
+              .from("students")
+              .select("id,class_code")
+              .in("id", chunk);
+            if (st.data) {
+              st.data.forEach(function (row) {
+                idToClass[String(row.id)] = row.class_code;
+              });
+            }
+          }
+          Object.keys(byGroup).forEach(function (gk) {
+            var g = byGroup[gk];
+            var codes = [];
+            var seenC = {};
+            g.studentIds.forEach(function (sid) {
+              var cc = idToClass[String(sid)];
+              if (!cc || seenC[cc]) return;
+              seenC[cc] = true;
+              codes.push(cc);
+              groupCoveredClassSubject[String(cc).toUpperCase() + "|" + String(g.subject).toUpperCase()] = true;
+            });
+            addGroupScope(g.form, g.subject, g.groupName, codes, "分組");
+          });
+        }
+      } catch (e1) { /* ignore */ }
+    }
+
+    // 3) lessons: exact single-class only → whole class (if not already a group for that subject)
+    //    Multi-class tokens rely on student_groups above; do not expand to full classes.
+    if (client && code) {
+      try {
+        var lessons = await client
+          .from("lessons")
+          .select("class_short,class_name,subject_short,subject")
+          .ilike("teacher_code", code)
+          .limit(3000);
+        if (lessons.data) {
+          var sawSplit = {};
+          lessons.data.forEach(function (l) {
+            var raw = String(l.class_short || l.class_name || "").replace(/\s+/g, "");
+            if (!raw) return;
+            var subj = String(l.subject_short || l.subject || "");
+            var subjKey = subj;
+            var subjBase = subj.split("-")[0].toUpperCase();
+
+            // Multi-class comma tokens (2A,2B / 1A,1B): use student_groups if present;
+            // otherwise a split scope whose roster is those classes only (not whole form).
+            if (raw.indexOf(",") >= 0 || raw.indexOf("，") >= 0) {
+              var token = raw.replace(/，/g, ",").toUpperCase();
+              var parts = token.split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+              var coveredByGroup = parts.some(function (cc) {
+                return groupCoveredClassSubject[cc + "|" + subjBase] ||
+                  groupCoveredClassSubject[cc + "|" + subj.toUpperCase()] ||
+                  (subjBase.indexOf("ENG") === 0 && groupCoveredClassSubject[cc + "|ENG"]);
+              });
+              if (coveredByGroup) return;
+              var sk = scopeKeySplit(token, subjKey);
+              if (sawSplit[sk]) return;
+              sawSplit[sk] = true;
+              map[sk] = {
+                kind: "split",
+                key: sk,
+                classCode: token,
+                form: formFromClassCode(parts[0] || ""),
+                subject: subjKey,
+                groupName: "",
+                classCodes: parts.filter(function (c) { return CLASS_CODES.indexOf(c) >= 0; }),
+                label: token + " · " + (subjKey || "課") + "（合班／分班）",
+                reasons: ["任教"]
+              };
+              return;
+            }
+
+            // Form ranges like 4A-D: only via student_groups (already added). Do not expand.
+            if (/[A-D]-[A-D]/.test(raw)) return;
+
+            if (!isSingleClassToken(raw)) return;
+            var classCode = raw.toUpperCase();
+            if (
+              groupCoveredClassSubject[classCode + "|" + subj.toUpperCase()] ||
+              groupCoveredClassSubject[classCode + "|" + subjBase] ||
+              (groupCoveredClassSubject[classCode + "|ENG"] && subjBase.indexOf("ENG") === 0)
+            ) {
+              return;
+            }
+            addClassScope(classCode, "任教");
+          });
+        }
+      } catch (e2) { /* ignore */ }
+    }
+
+    // Fallback from local timetable if cloud lessons empty
+    if (!client && code) {
       var data = window.TIMETABLE_DATA;
-      if (data && data.teachers && code) {
+      if (data && data.teachers) {
         var t = null;
-        for (var i = 0; i < data.teachers.length; i++) {
-          if (String(data.teachers[i].code || "").toUpperCase() === code) {
-            t = data.teachers[i];
+        for (var ti = 0; ti < data.teachers.length; ti++) {
+          if (String(data.teachers[ti].code || "").toUpperCase() === code) {
+            t = data.teachers[ti];
             break;
           }
         }
@@ -143,124 +375,142 @@
             Object.keys(periods).forEach(function (p) {
               var cell = periods[p];
               if (!cell) return;
-              var raw = cell.classShort || cell.class || "";
-              String(raw).split(/[,，]/).forEach(function (tok) {
-                expandClassToken(tok.trim()).forEach(function (c) { add(c, "任教"); });
-              });
+              var raw = String(cell.classShort || cell.class || "").replace(/\s+/g, "");
+              if (raw.indexOf(",") >= 0 || /[A-D]-[A-D]/.test(raw)) return;
+              if (isSingleClassToken(raw)) addClassScope(raw, "任教");
             });
           });
         }
       }
     }
 
-    list.sort(function (a, b) {
-      return a.code.localeCompare(b.code, "en");
+    // Finalize labels
+    var list = Object.keys(map).map(function (k) { return map[k]; });
+    list.forEach(function (s) {
+      var reason = (s.reasons || []).join("·") || (
+        s.kind === "group" ? "分組" : (s.kind === "split" ? "合班" : "任教")
+      );
+      if (s.kind === "group") {
+        var classPart = (s.classCodes && s.classCodes.length)
+          ? s.classCodes.join(",")
+          : "";
+        s.label = s.form + " " + s.subject + " · " + s.groupName +
+          (classPart ? "（" + classPart + "）" : "") +
+          " · " + reason;
+      } else if (s.kind === "split") {
+        s.label = s.classCode + " · " + (s.subject || "課") + "（" + reason + "）";
+      } else {
+        s.label = s.classCode + "（" + reason + "）";
+      }
     });
+    list.sort(function (a, b) {
+      var order = { class: 0, group: 1, split: 2 };
+      var ao = order[a.kind] != null ? order[a.kind] : 9;
+      var bo = order[b.kind] != null ? order[b.kind] : 9;
+      if (ao !== bo) return ao - bo;
+      return a.label.localeCompare(b.label, "zh-HK");
+    });
+    state.scopes = list;
     return list;
   }
 
-  async function enrichTaughtFromCloud(session) {
+  async function loadRosterForScope(scope) {
+    state.roster = [];
+    state.rosterIdSet = {};
     var client = getClient();
-    var code = teacherCode(session);
-    if (!client || !code) return collectTaughtClasses(session);
+    if (!client || !scope) return;
 
-    var seen = {};
-    collectTaughtClasses(session).forEach(function (x) {
-      seen[x.code] = { code: x.code, reasons: x.reasons.slice() };
-    });
-    function add(c, reason) {
-      c = String(c || "").toUpperCase();
-      if (CLASS_CODES.indexOf(c) < 0) return;
-      if (!seen[c]) seen[c] = { code: c, reasons: [] };
-      if (reason && seen[c].reasons.indexOf(reason) < 0) seen[c].reasons.push(reason);
-    }
-
-    try {
-      var ct = await client
-        .from("class_teachers")
-        .select("class_code")
-        .ilike("teacher_short_name", code)
-        .eq("academic_year", ACADEMIC_YEAR);
-      if (ct.data) {
-        ct.data.forEach(function (r) { add(r.class_code, "班主任"); });
+    if (scope.kind === "class") {
+      var res = await client
+        .from("students")
+        .select("id,class_code,class_no,chinese_name,english_name,sex,house")
+        .eq("class_code", scope.classCode)
+        .eq("academic_year", ACADEMIC_YEAR)
+        .order("class_no", { ascending: true });
+      if (res.error) throw new Error(res.error.message || "讀取學生名單失敗");
+      state.roster = res.data || [];
+    } else if (scope.kind === "split") {
+      var codes = (scope.classCodes && scope.classCodes.length)
+        ? scope.classCodes
+        : String(scope.classCode || "").split(",").map(function (x) { return x.trim(); }).filter(Boolean);
+      if (!codes.length) {
+        state.roster = [];
+      } else {
+        var sp = await client
+          .from("students")
+          .select("id,class_code,class_no,chinese_name,english_name,sex,house")
+          .in("class_code", codes)
+          .eq("academic_year", ACADEMIC_YEAR)
+          .order("class_code", { ascending: true })
+          .order("class_no", { ascending: true });
+        if (sp.error) throw new Error(sp.error.message || "讀取學生名單失敗");
+        state.roster = sp.data || [];
       }
-    } catch (e) { /* ignore */ }
-
-    try {
-      var lessons = await client
-        .from("lessons")
-        .select("class_short,class_name")
-        .ilike("teacher_code", code)
-        .limit(2000);
-      if (lessons.data) {
-        lessons.data.forEach(function (l) {
-          var raw = String(l.class_short || l.class_name || "");
-          raw.split(/[,，]/).forEach(function (tok) {
-            expandClassToken(tok.trim()).forEach(function (c) { add(c, "任教"); });
-          });
-        });
-      }
-    } catch (e2) { /* ignore */ }
-
-    try {
+    } else if (scope.kind === "group") {
       var sg = await client
         .from("student_groups")
         .select("student_id")
-        .ilike("teacher_short_name", code)
+        .eq("form", scope.form)
+        .eq("subject", scope.subject)
+        .eq("group_name", scope.groupName)
         .eq("academic_year", ACADEMIC_YEAR)
-        .limit(3000);
-      if (sg.data && sg.data.length) {
-        var ids = sg.data.map(function (r) { return r.student_id; }).filter(Boolean);
-        // Cap IN filter size
-        var chunk = ids.slice(0, 500);
-        if (chunk.length) {
+        .ilike("teacher_short_name", teacherCode(getSession()) || "")
+        .limit(2000);
+      if (sg.error) throw new Error(sg.error.message || "讀取分組名單失敗");
+      var ids = (sg.data || []).map(function (r) { return r.student_id; }).filter(Boolean);
+      if (!ids.length) {
+        state.roster = [];
+      } else {
+        var students = [];
+        for (var i = 0; i < ids.length; i += 400) {
+          var chunk = ids.slice(i, i + 400);
           var st = await client
             .from("students")
-            .select("class_code")
-            .in("id", chunk);
-          if (st.data) {
-            st.data.forEach(function (r) { add(r.class_code, "分組"); });
-          }
+            .select("id,class_code,class_no,chinese_name,english_name,sex,house")
+            .in("id", chunk)
+            .order("class_code", { ascending: true })
+            .order("class_no", { ascending: true });
+          if (st.error) throw new Error(st.error.message || "讀取學生名單失敗");
+          students = students.concat(st.data || []);
         }
+        // Stable sort: class then class_no
+        students.sort(function (a, b) {
+          if (a.class_code !== b.class_code) {
+            return String(a.class_code).localeCompare(String(b.class_code), "en");
+          }
+          return (a.class_no || 0) - (b.class_no || 0);
+        });
+        state.roster = students;
       }
-    } catch (e3) { /* ignore */ }
-
-    var list = Object.keys(seen).map(function (k) { return seen[k]; });
-    list.sort(function (a, b) { return a.code.localeCompare(b.code, "en"); });
-    return list;
-  }
-
-  async function loadRoster(classCode) {
-    var client = getClient();
-    if (!client || !classCode) {
-      state.roster = [];
-      return;
     }
-    var res = await client
-      .from("students")
-      .select("id,class_code,class_no,chinese_name,english_name,sex,house")
-      .eq("class_code", classCode)
-      .eq("academic_year", ACADEMIC_YEAR)
-      .order("class_no", { ascending: true });
-    if (res.error) throw new Error(res.error.message || "讀取學生名單失敗");
-    state.roster = res.data || [];
+
+    state.rosterIdSet = {};
+    state.roster.forEach(function (s) {
+      state.rosterIdSet[String(s.id)] = true;
+    });
   }
 
-  async function loadCharts(classCode) {
+  async function loadChartsForScope(scope) {
     var client = getClient();
     var session = getSession();
-    if (!client || !session || !classCode) {
-      state.charts = [];
-      return;
-    }
+    state.charts = [];
+    if (!client || !session || !scope) return;
     var email = ownerEmail(session);
-    var res = await client
+    var q = client
       .from("seating_charts")
-      .select("id,class_code,teacher_code,owner_email,title,rows,cols,layout,updated_at,academic_year")
-      .eq("class_code", classCode)
+      .select("id,class_code,teacher_code,owner_email,title,rows,cols,layout,updated_at,academic_year,scope_kind,form,subject,group_name")
       .eq("academic_year", ACADEMIC_YEAR)
       .eq("owner_email", email)
+      .eq("scope_kind", scope.kind)
       .order("updated_at", { ascending: false });
+    if (scope.kind === "class") {
+      q = q.eq("class_code", scope.classCode);
+    } else if (scope.kind === "split") {
+      q = q.eq("class_code", scope.classCode).eq("subject", scope.subject || "");
+    } else {
+      q = q.eq("form", scope.form).eq("subject", scope.subject).eq("group_name", scope.groupName);
+    }
+    var res = await q;
     if (res.error) throw new Error(res.error.message || "讀取座位表失敗");
     state.charts = res.data || [];
   }
@@ -269,6 +519,8 @@
     var map = {};
     (layout || []).forEach(function (s) {
       if (s == null || s.r == null || s.c == null) return;
+      // Drop seats whose student is no longer in roster
+      if (s.student_id != null && !state.rosterIdSet[String(s.student_id)]) return;
       map[seatKey(s.r, s.c)] = {
         r: s.r,
         c: s.c,
@@ -287,6 +539,7 @@
     Object.keys(state.seats).forEach(function (k) {
       var s = state.seats[k];
       if (!s || s.student_id == null) return;
+      if (!state.rosterIdSet[String(s.student_id)]) return; // hard filter
       out.push({
         r: s.r,
         c: s.c,
@@ -304,6 +557,18 @@
     return out;
   }
 
+  function pruneSeatsToRoster() {
+    var removed = 0;
+    Object.keys(state.seats).forEach(function (k) {
+      var s = state.seats[k];
+      if (s && s.student_id != null && !state.rosterIdSet[String(s.student_id)]) {
+        delete state.seats[k];
+        removed++;
+      }
+    });
+    return removed;
+  }
+
   function assignedIds() {
     var ids = {};
     Object.keys(state.seats).forEach(function (k) {
@@ -314,18 +579,28 @@
   }
 
   function suggestGrid(n) {
-    // Prefer ~6–8 columns; rows to fit
     var cols = n <= 24 ? 6 : (n <= 35 ? 7 : 8);
-    var rows = Math.max(4, Math.ceil(n / cols) + 1);
+    var rows = Math.max(4, Math.ceil((n || 24) / cols) + 1);
     if (rows > 12) rows = 12;
     if (cols > 10) cols = 10;
     return { rows: rows, cols: cols };
   }
 
+  function defaultTitle(scope) {
+    if (!scope) return "座位表";
+    if (scope.kind === "group") {
+      return scope.form + " " + scope.subject + " · " + scope.groupName + " 座位表";
+    }
+    if (scope.kind === "split") {
+      return scope.classCode + " · " + (scope.subject || "") + " 座位表";
+    }
+    return scope.classCode + " 座位表";
+  }
+
   function applyChart(chart) {
     if (!chart) {
       state.chartId = null;
-      state.title = state.classCode ? (state.classCode + " 座位表") : "座位表";
+      state.title = defaultTitle(state.scope);
       var g = suggestGrid((state.roster || []).length || 30);
       state.rows = g.rows;
       state.cols = g.cols;
@@ -335,7 +610,7 @@
       return;
     }
     state.chartId = chart.id;
-    state.title = chart.title || (chart.class_code + " 座位表");
+    state.title = chart.title || defaultTitle(state.scope);
     state.rows = chart.rows || 6;
     state.cols = chart.cols || 6;
     state.seats = layoutToSeats(chart.layout);
@@ -343,41 +618,40 @@
     state.selectedSeat = null;
   }
 
-  function fillClassSelect() {
+  function fillScopeSelect() {
     var sel = $("seat-class-select");
     if (!sel) return;
-    var prev = state.classCode || sel.value || "";
+    var prev = (state.scope && state.scope.key) || sel.value || "";
     sel.innerHTML = "";
     var opt0 = document.createElement("option");
     opt0.value = "";
-    opt0.textContent = state.taughtClasses.length
-      ? "選擇任教班別…"
-      : "選擇班別…";
+    opt0.textContent = state.scopes.length
+      ? "選擇任教班別／分組…"
+      : "未有任教班別／分組";
     sel.appendChild(opt0);
 
-    var taughtSet = {};
-    state.taughtClasses.forEach(function (t) {
-      taughtSet[t.code] = t;
-      var opt = document.createElement("option");
-      opt.value = t.code;
-      var reason = (t.reasons || []).join("·") || "任教";
-      opt.textContent = t.code + "（" + reason + "）";
-      sel.appendChild(opt);
-    });
+    var classScopes = state.scopes.filter(function (s) { return s.kind === "class"; });
+    var groupScopes = state.scopes.filter(function (s) { return s.kind === "group"; });
+    var splitScopes = state.scopes.filter(function (s) { return s.kind === "split"; });
 
-    // Also offer all classes under an optgroup for flexibility
-    var og = document.createElement("optgroup");
-    og.label = "全部班別";
-    CLASS_CODES.forEach(function (c) {
-      if (taughtSet[c]) return;
-      var opt = document.createElement("option");
-      opt.value = c;
-      opt.textContent = c;
-      og.appendChild(opt);
-    });
-    if (og.childNodes.length) sel.appendChild(og);
+    function appendGroup(label, list) {
+      if (!list.length) return;
+      var og = document.createElement("optgroup");
+      og.label = label;
+      list.forEach(function (s) {
+        var opt = document.createElement("option");
+        opt.value = s.key;
+        opt.textContent = s.label;
+        og.appendChild(opt);
+      });
+      sel.appendChild(og);
+    }
 
-    if (prev) sel.value = prev;
+    appendGroup("任教／班主任班別", classScopes);
+    appendGroup("任教科目分組", groupScopes);
+    appendGroup("合班／分班（無分組名單）", splitScopes);
+
+    if (prev && findScopeByKey(prev)) sel.value = prev;
   }
 
   function fillChartSelect() {
@@ -404,18 +678,24 @@
     if (!box) return;
     var taken = assignedIds();
     var free = state.roster.filter(function (s) { return !taken[String(s.id)]; });
-    var html = '<div class="seat-roster-head">未編座位 <span class="muted">' +
-      free.length + "／" + state.roster.length + "</span></div>";
+    var headExtra = state.scope && (state.scope.kind === "group" || state.scope.kind === "split")
+      ? "（分組）"
+      : "";
+    var html = '<div class="seat-roster-head">未編座位' + headExtra +
+      ' <span class="muted">' + free.length + "／" + state.roster.length + "</span></div>";
     if (!state.roster.length) {
-      html += '<p class="muted seat-empty">未有學生名單。</p>';
+      html += '<p class="muted seat-empty">此班別／分組未有學生名單。</p>';
     } else if (!free.length) {
       html += '<p class="muted seat-empty">全部已入座。</p>';
     } else {
       html += '<ul class="seat-roster-list">';
       free.forEach(function (s) {
+        var noLabel = (state.scope && (state.scope.kind === "group" || state.scope.kind === "split") && s.class_code)
+          ? (s.class_code + "-" + s.class_no)
+          : String(s.class_no);
         html += '<li class="seat-roster-item" draggable="true" data-student-id="' +
           escapeHtml(s.id) + '" tabindex="0">' +
-          '<span class="seat-no">' + escapeHtml(s.class_no) + "</span>" +
+          '<span class="seat-no">' + escapeHtml(noLabel) + "</span>" +
           '<span class="seat-name">' + escapeHtml(displayName(s)) + "</span>" +
           (secondaryName(s)
             ? '<span class="seat-name-en">' + escapeHtml(secondaryName(s)) + "</span>"
@@ -472,9 +752,9 @@
     var dirty = $("seat-dirty");
     if (dirty) dirty.hidden = !state.dirty;
     var editor = $("seat-editor");
-    if (editor) editor.classList.toggle("hidden", !state.classCode);
+    if (editor) editor.classList.toggle("hidden", !state.scope);
     var empty = $("seat-pick-hint");
-    if (empty) empty.classList.toggle("hidden", !!state.classCode);
+    if (empty) empty.classList.toggle("hidden", !!state.scope);
   }
 
   function renderAll() {
@@ -494,8 +774,14 @@
 
   function placeStudent(r, c, studentId) {
     var stu = findStudent(studentId);
-    if (!stu) return;
-    // Remove from previous seat if any
+    if (!stu) {
+      setStatus("只可以編入呢個班別／分組嘅學生。", true);
+      return;
+    }
+    if (!state.rosterIdSet[String(stu.id)]) {
+      setStatus("學生唔喺任教名單內。", true);
+      return;
+    }
     Object.keys(state.seats).forEach(function (k) {
       if (state.seats[k] && String(state.seats[k].student_id) === String(studentId)) {
         delete state.seats[k];
@@ -545,7 +831,7 @@
     }
     state.dirty = true;
     state.selectedSeat = null;
-    setStatus("已按學號自動編位（可再拖曳調整）。");
+    setStatus("已按名單次序自動編位（可再調整）。");
     renderAll();
   }
 
@@ -560,22 +846,39 @@
       setStatus("未連接資料庫。", true);
       return;
     }
-    if (!state.classCode) {
-      setStatus("請先選擇班別。", true);
+    if (!state.scope) {
+      setStatus("請先選擇任教班別／分組。", true);
       return;
     }
     if (state.saving) return;
+
+    var removed = pruneSeatsToRoster();
+    var layout = seatsToLayout();
+    if (removed) {
+      setStatus("已移除 " + removed + " 位唔屬於此名單嘅學生，請再儲存。", true);
+      state.dirty = true;
+      renderAll();
+      return;
+    }
+
     state.saving = true;
     setStatus("儲存中…");
+    var scope = state.scope;
     var payload = {
-      class_code: state.classCode,
+      class_code: scope.kind === "class"
+        ? scope.classCode
+        : (scope.classCode || (scope.classCodes || []).join(",") || scope.form),
       teacher_code: teacherCode(session),
       owner_email: ownerEmail(session),
-      title: (state.title || (state.classCode + " 座位表")).trim(),
+      title: (state.title || defaultTitle(scope)).trim(),
       rows: state.rows,
       cols: state.cols,
-      layout: seatsToLayout(),
-      academic_year: ACADEMIC_YEAR
+      layout: layout,
+      academic_year: ACADEMIC_YEAR,
+      scope_kind: scope.kind,
+      form: scope.kind === "group" ? scope.form : (scope.form || ""),
+      subject: (scope.kind === "group" || scope.kind === "split") ? (scope.subject || "") : "",
+      group_name: scope.kind === "group" ? scope.groupName : ""
     };
     try {
       var res;
@@ -587,25 +890,30 @@
             rows: payload.rows,
             cols: payload.cols,
             layout: payload.layout,
-            teacher_code: payload.teacher_code
+            teacher_code: payload.teacher_code,
+            class_code: payload.class_code,
+            scope_kind: payload.scope_kind,
+            form: payload.form,
+            subject: payload.subject,
+            group_name: payload.group_name
           })
           .eq("id", state.chartId)
           .eq("owner_email", payload.owner_email)
-          .select("id,class_code,teacher_code,owner_email,title,rows,cols,layout,updated_at,academic_year")
+          .select("id,class_code,teacher_code,owner_email,title,rows,cols,layout,updated_at,academic_year,scope_kind,form,subject,group_name")
           .single();
       } else {
         res = await client
           .from("seating_charts")
           .insert(payload)
-          .select("id,class_code,teacher_code,owner_email,title,rows,cols,layout,updated_at,academic_year")
+          .select("id,class_code,teacher_code,owner_email,title,rows,cols,layout,updated_at,academic_year,scope_kind,form,subject,group_name")
           .single();
       }
       if (res.error) throw new Error(res.error.message || "儲存失敗");
       state.chartId = res.data.id;
       state.dirty = false;
-      await loadCharts(state.classCode);
+      await loadChartsForScope(state.scope);
       renderAll();
-      setStatus("已儲存（" + (res.data.updated_at || "").slice(0, 19).replace("T", " ") + " HKT）");
+      setStatus("已儲存（" + (res.data.updated_at || "").slice(0, 19).replace("T", " ") + "）");
     } catch (e) {
       setStatus(e && e.message ? e.message : "儲存失敗", true);
     } finally {
@@ -632,7 +940,7 @@
         .eq("owner_email", ownerEmail(session));
       if (res.error) throw new Error(res.error.message || "刪除失敗");
       state.chartId = null;
-      await loadCharts(state.classCode);
+      await loadChartsForScope(state.scope);
       applyChart(null);
       renderAll();
       setStatus("已刪除座位表。");
@@ -655,10 +963,17 @@
     }
   }
 
-  /** Print / Save as PDF via browser print dialog (Traditional Chinese fonts OK). */
+  function displayTeacher(session) {
+    if (!session) return "";
+    var name = (session.staff && session.staff.name) || session.name || "";
+    var code = teacherCode(session);
+    if (name && code) return name + "（" + code + "）";
+    return name || code || "";
+  }
+
   function exportPdf() {
-    if (!state.classCode) {
-      setStatus("請先選擇班別。", true);
+    if (!state.scope) {
+      setStatus("請先選擇班別／分組。", true);
       return;
     }
     var session = getSession();
@@ -671,7 +986,7 @@
       for (var c = 0; c < cols; c++) {
         var seat = state.seats[seatKey(r, c)];
         var inner = "";
-        if (seat && seat.student_id) {
+        if (seat && seat.student_id && state.rosterIdSet[String(seat.student_id)]) {
           inner = '<div class="no">' + escapeHtml(seat.class_no || "") + "</div>" +
             '<div class="zh">' + escapeHtml(seat.name_zh || "") + "</div>" +
             (seat.name_en ? '<div class="en">' + escapeHtml(seat.name_en) + "</div>" : "");
@@ -682,8 +997,9 @@
       cells += "</tr>";
     }
 
+    var scopeLabel = state.scope.label || state.title || "";
     var html = "<!DOCTYPE html><html lang=\"zh-HK\"><head><meta charset=\"UTF-8\" />" +
-      "<title>" + escapeHtml(state.title || state.classCode + " 座位表") + "</title>" +
+      "<title>" + escapeHtml(state.title || "座位表") + "</title>" +
       "<style>" +
       "@page{size:A4 landscape;margin:12mm;}" +
       "body{font-family:'Noto Sans TC','PingFang TC','Microsoft JhengHei',sans-serif;" +
@@ -700,8 +1016,8 @@
       ".en{font-size:10px;color:#444;}" +
       "@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}" +
       "</style></head><body>" +
-      "<h1>" + escapeHtml(state.title || (state.classCode + " 座位表")) + "</h1>" +
-      '<div class="meta">班別 ' + escapeHtml(state.classCode) +
+      "<h1>" + escapeHtml(state.title || "座位表") + "</h1>" +
+      '<div class="meta">' + escapeHtml(scopeLabel) +
       " · " + escapeHtml(teacher) +
       " · " + escapeHtml(todayLabel()) +
       " · " + rows + "×" + cols + "</div>" +
@@ -722,37 +1038,30 @@
     setStatus("已開啟列印預覽（可揀「儲存為 PDF」）。");
   }
 
-  function displayTeacher(session) {
-    if (!session) return "";
-    var name = (session.staff && session.staff.name) || session.name || "";
-    var code = teacherCode(session);
-    if (name && code) return name + "（" + code + "）";
-    return name || code || "";
-  }
-
-  async function onClassChange(classCode) {
-    state.classCode = classCode || "";
+  async function onScopeChange(key) {
+    state.scope = key ? findScopeByKey(key) : null;
     state.chartId = null;
     state.selectedSeat = null;
-    if (!state.classCode) {
+    if (!state.scope) {
       state.charts = [];
       state.roster = [];
+      state.rosterIdSet = {};
       applyChart(null);
       renderAll();
       setStatus("");
       return;
     }
-    setStatus("載入 " + state.classCode + "…");
+    setStatus("載入 " + state.scope.label + "…");
     try {
-      await Promise.all([loadRoster(state.classCode), loadCharts(state.classCode)]);
-      if (state.charts.length) {
-        applyChart(state.charts[0]);
-      } else {
-        applyChart(null);
-      }
+      await Promise.all([
+        loadRosterForScope(state.scope),
+        loadChartsForScope(state.scope)
+      ]);
+      if (state.charts.length) applyChart(state.charts[0]);
+      else applyChart(null);
       renderAll();
       setStatus(
-        state.classCode + " · 學生 " + state.roster.length +
+        state.scope.label + " · 學生 " + state.roster.length +
         " 人 · 座位表 " + state.charts.length + " 份"
       );
     } catch (e) {
@@ -773,8 +1082,12 @@
       if (state.charts[i].id === id) { found = state.charts[i]; break; }
     }
     applyChart(found);
+    var pruned = pruneSeatsToRoster();
     renderAll();
-    setStatus("已載入：" + (found && found.title ? found.title : ""));
+    setStatus(
+      "已載入：" + (found && found.title ? found.title : "") +
+      (pruned ? "（已略過 " + pruned + " 位唔喺名單嘅學生）" : "")
+    );
   }
 
   function bindEditorEvents() {
@@ -785,7 +1098,7 @@
     root.addEventListener("change", function (e) {
       var t = e.target;
       if (t.id === "seat-class-select") {
-        onClassChange(t.value || "");
+        onScopeChange(t.value || "");
       } else if (t.id === "seat-chart-select") {
         onChartSelect(t.value || "");
       } else if (t.id === "seat-rows" || t.id === "seat-cols") {
@@ -795,7 +1108,6 @@
         if (!(cols > 0 && cols <= 20)) cols = state.cols;
         state.rows = rows;
         state.cols = cols;
-        // Drop seats outside new bounds
         Object.keys(state.seats).forEach(function (k) {
           var s = state.seats[k];
           if (s.r >= rows || s.c >= cols) delete state.seats[k];
@@ -836,7 +1148,6 @@
         var r = parseInt(cell.getAttribute("data-r"), 10);
         var c = parseInt(cell.getAttribute("data-c"), 10);
         var key = seatKey(r, c);
-        // Double-click / second tap on filled selected seat → clear
         if (state.selectedSeat && state.selectedSeat.r === r && state.selectedSeat.c === c) {
           if (state.seats[key] && state.seats[key].student_id) {
             clearSeat(r, c);
@@ -861,7 +1172,6 @@
       }
     });
 
-    // Drag & drop from roster → seat
     root.addEventListener("dragstart", function (e) {
       var item = e.target.closest(".seat-roster-item");
       if (!item || !e.dataTransfer) return;
@@ -900,39 +1210,43 @@
     if (studentNote) studentNote.classList.add("hidden");
 
     bindEditorEvents();
-    setStatus("載入任教班別…");
+    setStatus("載入任教班別／分組…");
     try {
-      state.taughtClasses = await enrichTaughtFromCloud(session);
+      await loadTaughtScopes(session);
     } catch (e) {
-      state.taughtClasses = collectTaughtClasses(session);
+      state.scopes = [];
     }
-    fillClassSelect();
-    if (state.classCode) {
-      await onClassChange(state.classCode);
+    fillScopeSelect();
+    // Update hint text
+    var hint = $("seat-pick-hint");
+    if (hint) {
+      hint.textContent = state.scopes.length
+        ? "只顯示你任教／班主任嘅班別，同埋你名下嘅科目分組（例如 2A,2B ENG）。唔可以揀無關班別。"
+        : "系統未找到你任教嘅班別或分組。若你係班主任或有分組課，請聯絡 IT 核對 staff／student_groups。";
+    }
+    if (state.scope && findScopeByKey(state.scope.key)) {
+      await onScopeChange(state.scope.key);
     } else {
+      state.scope = null;
       renderAll();
       setStatus(
-        state.taughtClasses.length
-          ? ("你有 " + state.taughtClasses.length + " 個任教／班主任班別，請揀一個開始。")
-          : "請選擇班別開始編座位表。"
+        state.scopes.length
+          ? ("你有 " + state.scopes.length + " 個任教範圍，請揀一個開始。")
+          : "未有可編嘅班別／分組。"
       );
     }
     state.ready = true;
   }
 
-  // Expose for home.js panel switch
   window.SchoolAdminSeating = {
     show: showPanel,
     isDirty: function () { return !!state.dirty; }
   };
 
   document.addEventListener("schooladmin:authed", function () {
-    // Prefetch taught classes quietly when staff signs in
     var session = getSession();
     if (session && session.role === "staff") {
-      enrichTaughtFromCloud(session).then(function (list) {
-        state.taughtClasses = list;
-      }).catch(function () { /* ignore */ });
+      loadTaughtScopes(session).catch(function () { /* ignore */ });
     }
   });
 })();
