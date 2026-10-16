@@ -1344,6 +1344,35 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   align-self: flex-start;
 }
 
+/* Split-group / co-taught: compact teacher · room chips */
+.tt-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.tt-g {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.25;
+  background: rgba(0,0,0,0.06);
+  padding: 2px 7px;
+  border-radius: 4px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tt-g.is-mine {
+  background: rgba(47, 95, 184, 0.14);
+  box-shadow: inset 0 0 0 1px rgba(47, 95, 184, 0.35);
+}
+.tt-period.lesson.is-split .tt-period-body .detail {
+  font-weight: 600;
+}
+
+.period.is-split .detail { font-weight: 600; }
+.period .tt-groups { margin-top: 4px; }
+
 .tt-student-block { padding: 8px 0; }
 
 .home-tt-message {

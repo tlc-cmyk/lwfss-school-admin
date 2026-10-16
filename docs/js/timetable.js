@@ -85,6 +85,92 @@
     }
   }
 
+
+  function classGroupKeyFromLesson(l) {
+    return String(
+      (l && (l.class_short || l.class_name || l.classShort || l.class)) || ""
+    ).replace(/\s+/g, "");
+  }
+
+  function subjectKeyFromLesson(l) {
+    return String(
+      (l && (l.subject_short || l.subjectShort || l.subject)) || ""
+    ).replace(/\s+/g, "").toUpperCase();
+  }
+
+  function getAllLessonRows() {
+    if (window.__LESSON_ROWS && window.__LESSON_ROWS.length) return window.__LESSON_ROWS;
+    var data = getData();
+    if (!data || !data.teachers) return [];
+    var rows = [];
+    data.teachers.forEach(function (t) {
+      for (var d = 1; d <= 10; d++) {
+        var dayMap = (t.schedule && t.schedule[String(d)]) || {};
+        Object.keys(dayMap).forEach(function (p) {
+          var cell = dayMap[p];
+          if (!cell) return;
+          rows.push({
+            teacher_code: t.code,
+            day: d,
+            period: parseInt(p, 10),
+            class_name: cell.class || "",
+            class_short: cell.classShort || "",
+            subject: cell.subject || "",
+            subject_short: cell.subjectShort || "",
+            teachers_field: cell.teacher || t.code,
+            room: cell.room || ""
+          });
+        });
+      }
+    });
+    return rows;
+  }
+
+  function collectSplitGroups(day, period, subjectKey, classKey) {
+    var out = [];
+    var seen = {};
+    getAllLessonRows().forEach(function (l) {
+      if (parseInt(l.day, 10) !== day) return;
+      if (parseInt(l.period, 10) !== period) return;
+      if (subjectKeyFromLesson(l) !== subjectKey) return;
+      if (classGroupKeyFromLesson(l) !== classKey) return;
+      var code = String(l.teacher_code || "").trim();
+      var room = String(l.room || "").trim();
+      if (!code) return;
+      var id = code + "\0" + room;
+      if (seen[id]) return;
+      seen[id] = true;
+      out.push({ code: code, room: room });
+    });
+    out.sort(function (a, b) {
+      var c = a.code.localeCompare(b.code);
+      return c !== 0 ? c : a.room.localeCompare(b.room);
+    });
+    return out;
+  }
+
+  function splitGroupsHtml(groups, preferCode) {
+    var list = (groups || []).slice();
+    if (preferCode) {
+      list.sort(function (a, b) {
+        var am = a.code === preferCode ? 0 : 1;
+        var bm = b.code === preferCode ? 0 : 1;
+        if (am !== bm) return am - bm;
+        var c = a.code.localeCompare(b.code);
+        return c !== 0 ? c : a.room.localeCompare(b.room);
+      });
+    }
+    if (!list.length) return "";
+    var html = '<div class="tt-groups" aria-label="分組">';
+    list.forEach(function (g) {
+      var mine = preferCode && g.code === preferCode ? " is-mine" : "";
+      var label = g.code + (g.room ? " · " + g.room : "");
+      html += '<span class="tt-g' + mine + '">' + escapeHtml(label) + "</span>";
+    });
+    html += "</div>";
+    return html;
+  }
+
   function escapeHtml(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -117,15 +203,29 @@
       var cell = schedule[String(p)];
       var row = document.createElement("div");
       if (cell) {
-        row.className = "period lesson";
+        var sk = subjectKeyFromLesson({ subjectShort: cell.subjectShort, subject: cell.subject });
+        var ck = classGroupKeyFromLesson({ classShort: cell.classShort, class: cell.class });
+        var splitGroups = collectSplitGroups(day, p, sk, ck);
+        var isSplit = splitGroups.length > 1;
+        row.className = "period lesson" + (isSplit ? " is-split" : "");
+        var detailText = cell.classShort || cell.class || "";
+        var trailing = "";
+        if (isSplit) {
+          trailing = splitGroupsHtml(splitGroups, teacher.code);
+        } else {
+          if (cell.teacher && cell.teacher !== teacher.code) {
+            detailText += (detailText ? " · " : "") + cell.teacher;
+          }
+          if (cell.room) {
+            trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+          }
+        }
         row.innerHTML =
           '<div class="pnum">' + p + "</div>" +
           '<div class="body">' +
             '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
-            '<div class="detail">' + escapeHtml(cell.classShort || cell.class || "") +
-              (cell.teacher && cell.teacher !== teacher.code ? " · " + escapeHtml(cell.teacher) : "") +
-            "</div>" +
-            (cell.room ? '<span class="room">' + escapeHtml(cell.room) + "</span>" : "") +
+            '<div class="detail">' + escapeHtml(detailText) + "</div>" +
+            trailing +
           "</div>";
       } else {
         row.className = "period free";
@@ -401,6 +501,7 @@
       var data = assemble(parts[0], parts[1], parts[2]);
       if (!data.teachers.length) throw new Error("empty");
       window.TIMETABLE_DATA = data;
+      window.__LESSON_ROWS = parts[1] || [];
       setCloudNote("");
       var current = window.__currentTeacher && window.__currentTeacher.code;
       bindLocal("Supabase 雲端");

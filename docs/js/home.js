@@ -1076,8 +1076,24 @@
       if (cell) {
         busy++;
         var subjCls = subjectClass(cell.subjectShort, cell.subject);
-        row.className = ("tt-period lesson " + subjCls + extra).trim();
+        var sk = subjectKeyFromLesson({ subjectShort: cell.subjectShort, subject: cell.subject });
+        var ck = classGroupKeyFromLesson({ classShort: cell.classShort, class: cell.class });
+        var splitGroups = collectSplitGroups(day, p, sk, ck);
+        var isSplit = splitGroups.length > 1;
+        row.className = ("tt-period lesson " + subjCls + extra + (isSplit ? " is-split" : "")).trim();
         row.setAttribute("data-subj", subjectFamily(cell.subjectShort, cell.subject));
+        var detailText = cell.classShort || cell.class || "";
+        var trailing = "";
+        if (isSplit) {
+          trailing = splitGroupsHtml(splitGroups, teacher.code);
+        } else {
+          if (cell.teacher && cell.teacher !== teacher.code) {
+            detailText += (detailText ? " · " : "") + cell.teacher;
+          }
+          if (cell.room) {
+            trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+          }
+        }
         row.innerHTML =
           '<div class="tt-period-left">' +
             '<span class="tt-pnum">P' + p + "</span>" +
@@ -1086,10 +1102,8 @@
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
-            '<div class="detail">' + escapeHtml(cell.classShort || cell.class || "") +
-              (cell.teacher && cell.teacher !== teacher.code ? " · " + escapeHtml(cell.teacher) : "") +
-            "</div>" +
-            (cell.room ? '<span class="room">' + escapeHtml(cell.room) + "</span>" : "") +
+            '<div class="detail">' + escapeHtml(detailText) + "</div>" +
+            trailing +
           "</div>";
       } else {
         row.className = ("tt-period free" + extra).trim();
@@ -1273,6 +1287,78 @@
     return flattenLessonsFromData();
   }
 
+  /**
+   * Split-group / co-taught merge rule (DB has no explicit group id):
+   * Rows that share the same cycle day + period + subject + class group
+   * (class_short / class_name, e.g. "2A,2B", "4B-D", or a single "5A" with
+   * two teachers) are one combined lesson taught in parallel. Merge into
+   * ONE cell showing every teacher · room. Do not merge different subjects
+   * or unrelated class groups that merely share a day/period.
+   */
+  function classGroupKeyFromLesson(l) {
+    return String(
+      (l && (l.class_short || l.class_name || l.classShort || l.class)) || ""
+    ).replace(/\s+/g, "");
+  }
+
+  function subjectKeyFromLesson(l) {
+    return String(
+      (l && (l.subject_short || l.subjectShort || l.subject)) || ""
+    ).replace(/\s+/g, "").toUpperCase();
+  }
+
+  /** Unique teacher_code@room slots for a split group. */
+  function collectSplitGroups(day, period, subjectKey, classKey) {
+    var out = [];
+    var seen = {};
+    if (!subjectKey && !classKey) return out;
+    getLessonRows().forEach(function (l) {
+      if (parseInt(l.day, 10) !== day) return;
+      if (parseInt(l.period, 10) !== period) return;
+      if (subjectKeyFromLesson(l) !== subjectKey) return;
+      if (classGroupKeyFromLesson(l) !== classKey) return;
+      var code = String(l.teacher_code || "").trim();
+      var room = String(l.room || "").trim();
+      if (!code) return;
+      var id = code + "\0" + room;
+      if (seen[id]) return;
+      seen[id] = true;
+      out.push({ code: code, room: room });
+    });
+    out.sort(function (a, b) {
+      var c = a.code.localeCompare(b.code);
+      return c !== 0 ? c : a.room.localeCompare(b.room);
+    });
+    return out;
+  }
+
+  function orderSplitGroups(groups, preferCode) {
+    var list = (groups || []).slice();
+    if (!preferCode) return list;
+    list.sort(function (a, b) {
+      var am = a.code === preferCode ? 0 : 1;
+      var bm = b.code === preferCode ? 0 : 1;
+      if (am !== bm) return am - bm;
+      var c = a.code.localeCompare(b.code);
+      return c !== 0 ? c : a.room.localeCompare(b.room);
+    });
+    return list;
+  }
+
+  /** Compact chips: "AYWS · 402" "NET · 401". preferCode marked is-mine. */
+  function splitGroupsHtml(groups, preferCode) {
+    var list = orderSplitGroups(groups, preferCode);
+    if (!list.length) return "";
+    var html = '<div class="tt-groups" aria-label="分組">';
+    list.forEach(function (g) {
+      var mine = preferCode && g.code === preferCode ? " is-mine" : "";
+      var label = g.code + (g.room ? " · " + g.room : "");
+      html += '<span class="tt-g' + mine + '">' + escapeHtml(label) + "</span>";
+    });
+    html += "</div>";
+    return html;
+  }
+
   /** Whether a class token (1A / 4A-D / 6A-D) includes target class code. */
   function classTokenIncludes(token, target) {
     token = String(token || "").toUpperCase().replace(/\s+/g, "");
@@ -1389,14 +1475,18 @@
     setHidden(roomSel, showClass);
   }
 
-  /** Merge co-taught rows (same subject+room) into one cell; keep splits separate. */
+  /**
+   * Merge split-group / co-taught rows into one cell.
+   * Key = subject + class group (not room): parallel groups in different
+   * rooms (e.g. 2A,2B ENG AYWS@402 + NET@401) become one cell.
+   */
   function groupLessonsForPeriod(lessons) {
     var groups = [];
     var index = {};
     (lessons || []).forEach(function (l) {
-      var subj = l.subject_short || l.subject || "";
-      var room = l.room || "";
-      var key = subj + "\0" + room + "\0" + (l.class_short || l.class_name || "");
+      var subjKey = subjectKeyFromLesson(l);
+      var classKey = classGroupKeyFromLesson(l);
+      var key = subjKey + "\0" + classKey;
       if (index[key] == null) {
         index[key] = groups.length;
         groups.push({
@@ -1404,24 +1494,55 @@
           classShort: l.class_short || "",
           subject: l.subject || "",
           subjectShort: l.subject_short || "",
-          room: room,
-          teachers: []
+          room: "",
+          teachers: [],
+          groupSlots: []
         });
       }
       var g = groups[index[key]];
-      var codes = [];
-      var field = String(l.teachers_field || l.teacher_code || "").trim();
-      if (field) {
-        field.split(/[,，\/、]/).forEach(function (p) {
-          var c = p.trim();
-          if (c) codes.push(c);
-        });
-      } else if (l.teacher_code) {
-        codes.push(String(l.teacher_code));
+      var code = String(l.teacher_code || "").trim();
+      var room = String(l.room || "").trim();
+      if (code) {
+        var exists = false;
+        for (var i = 0; i < g.groupSlots.length; i++) {
+          if (g.groupSlots[i].code === code && g.groupSlots[i].room === room) {
+            exists = true;
+            break;
+          }
+        }
+        if (!exists) g.groupSlots.push({ code: code, room: room });
+        if (g.teachers.indexOf(code) < 0) g.teachers.push(code);
+      } else {
+        // Fallback: teachers_field only (no teacher_code)
+        var field = String(l.teachers_field || "").trim();
+        if (field) {
+          field.split(/[,，\/、]/).forEach(function (p) {
+            var c = p.trim();
+            if (!c) return;
+            if (g.teachers.indexOf(c) < 0) g.teachers.push(c);
+            var found = false;
+            for (var j = 0; j < g.groupSlots.length; j++) {
+              if (g.groupSlots[j].code === c && g.groupSlots[j].room === room) {
+                found = true;
+                break;
+              }
+            }
+            if (!found) g.groupSlots.push({ code: c, room: room });
+          });
+        }
       }
-      codes.forEach(function (c) {
-        if (g.teachers.indexOf(c) < 0) g.teachers.push(c);
+    });
+    groups.forEach(function (g) {
+      g.groupSlots.sort(function (a, b) {
+        var c = a.code.localeCompare(b.code);
+        return c !== 0 ? c : a.room.localeCompare(b.room);
       });
+      var rooms = [];
+      g.groupSlots.forEach(function (s) {
+        if (s.room && rooms.indexOf(s.room) < 0) rooms.push(s.room);
+      });
+      g.room = rooms.length === 1 ? rooms[0] : "";
+      g.rooms = rooms;
     });
     return groups;
   }
@@ -1517,24 +1638,33 @@
       groups.forEach(function (cell, gi) {
         var row = document.createElement("div");
         var subjCls = subjectClass(cell.subjectShort, cell.subject);
-        row.className = ("tt-period lesson " + subjCls + extra).trim();
+        var slots = cell.groupSlots || [];
+        var isSplit = slots.length > 1;
+        row.className = ("tt-period lesson " + subjCls + extra + (isSplit ? " is-split" : "")).trim();
         row.setAttribute("data-subj", subjectFamily(cell.subjectShort, cell.subject));
-        var teacherStr = (cell.teachers || []).join(", ");
         var detailBits = [];
         if (mode === "room") {
           if (cell.classShort || cell.class) detailBits.push(cell.classShort || cell.class);
-          if (teacherStr) detailBits.push(teacherStr);
+          if (!isSplit && cell.teachers && cell.teachers.length) {
+            detailBits.push(cell.teachers.join(", "));
+          }
         } else {
-          if (teacherStr) detailBits.push(teacherStr);
           if (cell.classShort && cell.classShort !== state.crClass) {
             detailBits.push(cell.classShort);
+          } else if (isSplit && (cell.classShort || cell.class)) {
+            detailBits.push(cell.classShort || cell.class);
+          }
+          if (!isSplit && cell.teachers && cell.teachers.length) {
+            detailBits.push(cell.teachers.join(", "));
           }
         }
-        var roomHtml = "";
-        if (mode === "class" && cell.room) {
-          roomHtml = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+        var trailing = "";
+        if (isSplit) {
+          trailing = splitGroupsHtml(slots, null);
+        } else if (mode === "class" && cell.room) {
+          trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
         } else if (mode === "room" && cell.room && groups.length > 1) {
-          roomHtml = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+          trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
         }
         row.innerHTML =
           '<div class="tt-period-left">' +
@@ -1545,7 +1675,7 @@
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
             '<div class="detail">' + escapeHtml(detailBits.join(" · ")) + "</div>" +
-            roomHtml +
+            trailing +
           "</div>";
         if (isCurrent && gi === 0) row.setAttribute("aria-current", "true");
         box.appendChild(row);
