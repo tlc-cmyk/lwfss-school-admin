@@ -1284,6 +1284,52 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   box-shadow: 0 0 0 3px rgba(26, 58, 108, 0.15);
 }
 
+
+/* 即時空堂 — staff free-period list */
+.home-panel-free .home-free-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px 18px;
+  box-shadow: var(--shadow);
+}
+.home-panel-free .home-panel-title { margin-bottom: 4px; }
+.home-free-meta { margin: 0 0 12px; font-size: 0.88rem; }
+.home-free-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.home-free-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+}
+.home-free-code {
+  flex: 0 0 auto;
+  min-width: 2.8em;
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 0.92rem;
+}
+.home-free-name {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+}
+.home-free-empty {
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--muted, #6b7280);
+  font-size: 0.9rem;
+}
+.home-panel-free .home-free-student { margin-top: 0; }
+
 html[data-app-role="staff"] .tt-teacher-row[data-role-view="staff"]:not(.hidden),
 html[data-app-role="staff"] .home-func-bar[data-role-view="staff"]:not(.hidden),
 html[data-app-role="student"] .tt-student-block[data-role-view="student"]:not(.hidden) {

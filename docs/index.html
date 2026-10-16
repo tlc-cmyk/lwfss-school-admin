@@ -147,9 +147,16 @@
           </div>
         </section>
 
-        <section id="home-panel-free" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-free" data-panel="free" hidden>
-          <h2 class="home-panel-title">即時空堂</h2>
-          <p class="muted">功能稍後推出。</p>
+        <section id="home-panel-free" class="home-panel home-panel-free hidden" role="tabpanel" aria-labelledby="home-tab-free" data-panel="free" hidden>
+          <div class="home-free-card" data-role-view="staff">
+            <h2 class="home-panel-title">即時空堂</h2>
+            <p id="home-free-meta" class="muted home-free-meta">載入中…</p>
+            <div id="home-free-list" class="home-free-list" aria-live="polite"></div>
+          </div>
+          <div class="staff-only-note home-free-student" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">僅供教職員</h2>
+            <p>即時空堂只供教職員查閱。學生介面不會顯示此內容。</p>
+          </div>
         </section>
 
         <section id="home-panel-meet" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-meet" data-panel="meet" hidden>

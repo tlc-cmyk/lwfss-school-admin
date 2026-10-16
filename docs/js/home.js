@@ -358,10 +358,10 @@
       }
 
       // Refresh period past/current when the minute or current period flips
+      var slotNow = state.todayCycleDay ? findCurrentSlot(state.todayCycleDay) : null;
+      var periodKey = slotNow && slotNow.kind === "period" ? String(slotNow.period) : (slotNow ? slotNow.kind + ":" + (slotNow.key || "") : "none");
+      var mark = parts.hm + "|" + periodKey;
       if (browseIsToday() && state.selectedDay && state.selectedDay === state.todayCycleDay) {
-        var slotNow = state.todayCycleDay ? findCurrentSlot(state.todayCycleDay) : null;
-        var periodKey = slotNow && slotNow.kind === "period" ? String(slotNow.period) : (slotNow ? slotNow.kind + ":" + (slotNow.key || "") : "none");
-        var mark = parts.hm + "|" + periodKey;
         if (window.__homePeriodMark !== mark) {
           window.__homePeriodMark = mark;
           var result = $("home-tt-result");
@@ -375,6 +375,11 @@
         }
       } else {
         updateLiveCountdowns();
+      }
+      // 即時空堂 always follows HK now + today's cycle day (independent of D1–D10 picker)
+      if (state.activePanel === "free" && window.__homeFreeMark !== mark) {
+        window.__homeFreeMark = mark;
+        renderFreePanel();
       }
     }
     tick();
@@ -592,6 +597,7 @@
       buildDayGrid();
       renderTimetableSection(session);
       showClassRoomView();
+      if (state.activePanel === "free") renderFreePanel();
       return;
     }
 
@@ -668,7 +674,8 @@
         renderHomeBar(session);
         buildDayGrid();
         renderTimetableSection(session);
-      showClassRoomView();
+        showClassRoomView();
+        if (state.activePanel === "free") renderFreePanel();
         startClock();
       }
 
@@ -705,6 +712,7 @@
       buildDayGrid();
       renderTimetableSection(session);
       showClassRoomView();
+      if (state.activePanel === "free") renderFreePanel();
     });
   }
 
@@ -1006,6 +1014,7 @@
       showSelectedTeacher();
       fillClassRoomSelects();
       showClassRoomView();
+      if (state.activePanel === "free") renderFreePanel();
       return;
     }
     var client = getClient();
@@ -1036,6 +1045,7 @@
       showSelectedTeacher();
       fillClassRoomSelects();
       showClassRoomView();
+      if (state.activePanel === "free") renderFreePanel();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
@@ -1441,6 +1451,108 @@
     }
   }
 
+
+  /** Teachers with no lesson at day/period (from lessons / assembled schedule). */
+  function listFreeTeachers(day, period) {
+    var data = getData();
+    if (!data || !data.teachers || day == null || period == null) return [];
+    var dayKey = String(day);
+    var periodKey = String(period);
+    var busy = {};
+    var rows = getLessonRows();
+    for (var i = 0; i < rows.length; i++) {
+      var L = rows[i];
+      if (L.day === day && L.period === period && L.teacher_code) {
+        busy[String(L.teacher_code).toUpperCase()] = true;
+      }
+    }
+    // Also trust assembled schedule (covers local backup without lessonRows)
+    var free = [];
+    data.teachers.forEach(function (t) {
+      if (!t || !t.code) return;
+      var codeU = String(t.code).toUpperCase();
+      var cell = t.schedule && t.schedule[dayKey] && t.schedule[dayKey][periodKey];
+      if (cell || busy[codeU]) return;
+      free.push({
+        short_name: t.code,
+        name: t.chi || t.eng || ""
+      });
+    });
+    free.sort(function (a, b) {
+      return String(a.short_name).localeCompare(String(b.short_name));
+    });
+    return free;
+  }
+
+  function renderFreePanel() {
+    var metaEl = $("home-free-meta");
+    var listEl = $("home-free-list");
+    if (!metaEl || !listEl) return;
+
+    var session = getSession();
+    if (!session || session.role !== "staff") {
+      metaEl.textContent = "";
+      listEl.innerHTML = "";
+      return;
+    }
+
+    if (!getData() || !getData().teachers || !getData().teachers.length) {
+      metaEl.textContent = "時間表載入中…";
+      listEl.innerHTML = "";
+      return;
+    }
+
+    var day = state.todayCycleDay;
+    if (!day) {
+      metaEl.textContent = "今日無上課／假期，沒有可顯示的空堂。";
+      listEl.innerHTML = '<p class="home-free-empty">今日非循環日</p>';
+      return;
+    }
+
+    var slot = findCurrentSlot(day);
+    var bellLab = bellLabelForDay(day);
+    if (!slot || slot.kind !== "period" || slot.period == null) {
+      var why = "現時非上課時段";
+      if (slot) {
+        if (slot.kind === "before") why = "尚未上課";
+        else if (slot.kind === "after") why = "已放學";
+        else if (slot.kind === "break") why = "現時為" + (slot.label || "休息");
+      }
+      metaEl.textContent = "Day " + day +
+        (bellLab ? " · " + bellLab : "") +
+        " · " + why +
+        " · 空堂名單只在上課節顯示";
+      listEl.innerHTML = '<p class="home-free-empty">' + escapeHtml(why) + "</p>";
+      return;
+    }
+
+    var period = slot.period;
+    var bell = periodBell(day, period);
+    var timeStr = bell ? (bell.start + "–" + bell.end) : "";
+    var free = listFreeTeachers(day, period);
+    metaEl.textContent = "Day " + day +
+      (bellLab ? " · " + bellLab : "") +
+      " · 第" + period + "節" +
+      (timeStr ? "（" + timeStr + "）" : "") +
+      " · 空堂 " + free.length + " 人";
+
+    if (!free.length) {
+      listEl.innerHTML = '<p class="home-free-empty">本節沒有空堂教師</p>';
+      return;
+    }
+
+    var html = [];
+    free.forEach(function (t) {
+      html.push(
+        '<div class="home-free-row">' +
+          '<span class="home-free-code">' + escapeHtml(t.short_name) + "</span>" +
+          '<span class="home-free-name">' + escapeHtml(t.name || "—") + "</span>" +
+        "</div>"
+      );
+    });
+    listEl.innerHTML = html.join("");
+  }
+
     function switchHomePanel(panelId) {
     if (!panelId) panelId = "tt";
     state.activePanel = panelId;
@@ -1466,6 +1578,9 @@
       fillClassRoomSelects();
       showClassRoomView();
       scrollTodayDayIntoView();
+    }
+    if (panelId === "free") {
+      renderFreePanel();
     }
   }
 
