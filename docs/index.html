@@ -58,7 +58,7 @@
 
         <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄" data-role-view="staff">
           <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">時間表</button>
-          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-full-tt" id="home-tab-full-tt" data-panel="full-tt">完整時間表</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-class-room" id="home-tab-class-room" data-panel="class-room">班別／課室</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs">文件／會議</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free">即時空堂</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet">約開會</button>
@@ -91,10 +91,36 @@
           </div>
         </section>
 
-        <section id="home-panel-full-tt" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-full-tt" data-panel="full-tt" hidden>
-          <h2 class="home-panel-title">完整時間表</h2>
-          <p class="muted">稍後會嵌喺呢度。而家可開啟完整頁面。</p>
-          <p><a class="btn" href="timetable.html">開啟完整時間表</a></p>
+        <section id="home-panel-class-room" class="home-panel home-tt home-cr hidden" role="tabpanel" aria-labelledby="home-tab-class-room" data-panel="class-room" hidden>
+          <div id="home-cr-day-grid" class="tt-day-grid" role="tablist" aria-label="循環日 D1–D10"></div>
+
+          <div class="tt-cr-staff" data-role-view="staff">
+            <div class="tt-cr-mode" role="group" aria-label="查詢方式">
+              <button type="button" class="chip active" data-cr-mode="class" id="home-cr-mode-class">班別</button>
+              <button type="button" class="chip" data-cr-mode="room" id="home-cr-mode-room">課室</button>
+            </div>
+            <div class="tt-cr-pick-row">
+              <label class="tt-teacher-label" for="home-cr-class-select" id="home-cr-class-label">班別</label>
+              <select id="home-cr-class-select" class="home-teacher-select" aria-label="選擇班別">
+                <option value="">選擇班別…</option>
+              </select>
+              <label class="tt-teacher-label hidden" for="home-cr-room-select" id="home-cr-room-label" hidden>課室</label>
+              <select id="home-cr-room-select" class="home-teacher-select hidden" aria-label="選擇課室" hidden>
+                <option value="">選擇課室…</option>
+              </select>
+              <span id="home-cr-lesson-count" class="tt-lesson-count" hidden></span>
+            </div>
+            <p id="home-cr-message" class="home-tt-message muted hidden"></p>
+            <div id="home-cr-result" class="hidden">
+              <div id="home-cr-periods" class="tt-periods"></div>
+            </div>
+          </div>
+
+          <div class="tt-cr-student staff-only-note hidden" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">班別／課室</h2>
+            <p>學生班別／課室時間表稍後推出。</p>
+            <p class="muted">上線後可按班別或課室查看當日循環日課表。</p>
+          </div>
         </section>
 
         <section id="home-panel-docs" class="home-panel home-panel-docs hidden" role="tabpanel" aria-labelledby="home-tab-docs" data-panel="docs" hidden>

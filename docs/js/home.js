@@ -74,6 +74,14 @@
     }
   };
 
+  var CLASS_CODES = (function () {
+    var out = [];
+    for (var f = 1; f <= 6; f++) {
+      "ABCD".split("").forEach(function (L) { out.push(String(f) + L); });
+    }
+    return out;
+  })();
+
   var state = {
     browseDate: null,
     todayCycleDay: null,
@@ -84,7 +92,11 @@
     assemblyByDay: {},
     viewingCode: "",
     selectedDay: null,
-    activePanel: "tt"
+    activePanel: "tt",
+    lessonRows: null,
+    crMode: "class",
+    crClass: "",
+    crRoom: ""
   };
 
   function $(id) { return document.getElementById(id); }
@@ -198,7 +210,7 @@
   }
 
   function updateLiveCountdowns() {
-    var nodes = document.querySelectorAll("#home-periods .tt-period-countdown[data-end]");
+    var nodes = document.querySelectorAll("#home-periods .tt-period-countdown[data-end], #home-cr-periods .tt-period-countdown[data-end]");
     if (!nodes.length) return;
     Array.prototype.forEach.call(nodes, function (el) {
       var left = secondsUntilEnd(el.getAttribute("data-end"));
@@ -357,6 +369,7 @@
             var t = findTeacher(state.viewingCode);
             if (t) renderPeriods(t, state.selectedDay);
           }
+          if (state.activePanel === "class-room") showClassRoomView();
         } else {
           updateLiveCountdowns();
         }
@@ -495,20 +508,24 @@
     section.hidden = false;
   }
 
+  function dayGridNodes() {
+    return document.querySelectorAll("#home-panels .tt-day-grid");
+  }
+
   function scrollTodayDayIntoView() {
-    var grid = $("home-day-grid");
-    if (!grid || !state.todayCycleDay) return;
-    var chip = grid.querySelector('.tt-day-chip[data-day="' + state.todayCycleDay + '"]');
-    if (!chip) return;
-    // Center today's Day chip in the horizontal scroller after layout.
-    requestAnimationFrame(function () {
-      var target = chip.offsetLeft + chip.offsetWidth / 2 - grid.clientWidth / 2;
-      grid.scrollLeft = Math.max(0, target);
+    if (!state.todayCycleDay) return;
+    Array.prototype.forEach.call(dayGridNodes(), function (grid) {
+      var chip = grid.querySelector('.tt-day-chip[data-day="' + state.todayCycleDay + '"]');
+      if (!chip) return;
+      // Center today's Day chip in the horizontal scroller after layout.
+      requestAnimationFrame(function () {
+        var target = chip.offsetLeft + chip.offsetWidth / 2 - grid.clientWidth / 2;
+        grid.scrollLeft = Math.max(0, target);
+      });
     });
   }
 
-  function buildDayGrid() {
-    var grid = $("home-day-grid");
+  function fillOneDayGrid(grid) {
     if (!grid) return;
     grid.innerHTML = "";
     var todayMark = state.todayCycleDay;
@@ -532,22 +549,29 @@
           state.selectedDay = day;
           refreshDayGridActive();
           showSelectedTeacher();
+          showClassRoomView();
         });
         grid.appendChild(btn);
       })(d);
     }
+  }
+
+  function buildDayGrid() {
+    var grids = dayGridNodes();
+    if (!grids.length) return;
+    Array.prototype.forEach.call(grids, fillOneDayGrid);
     scrollTodayDayIntoView();
   }
 
   function refreshDayGridActive() {
-    var grid = $("home-day-grid");
-    if (!grid) return;
-    Array.prototype.forEach.call(grid.querySelectorAll(".tt-day-chip"), function (chip) {
-      var day = parseInt(chip.dataset.day, 10);
-      var on = day === state.selectedDay;
-      chip.classList.toggle("active", on);
-      chip.setAttribute("aria-selected", on ? "true" : "false");
-      chip.classList.toggle("has-today-mark", state.todayCycleDay === day);
+    Array.prototype.forEach.call(dayGridNodes(), function (grid) {
+      Array.prototype.forEach.call(grid.querySelectorAll(".tt-day-chip"), function (chip) {
+        var day = parseInt(chip.dataset.day, 10);
+        var on = day === state.selectedDay;
+        chip.classList.toggle("active", on);
+        chip.setAttribute("aria-selected", on ? "true" : "false");
+        chip.classList.toggle("has-today-mark", state.todayCycleDay === day);
+      });
     });
   }
 
@@ -567,6 +591,7 @@
       renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
+      showClassRoomView();
       return;
     }
 
@@ -643,6 +668,7 @@
         renderHomeBar(session);
         buildDayGrid();
         renderTimetableSection(session);
+      showClassRoomView();
         startClock();
       }
 
@@ -678,6 +704,7 @@
       renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
+      showClassRoomView();
     });
   }
 
@@ -977,6 +1004,8 @@
     if (cloudStarted && getData()) {
       fillTeacherSelect(state.viewingCode);
       showSelectedTeacher();
+      fillClassRoomSelects();
+      showClassRoomView();
       return;
     }
     var client = getClient();
@@ -984,6 +1013,8 @@
       if (getData()) {
         fillTeacherSelect(state.viewingCode);
         showSelectedTeacher();
+        fillClassRoomSelects();
+        showClassRoomView();
       }
       return;
     }
@@ -999,21 +1030,418 @@
       var data = assemble(parts[0], parts[1], parts[2]);
       if (!data.teachers.length) throw new Error("empty");
       window.TIMETABLE_DATA = data;
+      state.lessonRows = parts[1] || [];
       if (status) status.textContent = "";
       fillTeacherSelect(state.viewingCode);
       showSelectedTeacher();
+      fillClassRoomSelects();
+      showClassRoomView();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
       if (getData()) {
         fillTeacherSelect(state.viewingCode);
         showSelectedTeacher();
+        fillClassRoomSelects();
+        showClassRoomView();
       }
     });
   }
 
 
-  function switchHomePanel(panelId) {
+  function flattenLessonsFromData() {
+    var data = getData();
+    if (!data || !data.teachers) return [];
+    var rows = [];
+    data.teachers.forEach(function (t) {
+      for (var d = 1; d <= 10; d++) {
+        var dayMap = (t.schedule && t.schedule[String(d)]) || {};
+        Object.keys(dayMap).forEach(function (p) {
+          var cell = dayMap[p];
+          if (!cell) return;
+          rows.push({
+            teacher_code: t.code,
+            day: d,
+            period: parseInt(p, 10),
+            class_name: cell.class || "",
+            class_short: cell.classShort || "",
+            subject: cell.subject || "",
+            subject_short: cell.subjectShort || "",
+            teachers_field: cell.teacher || t.code,
+            room: cell.room || ""
+          });
+        });
+      }
+    });
+    return rows;
+  }
+
+  function getLessonRows() {
+    if (state.lessonRows && state.lessonRows.length) return state.lessonRows;
+    return flattenLessonsFromData();
+  }
+
+  /** Whether a class token (1A / 4A-D / 6A-D) includes target class code. */
+  function classTokenIncludes(token, target) {
+    token = String(token || "").toUpperCase().replace(/\s+/g, "");
+    target = String(target || "").toUpperCase();
+    if (!token || !target) return false;
+    if (token === target) return true;
+    var m = token.match(/^([1-6])([A-D])-([A-D])$/);
+    if (m && m[1] === target.charAt(0)) {
+      var from = m[2].charCodeAt(0);
+      var to = m[3].charCodeAt(0);
+      var letter = target.charCodeAt(1);
+      return letter >= from && letter <= to;
+    }
+    return false;
+  }
+
+  function lessonMatchesClass(lesson, classCode) {
+    var raw = String(lesson.class_short || lesson.class_name || "");
+    var parts = raw.split(/[,，]/);
+    for (var i = 0; i < parts.length; i++) {
+      if (classTokenIncludes(parts[i].trim(), classCode)) return true;
+    }
+    return false;
+  }
+
+  function listRoomsFromLessons() {
+    var seen = {};
+    var rooms = [];
+    getLessonRows().forEach(function (l) {
+      var r = String(l.room || "").trim();
+      if (!r || seen[r]) return;
+      seen[r] = true;
+      rooms.push(r);
+    });
+    rooms.sort(function (a, b) {
+      var na = /^\d+$/.test(a);
+      var nb = /^\d+$/.test(b);
+      if (na && nb) return parseInt(a, 10) - parseInt(b, 10);
+      if (na && !nb) return -1;
+      if (!na && nb) return 1;
+      return a.localeCompare(b, "zh-HK");
+    });
+    return rooms;
+  }
+
+  function fillClassRoomSelects() {
+    var classSel = $("home-cr-class-select");
+    var roomSel = $("home-cr-room-select");
+    if (classSel) {
+      var prevC = state.crClass || classSel.value || "";
+      classSel.innerHTML = "";
+      var opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = "選擇班別…";
+      classSel.appendChild(opt0);
+      CLASS_CODES.forEach(function (code) {
+        var opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = code;
+        classSel.appendChild(opt);
+      });
+      if (prevC && CLASS_CODES.indexOf(prevC) >= 0) {
+        classSel.value = prevC;
+        state.crClass = prevC;
+      }
+    }
+    if (roomSel) {
+      var prevR = state.crRoom || roomSel.value || "";
+      var rooms = listRoomsFromLessons();
+      roomSel.innerHTML = "";
+      var r0 = document.createElement("option");
+      r0.value = "";
+      r0.textContent = "選擇課室…";
+      roomSel.appendChild(r0);
+      rooms.forEach(function (r) {
+        var opt = document.createElement("option");
+        opt.value = r;
+        opt.textContent = r;
+        roomSel.appendChild(opt);
+      });
+      if (prevR && rooms.indexOf(prevR) >= 0) {
+        roomSel.value = prevR;
+        state.crRoom = prevR;
+      }
+    }
+    applyClassRoomModeUI();
+  }
+
+  function applyClassRoomModeUI() {
+    var mode = state.crMode === "room" ? "room" : "class";
+    state.crMode = mode;
+    var modeBar = document.querySelector(".tt-cr-mode");
+    if (modeBar) {
+      Array.prototype.forEach.call(modeBar.querySelectorAll("[data-cr-mode]"), function (btn) {
+        var on = btn.getAttribute("data-cr-mode") === mode;
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+    var classLabel = $("home-cr-class-label");
+    var classSel = $("home-cr-class-select");
+    var roomLabel = $("home-cr-room-label");
+    var roomSel = $("home-cr-room-select");
+    var showClass = mode === "class";
+    function setHidden(el, hidden) {
+      if (!el) return;
+      el.classList.toggle("hidden", hidden);
+      if (hidden) el.setAttribute("hidden", "");
+      else el.removeAttribute("hidden");
+    }
+    setHidden(classLabel, !showClass);
+    setHidden(classSel, !showClass);
+    setHidden(roomLabel, showClass);
+    setHidden(roomSel, showClass);
+  }
+
+  /** Merge co-taught rows (same subject+room) into one cell; keep splits separate. */
+  function groupLessonsForPeriod(lessons) {
+    var groups = [];
+    var index = {};
+    (lessons || []).forEach(function (l) {
+      var subj = l.subject_short || l.subject || "";
+      var room = l.room || "";
+      var key = subj + "\0" + room + "\0" + (l.class_short || l.class_name || "");
+      if (index[key] == null) {
+        index[key] = groups.length;
+        groups.push({
+          class: l.class_name || "",
+          classShort: l.class_short || "",
+          subject: l.subject || "",
+          subjectShort: l.subject_short || "",
+          room: room,
+          teachers: []
+        });
+      }
+      var g = groups[index[key]];
+      var codes = [];
+      var field = String(l.teachers_field || l.teacher_code || "").trim();
+      if (field) {
+        field.split(/[,，\/、]/).forEach(function (p) {
+          var c = p.trim();
+          if (c) codes.push(c);
+        });
+      } else if (l.teacher_code) {
+        codes.push(String(l.teacher_code));
+      }
+      codes.forEach(function (c) {
+        if (g.teachers.indexOf(c) < 0) g.teachers.push(c);
+      });
+    });
+    return groups;
+  }
+
+  function filterLessonsForClassRoom(day) {
+    var rows = getLessonRows();
+    var mode = state.crMode === "room" ? "room" : "class";
+    return rows.filter(function (l) {
+      if (parseInt(l.day, 10) !== day) return false;
+      if (mode === "room") {
+        return String(l.room || "").trim() === state.crRoom;
+      }
+      return lessonMatchesClass(l, state.crClass);
+    });
+  }
+
+  function renderClassRoomPeriods(day, lessons) {
+    var box = $("home-cr-periods");
+    var result = $("home-cr-result");
+    var countEl = $("home-cr-lesson-count");
+    if (!box) return;
+
+    box.innerHTML = "";
+    var maxp = periodsForDay(day);
+    var busy = 0;
+    var live = browseIsToday() && day === state.todayCycleDay;
+    var curSlot = live ? findCurrentSlot(day) : null;
+    var curPeriod = (curSlot && curSlot.kind === "period") ? curSlot.period : null;
+    var nowMins = nowHKTParts().minutes;
+    var mode = state.crMode === "room" ? "room" : "class";
+
+    var byPeriod = {};
+    (lessons || []).forEach(function (l) {
+      var p = parseInt(l.period, 10);
+      if (!byPeriod[p]) byPeriod[p] = [];
+      byPeriod[p].push(l);
+    });
+
+    for (var p = 1; p <= maxp; p++) {
+      var bell = periodBell(day, p);
+      var extra = "";
+      var isCurrent = false;
+      if (live) {
+        if (curPeriod === p) {
+          extra = " is-current";
+          isCurrent = true;
+        } else if (bell) {
+          var endM = hmToMinutes(bell.end);
+          if (endM != null && nowMins >= endM) extra = " is-past";
+        }
+      }
+      var timeHtml = bell
+        ? '<span class="tt-period-time">' + escapeHtml(bell.start) + " — " + escapeHtml(bell.end) + "</span>"
+        : "";
+      var cdHtml = (isCurrent && bell) ? countdownHtml(bell.end) : "";
+      var groups = groupLessonsForPeriod(byPeriod[p] || []);
+
+      if (!groups.length) {
+        var freeRow = document.createElement("div");
+        freeRow.className = ("tt-period free" + extra).trim();
+        freeRow.innerHTML =
+          '<div class="tt-period-left">' +
+            '<span class="tt-pnum">P' + p + "</span>" +
+            timeHtml +
+            cdHtml +
+          "</div>" +
+          '<div class="tt-period-body">' +
+            '<div class="subj free-label">空堂</div>' +
+          "</div>";
+        if (isCurrent) freeRow.setAttribute("aria-current", "true");
+        box.appendChild(freeRow);
+        continue;
+      }
+
+      busy++;
+      groups.forEach(function (cell, gi) {
+        var row = document.createElement("div");
+        var subjCls = subjectClass(cell.subjectShort, cell.subject);
+        row.className = ("tt-period lesson " + subjCls + extra).trim();
+        row.setAttribute("data-subj", subjectFamily(cell.subjectShort, cell.subject));
+        var teacherStr = (cell.teachers || []).join(", ");
+        var detailBits = [];
+        if (mode === "room") {
+          if (cell.classShort || cell.class) detailBits.push(cell.classShort || cell.class);
+          if (teacherStr) detailBits.push(teacherStr);
+        } else {
+          if (teacherStr) detailBits.push(teacherStr);
+          if (cell.classShort && cell.classShort !== state.crClass) {
+            detailBits.push(cell.classShort);
+          }
+        }
+        var roomHtml = "";
+        if (mode === "class" && cell.room) {
+          roomHtml = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+        } else if (mode === "room" && cell.room && groups.length > 1) {
+          roomHtml = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+        }
+        row.innerHTML =
+          '<div class="tt-period-left">' +
+            '<span class="tt-pnum">P' + p + "</span>" +
+            (gi === 0 ? timeHtml : "") +
+            (gi === 0 ? cdHtml : "") +
+          "</div>" +
+          '<div class="tt-period-body">' +
+            '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
+            '<div class="detail">' + escapeHtml(detailBits.join(" · ")) + "</div>" +
+            roomHtml +
+          "</div>";
+        if (isCurrent && gi === 0) row.setAttribute("aria-current", "true");
+        box.appendChild(row);
+      });
+    }
+
+    if (countEl) {
+      countEl.hidden = false;
+      countEl.textContent = busy + " / " + maxp + " 節";
+    }
+    if (result) result.classList.remove("hidden");
+  }
+
+  function showClassRoomView() {
+    var session = getSession();
+    var staffBlock = document.querySelector(".tt-cr-staff");
+    var studentBlock = document.querySelector(".tt-cr-student");
+
+    if (!session || session.role === "student") {
+      if (staffBlock) staffBlock.classList.add("hidden");
+      if (studentBlock) studentBlock.classList.remove("hidden");
+      return;
+    }
+    if (staffBlock) staffBlock.classList.remove("hidden");
+    if (studentBlock) studentBlock.classList.add("hidden");
+
+    applyClassRoomModeUI();
+
+    var msg = $("home-cr-message");
+    var result = $("home-cr-result");
+    var countEl = $("home-cr-lesson-count");
+    var day = state.selectedDay;
+    var mode = state.crMode === "room" ? "room" : "class";
+    var pick = mode === "room" ? state.crRoom : state.crClass;
+
+    if (!day) {
+      if (msg) {
+        msg.textContent = "請選擇循環日";
+        msg.classList.remove("hidden");
+      }
+      if (result) result.classList.add("hidden");
+      if (countEl) countEl.hidden = true;
+      return;
+    }
+
+    if (!pick) {
+      if (msg) {
+        msg.textContent = mode === "room" ? "請選擇課室以查看課表" : "請選擇班別以查看課表";
+        msg.classList.remove("hidden");
+      }
+      if (result) result.classList.add("hidden");
+      if (countEl) countEl.hidden = true;
+      return;
+    }
+
+    if (!getLessonRows().length) {
+      if (msg) {
+        msg.textContent = "時間表資料尚未載入";
+        msg.classList.remove("hidden");
+      }
+      if (result) result.classList.add("hidden");
+      if (countEl) countEl.hidden = true;
+      return;
+    }
+
+    if (msg) {
+      msg.textContent = "";
+      msg.classList.add("hidden");
+    }
+    renderClassRoomPeriods(day, filterLessonsForClassRoom(day));
+  }
+
+  function bindClassRoomControls() {
+    var modeBar = document.querySelector(".tt-cr-mode");
+    if (modeBar && modeBar.dataset.bound !== "1") {
+      modeBar.dataset.bound = "1";
+      modeBar.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-cr-mode]");
+        if (!btn || !modeBar.contains(btn)) return;
+        var mode = btn.getAttribute("data-cr-mode");
+        if (!mode || mode === state.crMode) return;
+        state.crMode = mode;
+        applyClassRoomModeUI();
+        showClassRoomView();
+      });
+    }
+    var classSel = $("home-cr-class-select");
+    if (classSel && classSel.dataset.bound !== "1") {
+      classSel.dataset.bound = "1";
+      classSel.addEventListener("change", function () {
+        state.crClass = classSel.value || "";
+        showClassRoomView();
+      });
+    }
+    var roomSel = $("home-cr-room-select");
+    if (roomSel && roomSel.dataset.bound !== "1") {
+      roomSel.dataset.bound = "1";
+      roomSel.addEventListener("change", function () {
+        state.crRoom = roomSel.value || "";
+        showClassRoomView();
+      });
+    }
+  }
+
+    function switchHomePanel(panelId) {
     if (!panelId) panelId = "tt";
     state.activePanel = panelId;
 
@@ -1033,6 +1461,12 @@
       if (on) panel.removeAttribute("hidden");
       else panel.setAttribute("hidden", "");
     });
+
+    if (panelId === "class-room") {
+      fillClassRoomSelects();
+      showClassRoomView();
+      scrollTodayDayIntoView();
+    }
   }
 
   function bindFuncBar() {
@@ -1098,13 +1532,17 @@
 
     startClock();
     bindTeacherSelect();
+    bindClassRoomControls();
     bindDatePicker();
     bindFuncBar();
     switchHomePanel(state.activePanel || "tt");
     renderHomeBar(session);
     loadCycleAndCalendar(session);
     if (session.role === "staff") loadTimetableCloud(session);
-    else renderTimetableSection(session);
+    else {
+      renderTimetableSection(session);
+      showClassRoomView();
+    }
   }
 
   function init() {
@@ -1119,8 +1557,10 @@
     state.browseDate = todayHK();
     startClock();
     bindFuncBar();
+    bindClassRoomControls();
     switchHomePanel(state.activePanel || "tt");
     buildDayGrid();
+    fillClassRoomSelects();
     if (window.__schoolAdminSession) onAuthed();
   }
 

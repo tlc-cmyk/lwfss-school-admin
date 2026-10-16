@@ -1013,6 +1013,45 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   white-space: nowrap;
   margin-left: auto;
 }
+
+/* Class / room timetable panel */
+.tt-cr-mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.tt-cr-mode .chip {
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border: 1.5px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+.tt-cr-mode .chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.tt-cr-pick-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.tt-cr-student {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 16px;
+  box-shadow: var(--shadow);
+}
+.tt-cr-student .home-panel-title { margin-bottom: 8px; }
+.tt-cr-student p { margin: 0 0 8px; color: var(--muted); font-size: 0.92rem; }
+
 .tt-load-status { margin: 0 0 6px; min-height: 0; }
 
 .tt-periods {
