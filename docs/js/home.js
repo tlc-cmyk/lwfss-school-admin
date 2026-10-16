@@ -1075,17 +1075,27 @@
 
       if (cell) {
         busy++;
+        var merged = collectMergedSlots(day, p, cell);
+        var isElective = !!(merged.length && merged[0].isElective);
+        var isSplit = merged.length > 1;
+        var blockKey = electiveBlockKeyFromLesson({
+          class_short: cell.classShort,
+          class_name: cell.class,
+          subject_short: cell.subjectShort,
+          subject: cell.subject
+        });
         var subjCls = subjectClass(cell.subjectShort, cell.subject);
-        var sk = subjectKeyFromLesson({ subjectShort: cell.subjectShort, subject: cell.subject });
-        var ck = classGroupKeyFromLesson({ classShort: cell.classShort, class: cell.class });
-        var splitGroups = collectSplitGroups(day, p, sk, ck);
-        var isSplit = splitGroups.length > 1;
-        row.className = ("tt-period lesson " + subjCls + extra + (isSplit ? " is-split" : "")).trim();
-        row.setAttribute("data-subj", subjectFamily(cell.subjectShort, cell.subject));
+        if (isElective) subjCls = "tt-subj-elective";
+        row.className = ("tt-period lesson " + subjCls + extra +
+          (isSplit ? " is-split" : "") + (isElective ? " is-elective" : "")).trim();
+        row.setAttribute("data-subj", isElective ? "elective" : subjectFamily(cell.subjectShort, cell.subject));
+        var titleText = isElective
+          ? electiveBlockTitle(blockKey)
+          : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
         var trailing = "";
         if (isSplit) {
-          trailing = splitGroupsHtml(splitGroups, teacher.code);
+          trailing = splitGroupsHtml(merged, teacher.code);
         } else {
           if (cell.teacher && cell.teacher !== teacher.code) {
             detailText += (detailText ? " · " : "") + cell.teacher;
@@ -1101,7 +1111,7 @@
             cdHtml +
           "</div>" +
           '<div class="tt-period-body">' +
-            '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
+            '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             '<div class="detail">' + escapeHtml(detailText) + "</div>" +
             trailing +
           "</div>";
@@ -1288,12 +1298,13 @@
   }
 
   /**
-   * Split-group / co-taught merge rule (DB has no explicit group id):
-   * Rows that share the same cycle day + period + subject + class group
-   * (class_short / class_name, e.g. "2A,2B", "4B-D", or a single "5A" with
-   * two teachers) are one combined lesson taught in parallel. Merge into
-   * ONE cell showing every teacher · room. Do not merge different subjects
-   * or unrelated class groups that merely share a day/period.
+   * Cell merge rules (DB has no explicit group id):
+   * 1) Same-subject split / co-taught: same day + period + subject + class
+   *    group (e.g. 2A,2B ENG → AYWS@402 + NET@401).
+   * 2) Senior elective block: same day + period + whole-form class
+   *    (4A-D / 5A-D / 6A-D) + same block B1/B2/B3 parsed from subject_short
+   *    (e.g. GEOc-GEO4-B1-…, CHEM-CHE4-B1-…); bare ICT counts as B1.
+   *    Different elective subjects in that block → ONE cell listing options.
    */
   function classGroupKeyFromLesson(l) {
     return String(
@@ -1307,53 +1318,167 @@
     ).replace(/\s+/g, "").toUpperCase();
   }
 
-  /** Unique teacher_code@room slots for a split group. */
-  function collectSplitGroups(day, period, subjectKey, classKey) {
-    var out = [];
-    var seen = {};
-    if (!subjectKey && !classKey) return out;
-    getLessonRows().forEach(function (l) {
-      if (parseInt(l.day, 10) !== day) return;
-      if (parseInt(l.period, 10) !== period) return;
-      if (subjectKeyFromLesson(l) !== subjectKey) return;
-      if (classGroupKeyFromLesson(l) !== classKey) return;
-      var code = String(l.teacher_code || "").trim();
-      var room = String(l.room || "").trim();
-      if (!code) return;
-      var id = code + "\0" + room;
-      if (seen[id]) return;
-      seen[id] = true;
-      out.push({ code: code, room: room });
-    });
-    out.sort(function (a, b) {
-      var c = a.code.localeCompare(b.code);
-      return c !== 0 ? c : a.room.localeCompare(b.room);
-    });
-    return out;
+  /** Whole-form senior class keys used by elective rows (4A-D / 4A,4B,4C,4D). */
+  function isSeniorElectiveClassKey(classKey) {
+    var k = String(classKey || "").toUpperCase().replace(/\s+/g, "");
+    if (/^[4-6]A-D$/.test(k)) return true;
+    if (/^[4-6]A,[4-6]B,[4-6]C,[4-6]D$/.test(k)) return true;
+    return false;
+  }
+
+  function formFromClassKey(classKey) {
+    var m = String(classKey || "").match(/^([4-6])/);
+    return m ? m[1] : "";
+  }
+
+  /**
+   * Elective block id from subject code, e.g. "B1" from GEOc-GEO4-B1-Geog_1C.
+   * ICT (no -Bn- token) is Block 1 with the GEO/HMS/CHIS/BAF/CHEM set.
+   */
+  function electiveBlockFromSubject(subjectShort, subject) {
+    var s = String(subjectShort || subject || "").trim();
+    if (!s) return null;
+    var m = s.match(/-B([123])-/i);
+    if (m) return "B" + m[1];
+    if (/^ICT$/i.test(s.replace(/\s+/g, ""))) return "B1";
+    return null;
+  }
+
+  /** "4|B1" / "5|B2" / "6|B1" or null if not a senior elective option. */
+  function electiveBlockKeyFromLesson(l) {
+    var ck = classGroupKeyFromLesson(l);
+    if (!isSeniorElectiveClassKey(ck)) return null;
+    var form = formFromClassKey(ck);
+    if (!form) return null;
+    var block = electiveBlockFromSubject(
+      l.subject_short || l.subjectShort,
+      l.subject
+    );
+    if (!block) return null;
+    return form + "|" + block;
+  }
+
+  /** Compact option name for chips: GEO / HMS / CHIS / ICT / BAF / CHEM… */
+  function electiveOptionLabel(subjectShort, subject) {
+    var fam = subjectFamily(subjectShort, subject);
+    var map = {
+      geog: "GEO", hmsc: "HMS", chis: "CHIS", ict: "ICT", bafs: "BAF",
+      chem: "CHEM", bio: "BIO", phy: "PHY", eco: "ECO", hist: "HIST",
+      ths: "THS", va: "VA", math: "M2", mus: "聲樂", stem: "BF AI"
+    };
+    if (map[fam]) return map[fam];
+    var raw = String(subjectShort || subject || "").trim();
+    if (!raw) return "—";
+    if (/^ICT$/i.test(raw)) return "ICT";
+    var first = raw.split(/[-_\s]/)[0];
+    return String(first || raw).replace(/[ce]$/i, "").toUpperCase();
+  }
+
+  function electiveBlockTitle(blockKey) {
+    if (!blockKey) return "選修";
+    var parts = String(blockKey).split("|");
+    var block = parts[1] || "";
+    return block ? ("選修 " + block) : "選修";
+  }
+
+  function slotSortKey(g) {
+    return String(g.label || "") + "\0" + String(g.code || "") + "\0" + String(g.room || "");
   }
 
   function orderSplitGroups(groups, preferCode) {
     var list = (groups || []).slice();
-    if (!preferCode) return list;
     list.sort(function (a, b) {
-      var am = a.code === preferCode ? 0 : 1;
-      var bm = b.code === preferCode ? 0 : 1;
-      if (am !== bm) return am - bm;
-      var c = a.code.localeCompare(b.code);
-      return c !== 0 ? c : a.room.localeCompare(b.room);
+      if (preferCode) {
+        var am = a.code === preferCode ? 0 : 1;
+        var bm = b.code === preferCode ? 0 : 1;
+        if (am !== bm) return am - bm;
+      }
+      return slotSortKey(a).localeCompare(slotSortKey(b));
     });
     return list;
   }
 
-  /** Compact chips: "AYWS · 402" "NET · 401". preferCode marked is-mine. */
+  /**
+   * Peers for one cell: same-subject split groups, or all options in the
+   * same senior elective block (different subjects).
+   * Each slot: { code, room, subjectShort, subject, label, isElective }.
+   */
+  function collectMergedSlots(day, period, cell) {
+    var out = [];
+    var seen = {};
+    if (!cell) return out;
+    var classKey = classGroupKeyFromLesson({
+      classShort: cell.classShort,
+      class: cell.class,
+      class_short: cell.classShort,
+      class_name: cell.class
+    });
+    var subjectKey = subjectKeyFromLesson({
+      subjectShort: cell.subjectShort,
+      subject: cell.subject,
+      subject_short: cell.subjectShort
+    });
+    var blockKey = electiveBlockKeyFromLesson({
+      class_short: cell.classShort,
+      class_name: cell.class,
+      subject_short: cell.subjectShort,
+      subject: cell.subject
+    });
+    getLessonRows().forEach(function (l) {
+      if (parseInt(l.day, 10) !== day) return;
+      if (parseInt(l.period, 10) !== period) return;
+      if (classGroupKeyFromLesson(l) !== classKey) return;
+      if (blockKey) {
+        if (electiveBlockKeyFromLesson(l) !== blockKey) return;
+      } else {
+        if (subjectKeyFromLesson(l) !== subjectKey) return;
+      }
+      var code = String(l.teacher_code || "").trim();
+      var room = String(l.room || "").trim();
+      if (!code) return;
+      var subj = l.subject_short || l.subject || "";
+      var id = (blockKey ? subjectKeyFromLesson(l) + "\0" : "") + code + "\0" + room;
+      if (seen[id]) return;
+      seen[id] = true;
+      out.push({
+        code: code,
+        room: room,
+        subjectShort: l.subject_short || "",
+        subject: l.subject || "",
+        label: blockKey
+          ? electiveOptionLabel(l.subject_short, l.subject)
+          : "",
+        isElective: !!blockKey
+      });
+    });
+    return orderSplitGroups(out, null);
+  }
+
+  /** @deprecated name kept: same as collectMergedSlots for subject splits. */
+  function collectSplitGroups(day, period, subjectKey, classKey) {
+    return collectMergedSlots(day, period, {
+      classShort: classKey,
+      class: classKey,
+      subjectShort: subjectKey,
+      subject: subjectKey
+    });
+  }
+
+  /**
+   * Compact chips. Elective: "GEO · CCC · ROOM"; split: "AYWS · 402".
+   * preferCode marked is-mine.
+   */
   function splitGroupsHtml(groups, preferCode) {
     var list = orderSplitGroups(groups, preferCode);
     if (!list.length) return "";
     var html = '<div class="tt-groups" aria-label="分組">';
     list.forEach(function (g) {
       var mine = preferCode && g.code === preferCode ? " is-mine" : "";
-      var label = g.code + (g.room ? " · " + g.room : "");
-      html += '<span class="tt-g' + mine + '">' + escapeHtml(label) + "</span>";
+      var bits = [];
+      if (g.label) bits.push(g.label);
+      if (g.code) bits.push(g.code);
+      if (g.room) bits.push(g.room);
+      html += '<span class="tt-g' + mine + '">' + escapeHtml(bits.join(" · ")) + "</span>";
     });
     html += "</div>";
     return html;
@@ -1476,17 +1601,20 @@
   }
 
   /**
-   * Merge split-group / co-taught rows into one cell.
-   * Key = subject + class group (not room): parallel groups in different
-   * rooms (e.g. 2A,2B ENG AYWS@402 + NET@401) become one cell.
+   * Merge rows into one cell:
+   * - elective block → key = class + block (B1/B2/B3)
+   * - else → key = subject + class (split groups across rooms)
    */
   function groupLessonsForPeriod(lessons) {
     var groups = [];
     var index = {};
     (lessons || []).forEach(function (l) {
-      var subjKey = subjectKeyFromLesson(l);
       var classKey = classGroupKeyFromLesson(l);
-      var key = subjKey + "\0" + classKey;
+      var blockKey = electiveBlockKeyFromLesson(l);
+      var subjKey = subjectKeyFromLesson(l);
+      var key = blockKey
+        ? ("E\0" + blockKey + "\0" + classKey)
+        : (subjKey + "\0" + classKey);
       if (index[key] == null) {
         index[key] = groups.length;
         groups.push({
@@ -1496,47 +1624,45 @@
           subjectShort: l.subject_short || "",
           room: "",
           teachers: [],
-          groupSlots: []
+          groupSlots: [],
+          isElective: !!blockKey,
+          blockKey: blockKey || ""
         });
       }
       var g = groups[index[key]];
       var code = String(l.teacher_code || "").trim();
       var room = String(l.room || "").trim();
-      if (code) {
-        var exists = false;
+      var label = blockKey ? electiveOptionLabel(l.subject_short, l.subject) : "";
+      function pushSlot(c, r, lab, ss, sub) {
+        if (!c) return;
         for (var i = 0; i < g.groupSlots.length; i++) {
-          if (g.groupSlots[i].code === code && g.groupSlots[i].room === room) {
-            exists = true;
-            break;
-          }
+          if (g.groupSlots[i].code === c && g.groupSlots[i].room === r &&
+              g.groupSlots[i].label === lab) return;
         }
-        if (!exists) g.groupSlots.push({ code: code, room: room });
-        if (g.teachers.indexOf(code) < 0) g.teachers.push(code);
+        g.groupSlots.push({
+          code: c,
+          room: r,
+          label: lab || "",
+          subjectShort: ss || "",
+          subject: sub || "",
+          isElective: !!blockKey
+        });
+        if (g.teachers.indexOf(c) < 0) g.teachers.push(c);
+      }
+      if (code) {
+        pushSlot(code, room, label, l.subject_short || "", l.subject || "");
       } else {
-        // Fallback: teachers_field only (no teacher_code)
         var field = String(l.teachers_field || "").trim();
         if (field) {
           field.split(/[,，\/、]/).forEach(function (p) {
             var c = p.trim();
-            if (!c) return;
-            if (g.teachers.indexOf(c) < 0) g.teachers.push(c);
-            var found = false;
-            for (var j = 0; j < g.groupSlots.length; j++) {
-              if (g.groupSlots[j].code === c && g.groupSlots[j].room === room) {
-                found = true;
-                break;
-              }
-            }
-            if (!found) g.groupSlots.push({ code: c, room: room });
+            if (c) pushSlot(c, room, label, l.subject_short || "", l.subject || "");
           });
         }
       }
     });
     groups.forEach(function (g) {
-      g.groupSlots.sort(function (a, b) {
-        var c = a.code.localeCompare(b.code);
-        return c !== 0 ? c : a.room.localeCompare(b.room);
-      });
+      g.groupSlots = orderSplitGroups(g.groupSlots, null);
       var rooms = [];
       g.groupSlots.forEach(function (s) {
         if (s.room && rooms.indexOf(s.room) < 0) rooms.push(s.room);
@@ -1637,11 +1763,18 @@
       busy++;
       groups.forEach(function (cell, gi) {
         var row = document.createElement("div");
-        var subjCls = subjectClass(cell.subjectShort, cell.subject);
         var slots = cell.groupSlots || [];
         var isSplit = slots.length > 1;
-        row.className = ("tt-period lesson " + subjCls + extra + (isSplit ? " is-split" : "")).trim();
-        row.setAttribute("data-subj", subjectFamily(cell.subjectShort, cell.subject));
+        var isElective = !!cell.isElective;
+        var subjCls = isElective
+          ? "tt-subj-elective"
+          : subjectClass(cell.subjectShort, cell.subject);
+        row.className = ("tt-period lesson " + subjCls + extra +
+          (isSplit ? " is-split" : "") + (isElective ? " is-elective" : "")).trim();
+        row.setAttribute("data-subj", isElective ? "elective" : subjectFamily(cell.subjectShort, cell.subject));
+        var titleText = isElective
+          ? electiveBlockTitle(cell.blockKey)
+          : (cell.subjectShort || cell.subject || "—");
         var detailBits = [];
         if (mode === "room") {
           if (cell.classShort || cell.class) detailBits.push(cell.classShort || cell.class);
@@ -1651,7 +1784,7 @@
         } else {
           if (cell.classShort && cell.classShort !== state.crClass) {
             detailBits.push(cell.classShort);
-          } else if (isSplit && (cell.classShort || cell.class)) {
+          } else if ((isSplit || isElective) && (cell.classShort || cell.class)) {
             detailBits.push(cell.classShort || cell.class);
           }
           if (!isSplit && cell.teachers && cell.teachers.length) {
@@ -1673,7 +1806,7 @@
             (gi === 0 ? cdHtml : "") +
           "</div>" +
           '<div class="tt-period-body">' +
-            '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
+            '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             '<div class="detail">' + escapeHtml(detailBits.join(" · ")) + "</div>" +
             trailing +
           "</div>";

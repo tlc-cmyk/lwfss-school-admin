@@ -134,15 +134,15 @@ school-admin/
 
 「雲端暫不可用，使用本地備份」
 
-### 分組／合班課格合併（split-group）
+### 分組／合班／選修課格合併
 
-`lessons` 沒有獨立 group id。前端用以下規則把同一堂分組課合成**一格**：
+`lessons` 沒有獨立 group id。前端用以下規則把平行課合成**一格**：
 
-- **鍵**：同一循環日 `day` + 節 `period` + 科目（`subject_short`／`subject`）+ 班組（`class_short`／`class_name`，例如 `2A,2B`、`4B-D`、或單班 `5A` 雙教師）
-- **效果**：不同教師／課室的平行組（如 2A,2B ENG：`AYWS · 402` + `NET · 401`）在教師時間表、班別、課室面板顯示為同一格，用緊湊 chips 列出各方
-- **不合併**：不同科目，或只是同一節但班組無關的課
+1. **同分組／合班（同科目）**：同一循環日 `day` + 節 `period` + 科目 + 班組（`class_short`／`class_name`，例如 `2A,2B`、`4B-D`、或單班 `5A` 雙教師）→ 一格，chips 如 `AYWS · 402` `NET · 401`
+2. **高中選修 block（不同科目）**：同一 `day` + `period` + 全級班組（`4A-D`／`5A-D`／`6A-D`）+ 同一選修組 `B1`／`B2`／`B3`（從 `subject_short` 的 `-Bn-` 解析；裸 `ICT` 視為 B1）→ 一格標題「選修 B1」，chips 如 `GEO · CCC · GEOGRAPHY ROOM` `ICT · TLC · COMPUTER ROOM` …
+3. **不合併**：MATH 等非選修、不同 block、或無關班組
 
-實作：`docs/js/home.js`（主頁時間表／班別／課室）、`docs/js/timetable.js`（獨立時間表頁）。
+實作：`docs/js/home.js`、`docs/js/timetable.js`。
 
 ---
 

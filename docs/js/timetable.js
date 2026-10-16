@@ -98,6 +98,70 @@
     ).replace(/\s+/g, "").toUpperCase();
   }
 
+  function isSeniorElectiveClassKey(classKey) {
+    var k = String(classKey || "").toUpperCase().replace(/\s+/g, "");
+    if (/^[4-6]A-D$/.test(k)) return true;
+    if (/^[4-6]A,[4-6]B,[4-6]C,[4-6]D$/.test(k)) return true;
+    return false;
+  }
+
+  function formFromClassKey(classKey) {
+    var m = String(classKey || "").match(/^([4-6])/);
+    return m ? m[1] : "";
+  }
+
+  function electiveBlockFromSubject(subjectShort, subject) {
+    var s = String(subjectShort || subject || "").trim();
+    if (!s) return null;
+    var m = s.match(/-B([123])-/i);
+    if (m) return "B" + m[1];
+    if (/^ICT$/i.test(s.replace(/\s+/g, ""))) return "B1";
+    return null;
+  }
+
+  function electiveBlockKeyFromLesson(l) {
+    var ck = classGroupKeyFromLesson(l);
+    if (!isSeniorElectiveClassKey(ck)) return null;
+    var form = formFromClassKey(ck);
+    if (!form) return null;
+    var block = electiveBlockFromSubject(
+      l.subject_short || l.subjectShort,
+      l.subject
+    );
+    if (!block) return null;
+    return form + "|" + block;
+  }
+
+  function electiveOptionLabel(subjectShort, subject) {
+    var raw = String(subjectShort || subject || "").trim();
+    if (!raw) return "—";
+    if (/^ICT$/i.test(raw)) return "ICT";
+    if (/流行聲樂/.test(raw)) return "聲樂";
+    if (/BF\s*AI|AI\s*900/i.test(raw)) return "BF AI";
+    var u = raw.toUpperCase();
+    if (/^GEO/.test(u)) return "GEO";
+    if (/^HMS/.test(u)) return "HMS";
+    if (/^CHIS|^CHIST/.test(u)) return "CHIS";
+    if (/^BAF|^BA\b/.test(u)) return "BAF";
+    if (/^CHEM|^CHE/.test(u)) return "CHEM";
+    if (/^BIO/.test(u)) return "BIO";
+    if (/^PHY/.test(u)) return "PHY";
+    if (/^ECO/.test(u)) return "ECO";
+    if (/^HIST|^HIS-/.test(u)) return "HIST";
+    if (/^THS/.test(u)) return "THS";
+    if (/^VA\b|^VA-/.test(u)) return "VA";
+    if (/^MAM|^MATH/.test(u)) return "M2";
+    var first = raw.split(/[-_\s]/)[0];
+    return String(first || raw).replace(/[ce]$/i, "").toUpperCase();
+  }
+
+  function electiveBlockTitle(blockKey) {
+    if (!blockKey) return "選修";
+    var parts = String(blockKey).split("|");
+    var block = parts[1] || "";
+    return block ? ("選修 " + block) : "選修";
+  }
+
   function getAllLessonRows() {
     if (window.__LESSON_ROWS && window.__LESSON_ROWS.length) return window.__LESSON_ROWS;
     var data = getData();
@@ -126,46 +190,75 @@
     return rows;
   }
 
-  function collectSplitGroups(day, period, subjectKey, classKey) {
-    var out = [];
-    var seen = {};
-    getAllLessonRows().forEach(function (l) {
-      if (parseInt(l.day, 10) !== day) return;
-      if (parseInt(l.period, 10) !== period) return;
-      if (subjectKeyFromLesson(l) !== subjectKey) return;
-      if (classGroupKeyFromLesson(l) !== classKey) return;
-      var code = String(l.teacher_code || "").trim();
-      var room = String(l.room || "").trim();
-      if (!code) return;
-      var id = code + "\0" + room;
-      if (seen[id]) return;
-      seen[id] = true;
-      out.push({ code: code, room: room });
-    });
-    out.sort(function (a, b) {
-      var c = a.code.localeCompare(b.code);
-      return c !== 0 ? c : a.room.localeCompare(b.room);
-    });
-    return out;
-  }
-
-  function splitGroupsHtml(groups, preferCode) {
+  function orderMergedSlots(groups, preferCode) {
     var list = (groups || []).slice();
-    if (preferCode) {
-      list.sort(function (a, b) {
+    list.sort(function (a, b) {
+      if (preferCode) {
         var am = a.code === preferCode ? 0 : 1;
         var bm = b.code === preferCode ? 0 : 1;
         if (am !== bm) return am - bm;
-        var c = a.code.localeCompare(b.code);
-        return c !== 0 ? c : a.room.localeCompare(b.room);
+      }
+      var ka = String(a.label || "") + "\0" + a.code + "\0" + a.room;
+      var kb = String(b.label || "") + "\0" + b.code + "\0" + b.room;
+      return ka.localeCompare(kb);
+    });
+    return list;
+  }
+
+  function collectMergedSlots(day, period, cell) {
+    var out = [];
+    var seen = {};
+    if (!cell) return out;
+    var classKey = classGroupKeyFromLesson({
+      classShort: cell.classShort,
+      class: cell.class
+    });
+    var subjectKey = subjectKeyFromLesson({
+      subjectShort: cell.subjectShort,
+      subject: cell.subject
+    });
+    var blockKey = electiveBlockKeyFromLesson({
+      class_short: cell.classShort,
+      class_name: cell.class,
+      subject_short: cell.subjectShort,
+      subject: cell.subject
+    });
+    getAllLessonRows().forEach(function (l) {
+      if (parseInt(l.day, 10) !== day) return;
+      if (parseInt(l.period, 10) !== period) return;
+      if (classGroupKeyFromLesson(l) !== classKey) return;
+      if (blockKey) {
+        if (electiveBlockKeyFromLesson(l) !== blockKey) return;
+      } else if (subjectKeyFromLesson(l) !== subjectKey) {
+        return;
+      }
+      var code = String(l.teacher_code || "").trim();
+      var room = String(l.room || "").trim();
+      if (!code) return;
+      var id = (blockKey ? subjectKeyFromLesson(l) + "\0" : "") + code + "\0" + room;
+      if (seen[id]) return;
+      seen[id] = true;
+      out.push({
+        code: code,
+        room: room,
+        label: blockKey ? electiveOptionLabel(l.subject_short, l.subject) : "",
+        isElective: !!blockKey
       });
-    }
+    });
+    return orderMergedSlots(out, null);
+  }
+
+  function splitGroupsHtml(groups, preferCode) {
+    var list = orderMergedSlots(groups, preferCode);
     if (!list.length) return "";
     var html = '<div class="tt-groups" aria-label="分組">';
     list.forEach(function (g) {
       var mine = preferCode && g.code === preferCode ? " is-mine" : "";
-      var label = g.code + (g.room ? " · " + g.room : "");
-      html += '<span class="tt-g' + mine + '">' + escapeHtml(label) + "</span>";
+      var bits = [];
+      if (g.label) bits.push(g.label);
+      if (g.code) bits.push(g.code);
+      if (g.room) bits.push(g.room);
+      html += '<span class="tt-g' + mine + '">' + escapeHtml(bits.join(" · ")) + "</span>";
     });
     html += "</div>";
     return html;
@@ -203,15 +296,24 @@
       var cell = schedule[String(p)];
       var row = document.createElement("div");
       if (cell) {
-        var sk = subjectKeyFromLesson({ subjectShort: cell.subjectShort, subject: cell.subject });
-        var ck = classGroupKeyFromLesson({ classShort: cell.classShort, class: cell.class });
-        var splitGroups = collectSplitGroups(day, p, sk, ck);
-        var isSplit = splitGroups.length > 1;
-        row.className = "period lesson" + (isSplit ? " is-split" : "");
+        var merged = collectMergedSlots(day, p, cell);
+        var isElective = !!(merged.length && merged[0].isElective);
+        var isSplit = merged.length > 1;
+        var blockKey = electiveBlockKeyFromLesson({
+          class_short: cell.classShort,
+          class_name: cell.class,
+          subject_short: cell.subjectShort,
+          subject: cell.subject
+        });
+        row.className = "period lesson" + (isSplit ? " is-split" : "") +
+          (isElective ? " is-elective" : "");
+        var titleText = isElective
+          ? electiveBlockTitle(blockKey)
+          : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
         var trailing = "";
         if (isSplit) {
-          trailing = splitGroupsHtml(splitGroups, teacher.code);
+          trailing = splitGroupsHtml(merged, teacher.code);
         } else {
           if (cell.teacher && cell.teacher !== teacher.code) {
             detailText += (detailText ? " · " : "") + cell.teacher;
@@ -223,7 +325,7 @@
         row.innerHTML =
           '<div class="pnum">' + p + "</div>" +
           '<div class="body">' +
-            '<div class="subj">' + escapeHtml(cell.subjectShort || cell.subject || "—") + "</div>" +
+            '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             '<div class="detail">' + escapeHtml(detailText) + "</div>" +
             trailing +
           "</div>";
