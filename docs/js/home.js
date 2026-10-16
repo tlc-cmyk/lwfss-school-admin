@@ -386,6 +386,9 @@
         window.__homeFreeMark = mark;
         renderFreePanel();
       }
+
+      // Sticky 「下堂」countdown: real today + logged-in staff (not browse date / picker)
+      updateNextLessonCountdown();
     }
     tick();
     if (clockTimer) clearInterval(clockTimer);
@@ -418,6 +421,91 @@
     el.innerHTML = escapeHtml(name) +
       (short ? ' <span class="home-who-code">' + escapeHtml(short) + "</span>" : "") +
       (role ? ' <span class="' + roleClass + '">' + escapeHtml(role) + "</span>" : "");
+  }
+
+  /** Logged-in staff short code (not the 「查看教師」picker). */
+  function loggedInTeacherCode(session) {
+    session = session || getSession();
+    if (!session || session.role !== "staff") return "";
+    if (session.staff && session.staff.short_name) {
+      return String(session.staff.short_name).toUpperCase();
+    }
+    return "";
+  }
+
+  /**
+   * Next upcoming teaching period for the logged-in staff on real today
+   * (state.todayCycleDay + Asia/Hong_Kong now). Skips 空堂; ignores browse date.
+   * kind: hide | pending | none | next | done
+   */
+  function findNextOwnLesson() {
+    var code = loggedInTeacherCode();
+    if (!code) return { kind: "hide" };
+    var day = state.todayCycleDay;
+    if (!day) return { kind: "none" };
+    var teacher = findTeacher(code);
+    if (!teacher) return { kind: "pending" };
+    var schedule = (teacher.schedule && teacher.schedule[String(day)]) || {};
+    var maxp = periodsForDay(day);
+    var nowSec = nowHKTSeconds();
+    var lessons = [];
+    for (var p = 1; p <= maxp; p++) {
+      if (!schedule[String(p)]) continue;
+      var bell = periodBell(day, p);
+      if (!bell) continue;
+      var startM = hmToMinutes(bell.start);
+      var endM = hmToMinutes(bell.end);
+      if (startM == null) continue;
+      lessons.push({
+        period: p,
+        start: bell.start,
+        end: bell.end,
+        startSec: startM * 60,
+        endSec: endM != null ? endM * 60 : startM * 60 + 1
+      });
+    }
+    if (!lessons.length) return { kind: "none" };
+    var inCurrent = false;
+    for (var i = 0; i < lessons.length; i++) {
+      var L = lessons[i];
+      if (L.startSec > nowSec) {
+        return { kind: "next", lesson: L, secLeft: L.startSec - nowSec };
+      }
+      if (nowSec >= L.startSec && nowSec < L.endSec) inCurrent = true;
+    }
+    // Last (or only remaining) lesson still in progress — no 「下堂」yet.
+    if (inCurrent) return { kind: "hide" };
+    return { kind: "done" };
+  }
+
+  function formatNextLessonText(info) {
+    if (!info || info.kind === "hide" || info.kind === "pending") return null;
+    if (info.kind === "none") return "今日無堂";
+    if (info.kind === "done") return "今日完結";
+    var sec = info.secLeft;
+    if (sec == null) return null;
+    if (sec >= 3600) return "下堂 " + info.lesson.start;
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    if (m >= 1) return "下堂 還有 " + m + " 分";
+    return "下堂 還有 " + s + " 秒";
+  }
+
+  function updateNextLessonCountdown() {
+    var el = $("home-next-lesson");
+    if (!el) return;
+    var info = findNextOwnLesson();
+    var text = formatNextLessonText(info);
+    if (!text) {
+      el.hidden = true;
+      el.textContent = "";
+      el.className = "home-next-lesson";
+      return;
+    }
+    el.hidden = false;
+    if (el.textContent !== text) el.textContent = text;
+    var done = info.kind === "done" || info.kind === "none";
+    el.className = "home-next-lesson" + (done ? " is-done" : "");
   }
 
   function renderHomeBar(session) {

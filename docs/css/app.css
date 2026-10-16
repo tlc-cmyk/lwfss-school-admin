@@ -703,13 +703,41 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .home-status-chip.is-period { background: rgba(220, 70, 60, 0.55); }
 .home-status-chip.is-break { background: rgba(255, 200, 80, 0.4); color: #fff8e0; }
 .home-status-chip.is-after { background: rgba(160, 220, 190, 0.35); }
-.home-bar-who {
+.home-bar-who-wrap {
   margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: 58%;
+  min-width: 0;
+}
+.home-bar-who {
   font-size: 0.78rem;
   opacity: 0.92;
   text-align: right;
-  max-width: 52%;
+  max-width: 100%;
   word-break: break-word;
+}
+.home-next-lesson {
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #e8f8f0;
+  white-space: nowrap;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home-next-lesson.is-done {
+  opacity: 0.78;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.12);
 }
 .home-who-code {
   display: inline-block;
