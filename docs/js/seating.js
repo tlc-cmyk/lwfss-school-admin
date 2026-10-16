@@ -82,6 +82,25 @@
     return "";
   }
 
+  function normalizeSex(sex) {
+    var s = String(sex == null ? "" : sex).trim().toUpperCase();
+    if (s === "F" || s === "女" || s === "FEMALE" || s === "GIRL") return "F";
+    if (s === "M" || s === "男" || s === "MALE" || s === "BOY") return "M";
+    return "";
+  }
+
+  function sexClass(sex) {
+    var n = normalizeSex(sex);
+    if (n === "F") return " is-girl";
+    if (n === "M") return " is-boy";
+    return "";
+  }
+
+  function sexFromRosterId(studentId) {
+    var stu = findStudent(studentId);
+    return stu ? normalizeSex(stu.sex) : "";
+  }
+
   function setStatus(msg, isErr) {
     state.statusMsg = msg || "";
     var el = $("seat-status");
@@ -516,6 +535,8 @@
       if (s == null || s.r == null || s.c == null) return;
       // Drop seats whose student is no longer in roster
       if (s.student_id != null && !state.rosterIdSet[String(s.student_id)]) return;
+      var sex = normalizeSex(s.sex);
+      if (!sex && s.student_id != null) sex = sexFromRosterId(s.student_id);
       map[seatKey(s.r, s.c)] = {
         r: s.r,
         c: s.c,
@@ -523,6 +544,7 @@
         class_no: s.class_no || null,
         name_zh: s.name_zh || "",
         name_en: s.name_en || "",
+        sex: sex,
         notes: s.notes || ""
       };
     });
@@ -542,6 +564,7 @@
         class_no: s.class_no,
         name_zh: s.name_zh || "",
         name_en: s.name_en || "",
+        sex: normalizeSex(s.sex) || sexFromRosterId(s.student_id),
         notes: s.notes || ""
       });
     });
@@ -688,7 +711,7 @@
         var noLabel = (state.scope && (state.scope.kind === "group" || state.scope.kind === "split") && s.class_code)
           ? (s.class_code + "-" + s.class_no)
           : String(s.class_no);
-        html += '<li class="seat-roster-item" draggable="true" data-student-id="' +
+        html += '<li class="seat-roster-item' + sexClass(s.sex) + '" draggable="true" data-student-id="' +
           escapeHtml(s.id) + '" tabindex="0">' +
           '<span class="seat-no">' + escapeHtml(noLabel) + "</span>" +
           '<span class="seat-name">' + escapeHtml(displayName(s)) + "</span>" +
@@ -716,7 +739,11 @@
         var seat = state.seats[key];
         var selected = state.selectedSeat && state.selectedSeat.r === r && state.selectedSeat.c === c;
         var cls = "seat-cell";
-        if (seat && seat.student_id) cls += " is-filled";
+        if (seat && seat.student_id) {
+          cls += " is-filled";
+          var sx = normalizeSex(seat.sex) || (seat.student_id != null ? sexFromRosterId(seat.student_id) : "");
+          cls += sexClass(sx);
+        }
         if (selected) cls += " is-selected";
         var label = "";
         if (seat && seat.student_id) {
@@ -778,12 +805,15 @@
       class_no: stu.class_no,
       name_zh: stu.chinese_name || "",
       name_en: stu.english_name || "",
+      sex: normalizeSex(stu.sex),
       notes: ""
     };
   }
 
   function cloneSeatAt(seat, r, c) {
     if (!seat) return null;
+    var sex = normalizeSex(seat.sex);
+    if (!sex && seat.student_id != null) sex = sexFromRosterId(seat.student_id);
     return {
       r: r,
       c: c,
@@ -791,6 +821,7 @@
       class_no: seat.class_no,
       name_zh: seat.name_zh || "",
       name_en: seat.name_en || "",
+      sex: sex,
       notes: seat.notes || ""
     };
   }
@@ -888,15 +919,7 @@
     for (var r = 0; r < state.rows && i < state.roster.length; r++) {
       for (var c = 0; c < state.cols && i < state.roster.length; c++) {
         var stu = state.roster[i++];
-        state.seats[seatKey(r, c)] = {
-          r: r,
-          c: c,
-          student_id: stu.id,
-          class_no: stu.class_no,
-          name_zh: stu.chinese_name || "",
-          name_en: stu.english_name || "",
-          notes: ""
-        };
+        state.seats[seatKey(r, c)] = seatObjFromStudent(stu, r, c);
       }
     }
     state.dirty = true;
@@ -1056,13 +1079,17 @@
       for (var c = 0; c < cols; c++) {
         var seat = state.seats[seatKey(r, c)];
         var inner = "";
+        var sexN = "";
         if (seat && seat.student_id && state.rosterIdSet[String(seat.student_id)]) {
+          sexN = normalizeSex(seat.sex) || sexFromRosterId(seat.student_id);
           inner = '<div class="no">' + escapeHtml(seat.class_no || "") + "</div>" +
             '<div class="zh">' + escapeHtml(seat.name_zh || "") + "</div>" +
             (seat.name_en ? '<div class="en">' + escapeHtml(seat.name_en) + "</div>" : "");
         }
-        cells += '<td class="' + (seat && seat.student_id ? "filled" : "empty") + '">' +
-          inner + "</td>";
+        var tdCls = seat && seat.student_id ? "filled" : "empty";
+        if (sexN === "F") tdCls += " girl";
+        else if (sexN === "M") tdCls += " boy";
+        cells += '<td class="' + tdCls + '">' + inner + "</td>";
       }
       cells += "</tr>";
     }
@@ -1081,6 +1108,8 @@
       "td{border:1px solid #333;height:56px;vertical-align:middle;text-align:center;" +
       "padding:4px;font-size:12px;}" +
       "td.empty{background:#f7f7f7;}" +
+      "td.girl{background:#ffe4ec;}" +
+      "td.boy{background:#dbebff;}" +
       ".no{font-weight:700;font-size:11px;}" +
       ".zh{font-size:13px;}" +
       ".en{font-size:10px;color:#444;}" +
@@ -1090,7 +1119,9 @@
       '<div class="meta">' + escapeHtml(scopeLabel) +
       " · " + escapeHtml(teacher) +
       " · " + escapeHtml(todayLabel()) +
-      " · " + rows + "×" + cols + "</div>" +
+      " · " + rows + "×" + cols +
+      " · <span style=\"background:#ffe4ec;padding:1px 6px;border-radius:4px\">女</span> " +
+      "<span style=\"background:#dbebff;padding:1px 6px;border-radius:4px\">男</span></div>" +
       '<div class="front">黑板／講台</div>' +
       "<table><tbody>" + cells + "</tbody></table>" +
       '<div class="back">課室後</div>' +

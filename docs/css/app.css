@@ -1725,6 +1725,50 @@ html[data-app-role="student"] a[data-staff-only],
   border-color: #84caff;
   cursor: grab;
 }
+.seat-cell.is-filled.is-girl {
+  background: #ffe4ec;
+  border-color: #fda4c0;
+}
+.seat-cell.is-filled.is-boy {
+  background: #dbebff;
+  border-color: #93c5fd;
+}
+.seat-cell.is-selected.is-girl {
+  box-shadow: 0 0 0 2px rgba(244, 114, 182, 0.45);
+}
+.seat-cell.is-selected.is-boy {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4);
+}
+.seat-roster-item.is-girl {
+  background: #fff1f5;
+  border-color: #feCDD3;
+}
+.seat-roster-item.is-boy {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.seat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: var(--muted, #6b7280);
+}
+.seat-legend-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.08);
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.seat-legend-swatch.girl { background: #ffe4ec; }
+.seat-legend-swatch.boy { background: #dbebff; }
+.seat-legend-swatch.neutral { background: #eff8ff; }
+
 .seat-cell.is-selected {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(26, 58, 108, 0.2);
