@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events` |
+| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`、`assembly_by_day`（10） |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -37,7 +37,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_lessons`
 - `school_read_meta`
 - `school_read_staff`
-- `school_read_cycle_days` / `school_read_calendar_events`（本校 `@g.lwfss.edu.hk`）
+- `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 
 條件（約）：
@@ -53,10 +53,11 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 
 設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
-1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。主選單喺 footer。
-2. **今日事項**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；嵌喺頂卡內白底 inset。當值／早會**未有真 DB 資料就唔顯示**。
-3. **功能欄（sticky tabs）**：循環日課表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
-4. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡；**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；其他 tab 而家用 placeholder（可連去完整頁）。
+1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋**早會主題**（`assembly_by_day`）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。主選單喺 footer。
+2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
+3. **今日事項**：校曆 remark ＋最多 3 條今日 `staff_deadlines`；嵌喺頂卡內白底 inset。當值**未有真 DB 資料就唔顯示**。
+4. **功能欄（sticky tabs）**：循環日課表（預設）／完整時間表／文件／會議／即時空堂／約開會。切換只換下方面板。
+5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋P1… 節卡；**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；其他 tab 而家用 placeholder（可連去完整頁）。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 
@@ -82,6 +83,8 @@ school-admin/
 │   ├── calendar_staff_deadlines.sql  # calendar_events / cycle_days / staff_deadlines
 │   ├── seed_staff_deadlines.sql
 │   ├── seed_cycle_days.sql
+│   ├── assembly_by_day.sql # 早會日程（Day 1–10）
+│   ├── seed_assembly_by_day.sql
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
 │   └── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON

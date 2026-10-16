@@ -81,6 +81,7 @@
     cycleNote: "",
     calendarItems: [],
     deadlineItems: [],
+    assemblyByDay: {},
     viewingCode: "",
     selectedDay: null,
     activePanel: "tt"
@@ -412,7 +413,28 @@
       }
     }
 
+    renderAssembly();
     renderNotes(session);
+  }
+
+  function renderAssembly() {
+    var el = $("home-assembly");
+    if (!el) return;
+    var day = effectiveCycleDay();
+    var row = day && state.assemblyByDay ? state.assemblyByDay[day] : null;
+    if (!row || !row.theme) {
+      el.innerHTML = "";
+      el.hidden = true;
+      return;
+    }
+    var flagNote = row.is_flag
+      ? ' <span class="home-assembly-flag">· 升國旗</span>'
+      : "";
+    el.innerHTML =
+      '<span class="home-assembly-label">早會：</span>' +
+      '<span class="home-assembly-theme">' + escapeHtml(row.theme) + "</span>" +
+      flagNote;
+    el.hidden = false;
   }
 
   function renderNotes(session) {
@@ -518,6 +540,7 @@
       state.cycleNote = "登入後可顯示循環日";
       state.calendarItems = [];
       state.deadlineItems = [];
+      state.assemblyByDay = {};
       if (!state.selectedDay) state.selectedDay = 1;
       renderHomeBar(session);
       buildDayGrid();
@@ -543,10 +566,23 @@
       .eq("event_date", iso)
       .order("sort_order", { ascending: true });
 
-    Promise.all([cycleBrowse, cycleToday, calP]).then(function (parts) {
+    var assemblyP = Object.keys(state.assemblyByDay || {}).length
+      ? Promise.resolve({ data: null, _cached: true })
+      : client.from("assembly_by_day").select("day,theme,is_flag,is_3x").order("day");
+
+    Promise.all([cycleBrowse, cycleToday, calP, assemblyP]).then(function (parts) {
       var browseRes = parts[0];
       var todayRes = parts[1];
       var calRes = parts[2];
+      var assemblyRes = parts[3];
+
+      if (assemblyRes && !assemblyRes._cached && !assemblyRes.error && assemblyRes.data) {
+        var map = {};
+        assemblyRes.data.forEach(function (r) {
+          if (r && r.day) map[r.day] = r;
+        });
+        state.assemblyByDay = map;
+      }
 
       if (browseRes && !browseRes.error && browseRes.data && browseRes.data.cycle_day) {
         state.browseCycleDay = browseRes.data.cycle_day;

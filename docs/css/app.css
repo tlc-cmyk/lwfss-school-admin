@@ -708,6 +708,27 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: #0f3460;
 }
 /* Today's notes — one-line inset inside the same top card */
+/* Morning assembly line under Day / status / who */
+.home-assembly {
+  margin-top: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #e8f8f0;
+}
+.home-assembly-label {
+  opacity: 0.92;
+  font-weight: 700;
+}
+.home-assembly-theme {
+  font-weight: 700;
+}
+.home-assembly-flag {
+  font-weight: 700;
+  color: #ffe08a;
+  white-space: nowrap;
+}
+
 .home-top-notes {
   display: flex;
   align-items: baseline;
