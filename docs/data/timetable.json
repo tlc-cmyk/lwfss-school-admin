@@ -12,7 +12,7 @@
       5,
       10
     ],
-    "generatedAt": "2026-10-14 22:20:01 HKT",
+    "generatedAt": "2026-10-16 16:47:02 HKT",
     "generatedFrom": "MailMergeDB CSV export"
   },
   "teachers": [
@@ -344,7 +344,7 @@
       "code": "CCC",
       "eng": "CHO CHI CHUNG",
       "chi": "曹治聰",
-      "lessonCount": 32,
+      "lessonCount": 33,
       "schedule": {
         "1": {
           "1": {
@@ -614,6 +614,14 @@
             "room": "GEOGRAPHY ROOM"
           },
           "7": {
+            "class": "5A,5B,5C,5D",
+            "classShort": "5A-D",
+            "subject": "GEOc-GEO5-B3-Geog_3C",
+            "subjectShort": "GEOc-GEO5-B3-Geog_3C",
+            "teacher": "CCC",
+            "room": "GEOGRAPHY ROOM"
+          },
+          "8": {
             "class": "5A,5B,5C,5D",
             "classShort": "5A-D",
             "subject": "GEOc-GEO5-B3-Geog_3C",
@@ -3410,7 +3418,7 @@
       "code": "CYT",
       "eng": "CHAN YAT TING",
       "chi": "陳逸婷",
-      "lessonCount": 33,
+      "lessonCount": 34,
       "schedule": {
         "1": {
           "1": {
@@ -3688,6 +3696,14 @@
             "room": "PHYSICS LAB"
           },
           "7": {
+            "class": "5A,5B,5C,5D",
+            "classShort": "5A-D",
+            "subject": "PHY-PHY5-B3-Phy_3C",
+            "subjectShort": "PHY-PHY5-B3-Phy_3C",
+            "teacher": "CYT",
+            "room": "PHYSICS LAB"
+          },
+          "8": {
             "class": "5A,5B,5C,5D",
             "classShort": "5A-D",
             "subject": "PHY-PHY5-B3-Phy_3C",
@@ -4026,7 +4042,7 @@
       "code": "HCS",
       "eng": "HUNG CHAK SANG JONSON",
       "chi": "洪澤生",
-      "lessonCount": 31,
+      "lessonCount": 32,
       "schedule": {
         "1": {
           "1": {
@@ -4288,6 +4304,14 @@
             "room": "CHEMISTRY LAB"
           },
           "7": {
+            "class": "4A,4B,4C,4D",
+            "classShort": "4A-D",
+            "subject": "PHY-PHY4-B3-Phy_3C",
+            "subjectShort": "PHY-PHY4-B3-Phy_3C",
+            "teacher": "HCS",
+            "room": "CHEMISTRY LAB"
+          },
+          "8": {
             "class": "4A,4B,4C,4D",
             "classShort": "4A-D",
             "subject": "PHY-PHY4-B3-Phy_3C",
@@ -5620,7 +5644,7 @@
       "code": "KMW",
       "eng": "KEI MAN WAI JOE",
       "chi": "紀文偉",
-      "lessonCount": 35,
+      "lessonCount": 36,
       "schedule": {
         "1": {
           "6": {
@@ -5914,6 +5938,14 @@
             "room": "I.S. LAB"
           },
           "7": {
+            "class": "4A,4B,4C,4D",
+            "classShort": "4A-D",
+            "subject": "BIOe-BIO4-B3-Bio_3E",
+            "subjectShort": "BIOe-BIO4-B3-Bio_3E",
+            "teacher": "KMW",
+            "room": "I.S. LAB"
+          },
+          "8": {
             "class": "4A,4B,4C,4D",
             "classShort": "4A-D",
             "subject": "BIOe-BIO4-B3-Bio_3E",
@@ -6268,7 +6300,7 @@
       "code": "KWY",
       "eng": "KWOK WAI YIN",
       "chi": "郭偉賢",
-      "lessonCount": 28,
+      "lessonCount": 29,
       "schedule": {
         "1": {
           "3": {
@@ -6506,6 +6538,14 @@
             "room": "501"
           },
           "7": {
+            "class": "4A,4B,4C,4D",
+            "classShort": "4A-D",
+            "subject": "MAM2-M2S4-B3-Maths_3E",
+            "subjectShort": "MAM2-M2S4-B3-Maths_3E",
+            "teacher": "KWY",
+            "room": "501"
+          },
+          "8": {
             "class": "4A,4B,4C,4D",
             "classShort": "4A-D",
             "subject": "MAM2-M2S4-B3-Maths_3E",
@@ -12082,7 +12122,7 @@
       "code": "SCL",
       "eng": "SO CHI LEONG",
       "chi": "蘇智亮",
-      "lessonCount": 32,
+      "lessonCount": 33,
       "schedule": {
         "1": {
           "1": {
@@ -12352,6 +12392,14 @@
             "room": "502"
           },
           "7": {
+            "class": "4A,4B,4C,4D",
+            "classShort": "4A-D",
+            "subject": "GEOc-GEO4-B3-Geog_3C",
+            "subjectShort": "GEOc-GEO4-B3-Geog_3C",
+            "teacher": "SCL",
+            "room": "502"
+          },
+          "8": {
             "class": "4A,4B,4C,4D",
             "classShort": "4A-D",
             "subject": "GEOc-GEO4-B3-Geog_3C",
@@ -12869,7 +12917,7 @@
       "code": "TLC",
       "eng": "TSAO LAP CHEUNG",
       "chi": "曹立翔",
-      "lessonCount": 36,
+      "lessonCount": 35,
       "schedule": {
         "1": {
           "1": {
@@ -13169,14 +13217,6 @@
             "subjectShort": "MATH",
             "teacher": "TLC",
             "room": "604"
-          },
-          "8": {
-            "class": "5A,5B,5C,5D",
-            "classShort": "5A-D",
-            "subject": "BF AI 900課程",
-            "subjectShort": "BF AI 900課程",
-            "teacher": "TLC",
-            "room": "521"
           }
         }
       }
@@ -14099,7 +14139,7 @@
       "code": "WKS",
       "eng": "WONG KAI SHING",
       "chi": "黃啟成",
-      "lessonCount": 28,
+      "lessonCount": 29,
       "schedule": {
         "1": {
           "1": {
@@ -14337,6 +14377,14 @@
             "room": "601"
           },
           "7": {
+            "class": "5A,5B,5C,5D",
+            "classShort": "5A-D",
+            "subject": "MAM2-M2S5-B3-Maths_3E",
+            "subjectShort": "MAM2-M2S5-B3-Maths_3E",
+            "teacher": "WKS",
+            "room": "601"
+          },
+          "8": {
             "class": "5A,5B,5C,5D",
             "classShort": "5A-D",
             "subject": "MAM2-M2S5-B3-Maths_3E",
@@ -16716,7 +16764,7 @@
       "code": "YTH",
       "eng": "YU TSZ HOI",
       "chi": "余子海",
-      "lessonCount": 36,
+      "lessonCount": 35,
       "schedule": {
         "1": {
           "2": {
@@ -17016,14 +17064,6 @@
             "subjectShort": "MATH",
             "teacher": "YTH",
             "room": "403"
-          },
-          "8": {
-            "class": "5A,5B,5C,5D",
-            "classShort": "5A-D",
-            "subject": "流行聲樂製作",
-            "subjectShort": "流行聲樂製作",
-            "teacher": "YTH",
-            "room": "禮堂STUDIO"
           }
         }
       }

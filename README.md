@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1908）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49） |
+| 資料表 | `teachers`（65）、`lessons`（1913）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49） |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -124,7 +124,7 @@ school-admin/
 
 ## 網站怎樣讀時間表
 
-登入成功且工作階段來自 Supabase 時，`timetable.js` 會分頁讀取 `teachers`、`lessons`、`meta`（PostgREST 預設每頁最多 1000 列，課節約 1908，所以會讀兩頁），再組成跟 `window.TIMETABLE_DATA` 一樣的形狀：
+登入成功且工作階段來自 Supabase 時，`timetable.js` 會分頁讀取 `teachers`、`lessons`、`meta`（PostgREST 預設每頁最多 1000 列，課節約 1913，所以會讀兩頁），再組成跟 `window.TIMETABLE_DATA` 一樣的形狀：
 
 ```text
 { meta, teachers: [{ code, eng, chi, lessonCount, schedule: { day: { period: { class, classShort, subject, subjectShort, teacher, room } } } }] }
@@ -255,7 +255,7 @@ SQLite 是離線備份和匯入快取，不要刪。
 3. 不要用瀏覽器裡的 anon key 寫入；RLS 沒有寫入政策
 4. 之後若要自動化，可另寫腳本用 **service role**（只放在本機環境變數，不進 git）從 `school.db` upsert 上雲
 
-匯入後抽查：`teachers` 約 65 列、`lessons` 約 1908 列、`meta` 有 `generated_at`。
+匯入後抽查：`teachers` 約 65 列、`lessons` 約 1913 列、`meta` 有 `generated_at`。
 
 ---
 
