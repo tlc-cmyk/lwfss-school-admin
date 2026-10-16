@@ -141,8 +141,9 @@ school-admin/
 1. **同分組／合班（同科目）**：同一循環日 `day` + 節 `period` + 科目 + 班組（`class_short`／`class_name`，例如 `2A,2B`、`4B-D`、或單班 `5A` 雙教師）→ 一格，chips 如 `AYWS · 402` `NET · 401`
 2. **高中選修 block（不同科目）**：同一 `day` + `period` + 全級班組（`4A-D`／`5A-D`／`6A-D`）+ 同一選修組 `B1`／`B2`／`B3`（從 `subject_short` 的 `-Bn-` 解析；裸 `ICT` 視為 B1）→ 一格標題「選修 B1」，chips 如 `GEO · CCC · GEOGRAPHY ROOM` `ICT · TLC · COMPUTER ROOM` …
 3. **不合併**：MATH 等非選修、不同 block、或無關班組
+4. **教師時間表過濾**：合併後只保留 `teacher_code ===` 檢視中教師的 chip。同分組唔顯示其他教師；選修 block 只顯示自己任教的 option（subject·room）；該節無自己的課則維持空堂。**班別／課室**面板仍顯示完整合併列表。
 
-實作：`docs/js/home.js`、`docs/js/timetable.js`。
+實作：`docs/js/home.js`、`docs/js/timetable.js`（`ownMergedSlots`）。
 
 ---
 

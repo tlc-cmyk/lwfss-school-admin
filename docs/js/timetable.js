@@ -190,6 +190,18 @@
     return rows;
   }
 
+
+  /**
+   * Teacher timetable only: keep chips whose teacher_code matches the viewer.
+   */
+  function ownMergedSlots(groups, teacherCode) {
+    var code = String(teacherCode || "").trim();
+    if (!code) return [];
+    return (groups || []).filter(function (g) {
+      return g && g.code === code;
+    });
+  }
+
   function orderMergedSlots(groups, preferCode) {
     var list = (groups || []).slice();
     list.sort(function (a, b) {
@@ -311,15 +323,17 @@
       var cell = schedule[String(p)];
       var row = document.createElement("div");
       if (cell) {
-        var merged = collectMergedSlots(day, p, cell);
-        var isElective = !!(merged.length && merged[0].isElective);
-        var isSplit = merged.length > 1;
         var blockKey = electiveBlockKeyFromLesson({
           class_short: cell.classShort,
           class_name: cell.class,
           subject_short: cell.subjectShort,
           subject: cell.subject
         });
+        // Teacher view: only this teacher's group/option (not peer chips).
+        var merged = ownMergedSlots(collectMergedSlots(day, p, cell), teacher.code);
+        var isElective = !!blockKey;
+        var useChips = merged.length > 1 || (isElective && merged.length > 0);
+        var isSplit = useChips;
         row.className = "period lesson" + (isSplit ? " is-split" : "") +
           (isElective ? " is-elective" : "");
         var titleText = isElective
@@ -327,7 +341,7 @@
           : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
         var trailing = "";
-        if (isSplit) {
+        if (useChips) {
           trailing = splitGroupsHtml(merged, teacher.code);
         } else {
           if (cell.teacher && cell.teacher !== teacher.code) {

@@ -1511,15 +1511,19 @@
 
       if (cell) {
         busy++;
-        var merged = collectMergedSlots(day, p, cell);
-        var isElective = !!(merged.length && merged[0].isElective);
-        var isSplit = merged.length > 1;
         var blockKey = electiveBlockKeyFromLesson({
           class_short: cell.classShort,
           class_name: cell.class,
           subject_short: cell.subjectShort,
           subject: cell.subject
         });
+        // Teacher view: only this teacher's group/option (not peer chips).
+        var merged = ownMergedSlots(collectMergedSlots(day, p, cell), teacher.code);
+        var isElective = !!blockKey;
+        // Elective: keep one option chip (subject·room). Same-subject split with
+        // a single own slot: plain room (no peer teachers).
+        var useChips = merged.length > 1 || (isElective && merged.length > 0);
+        var isSplit = useChips;
         var subjCls = subjectClass(cell.subjectShort, cell.subject);
         if (isElective) subjCls = "tt-subj-elective";
         row.className = ("tt-period lesson " + subjCls + extra +
@@ -1530,7 +1534,7 @@
           : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
         var trailing = "";
-        if (isSplit) {
+        if (useChips) {
           trailing = splitGroupsHtml(merged, teacher.code);
         } else {
           if (cell.teacher && cell.teacher !== teacher.code) {
@@ -1834,6 +1838,19 @@
     return list;
   }
 
+
+  /**
+   * Teacher timetable only: keep chips whose teacher_code matches the viewer.
+   * Class/room panels skip this and keep the full merged list.
+   */
+  function ownMergedSlots(groups, teacherCode) {
+    var code = String(teacherCode || "").trim();
+    if (!code) return [];
+    return (groups || []).filter(function (g) {
+      return g && g.code === code;
+    });
+  }
+
   /**
    * Peers for one cell: same-subject split groups, or all options in the
    * same senior elective block (different subjects).
@@ -1904,7 +1921,7 @@
    * Structured chips with aligned columns.
    * Elective: subject · teacher · room (full-width rows).
    * Split: teacher · room (equal 2-col grid).
-   * preferCode marked is-mine.
+   * preferCode marked is-mine (class/room show all; teacher view pre-filters).
    */
   function splitGroupsHtml(groups, preferCode) {
     var list = orderSplitGroups(groups, preferCode);
