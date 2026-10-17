@@ -4,7 +4,8 @@
  *
  * Ports only the kit helpers #005 needs (pure u-based draw). Content localized
  * for LWFSS school-admin; timings/easing unchanged from upstream.
- * Plays one CYC (4.7s) then freezes (no loop).
+ * Plays once through the reveal hold, then freezes on a fully-visible
+ * frame (u = HOLD_U ≈ mid-hold; not the empty exit at end of CYC).
  */
 (function () {
   "use strict";
@@ -155,6 +156,10 @@
     return canvas;
   }
 
+  // Hold while LWFSS + 行政系統 are fully in place (~1.0–1.7s of half-cycle);
+  // exit starts ~1.7s — freeze mid-hold, not at empty end of CYC.
+  var HOLD_U = 1.2;
+
   function frame(now) {
     if (!running) return;
     if (!gateVisible()) {
@@ -163,9 +168,9 @@
     }
     if (!ctx && !ensureCanvas()) return;
     var elapsed = (now - t0) / 1000;
-    // One full CYC (4.7s) only — freeze on last frame, do not loop.
-    var done = elapsed >= CYC;
-    var u = done ? CYC : elapsed;
+    // Play once to hold frame, freeze there, stop rAF.
+    var done = elapsed >= HOLD_U;
+    var u = done ? HOLD_U : elapsed;
     var dpr = canvas.width / CW;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, CW, CH);

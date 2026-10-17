@@ -4,7 +4,7 @@
  *
  * Ports kit helpers #011 needs (pure u-based draw). Demo character kept;
  * timings/easing unchanged from upstream.
- * Plays one CYC (4.7s) then freezes on rest pose (no loop).
+ * Continuous loop while the login gate is visible (u = t % CYC).
  */
 (function () {
   "use strict";
@@ -156,20 +156,14 @@
     }
     if (!ctx && !ensureCanvas()) return;
     var elapsed = (now - t0) / 1000;
-    // One full CYC (4.7s) only — freeze on last frame, do not loop.
-    var done = elapsed >= CYC;
-    var u = done ? CYC : elapsed;
+    // Continuous loop while gate visible.
+    var u = elapsed % CYC;
     var dpr = canvas.width / CW;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, CW, CH);
     ctx.save();
     drawSquashStretch(ctx, CW, CH, u);
     ctx.restore();
-    if (done) {
-      running = false;
-      rafId = 0;
-      return;
-    }
     rafId = requestAnimationFrame(frame);
   }
 
