@@ -3,6 +3,7 @@
 
   var MIN_PICK = 2;
   var MAX_PICK = 8;
+  var SUGGEST_ROOMS = 4; // max rooms listed per free slot
 
   // Same Day→bell mapping as home.js (Day 5／10 = BF)
   var BELLS = {
@@ -166,6 +167,111 @@
       if (allFree) out.push(p);
     }
     return out;
+  }
+
+  /** Collect unique room names from all teacher schedule cells. */
+  function allRoomsFromData() {
+    var data = getData();
+    var seen = {};
+    var rooms = [];
+    if (!data || !data.teachers) return rooms;
+    data.teachers.forEach(function (t) {
+      if (!t || !t.schedule) return;
+      Object.keys(t.schedule).forEach(function (dayKey) {
+        var dayMap = t.schedule[dayKey];
+        if (!dayMap) return;
+        Object.keys(dayMap).forEach(function (periodKey) {
+          var cell = dayMap[periodKey];
+          if (!cell) return;
+          var r = String(cell.room || "").trim();
+          if (!r || seen[r]) return;
+          seen[r] = true;
+          rooms.push(r);
+        });
+      });
+    });
+    return rooms;
+  }
+
+  /** Rooms that have any lesson at day+period (from lessons / schedules). */
+  function busyRoomsAt(day, period) {
+    var data = getData();
+    var busy = {};
+    if (!data || !data.teachers || day == null || period == null) return busy;
+    var dayKey = String(day);
+    var periodKey = String(period);
+    data.teachers.forEach(function (t) {
+      if (!t || !t.schedule) return;
+      var cell = t.schedule[dayKey] && t.schedule[dayKey][periodKey];
+      if (!cell) return;
+      var r = String(cell.room || "").trim();
+      if (r) busy[r] = true;
+    });
+    return busy;
+  }
+
+  function isOutdoorRoom(name) {
+    var u = String(name || "").toUpperCase();
+    return /PLAYGROUND|操場|球場|COVERED\s*PLAY|OPEN\s*AREA/.test(u);
+  }
+
+  /** Ordinary classroom: numeric room codes e.g. 301、506. */
+  function isOrdinaryClassroom(name) {
+    return /^\d{3,4}$/.test(String(name || "").trim());
+  }
+
+  function isLabOrSpecial(name) {
+    var u = String(name || "").toUpperCase();
+    return /LAB|MMLC|COMPUTER|I\.?\s*T\.?\s*ROOM|STEM|MUSIC|VISUAL\s*ARTS|HOME\s*ECONOMICS|GEOGRAPHY|SCIENCE/.test(u);
+  }
+
+  /**
+   * Suggest free rooms for a day+period.
+   * Prefer ordinary classrooms; then other indoor rooms; skip playgrounds.
+   * Returns up to SUGGEST_ROOMS names.
+   */
+  function suggestFreeRooms(day, period) {
+    var busy = busyRoomsAt(day, period);
+    var all = allRoomsFromData();
+    var ordinary = [];
+    var other = [];
+    all.forEach(function (r) {
+      if (busy[r] || isOutdoorRoom(r)) return;
+      if (isOrdinaryClassroom(r)) ordinary.push(r);
+      else other.push(r);
+    });
+    ordinary.sort(function (a, b) {
+      return parseInt(a, 10) - parseInt(b, 10);
+    });
+    // Prefer non-lab specials before labs when filling remainder
+    other.sort(function (a, b) {
+      var la = isLabOrSpecial(a) ? 1 : 0;
+      var lb = isLabOrSpecial(b) ? 1 : 0;
+      if (la !== lb) return la - lb;
+      return a.localeCompare(b, "zh-HK");
+    });
+    var out = ordinary.slice();
+    for (var i = 0; i < other.length && out.length < SUGGEST_ROOMS; i++) {
+      out.push(other[i]);
+    }
+    return out.slice(0, SUGGEST_ROOMS);
+  }
+
+  function renderRoomSuggest(day, period) {
+    var rooms = suggestFreeRooms(day, period);
+    if (!rooms.length) {
+      return '<div class="meet-rooms"><span class="meet-rooms-label">可用課室</span><span class="meet-rooms-none">本節未有可建議課室</span></div>';
+    }
+    var chips = rooms.map(function (r) {
+      var cls = "meet-room-chip" + (isOrdinaryClassroom(r) ? " is-class" : " is-special");
+      return '<span class="' + cls + '">' + escapeHtml(r) + "</span>";
+    }).join("");
+    return (
+      '<div class="meet-rooms">' +
+        '<span class="meet-rooms-label">建議課室</span>' +
+        '<span class="meet-rooms-list">' + chips + "</span>" +
+      "</div>"
+    );
   }
 
   function selfCode() {
@@ -333,7 +439,7 @@
       return;
     }
 
-    setHint("共同空堂＝所選同事在該節皆無課（按 lessons／時間表）");
+    setHint("共同空堂＝所選同事該節皆無課；建議課室＝該節 lessons 無人用（優先普通課室）");
 
     var names = codes.map(function (c) {
       var t = findTeacher(c);
@@ -361,9 +467,12 @@
         var s = formatSlot(day, p);
         return (
           '<div class="meet-slot">' +
-            '<span class="meet-slot-period">' + escapeHtml(s.label) + "</span>" +
-            (s.time ? '<span class="meet-slot-time">' + escapeHtml(s.time) + "</span>" : "") +
-            '<span class="meet-slot-tag">共同空堂</span>' +
+            '<div class="meet-slot-main">' +
+              '<span class="meet-slot-period">' + escapeHtml(s.label) + "</span>" +
+              (s.time ? '<span class="meet-slot-time">' + escapeHtml(s.time) + "</span>" : "") +
+              '<span class="meet-slot-tag">共同空堂</span>' +
+            "</div>" +
+            renderRoomSuggest(day, p) +
           "</div>"
         );
       });
@@ -387,8 +496,11 @@
           var s = formatSlot(d, p);
           return (
             '<div class="meet-slot">' +
-              '<span class="meet-slot-period">' + escapeHtml(s.label) + "</span>" +
-              (s.time ? '<span class="meet-slot-time">' + escapeHtml(s.time) + "</span>" : "") +
+              '<div class="meet-slot-main">' +
+                '<span class="meet-slot-period">' + escapeHtml(s.label) + "</span>" +
+                (s.time ? '<span class="meet-slot-time">' + escapeHtml(s.time) + "</span>" : "") +
+              "</div>" +
+              renderRoomSuggest(d, p) +
             "</div>"
           );
         }).join("") + "</div>";

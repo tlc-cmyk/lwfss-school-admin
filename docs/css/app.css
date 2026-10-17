@@ -1848,13 +1848,18 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .meet-slot-list-compact { gap: 4px; }
 .meet-slot {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px 12px;
+  flex-direction: column;
+  gap: 8px;
   padding: 10px 12px;
   border: 1px solid #abefc6;
   border-radius: 8px;
   background: #ecfdf3;
+}
+.meet-slot-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
 }
 .meet-slot-period {
   font-weight: 700;
@@ -1874,6 +1879,49 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   background: #dcfae6;
   padding: 2px 8px;
   border-radius: 999px;
+}
+.meet-rooms {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  padding-top: 2px;
+  border-top: 1px dashed #abefc6;
+}
+.meet-rooms-label {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475467;
+}
+.meet-rooms-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.meet-room-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+}
+.meet-room-chip.is-class {
+  border-color: #84caff;
+  background: #f0f9ff;
+  color: #175cd3;
+}
+.meet-room-chip.is-special {
+  border-color: #d0d5dd;
+  background: #f9fafb;
+  color: #475467;
+}
+.meet-rooms-none {
+  font-size: 0.78rem;
+  color: var(--muted, #6b7280);
 }
 .meet-week-grid {
   display: flex;
