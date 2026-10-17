@@ -404,6 +404,25 @@ a:hover { text-decoration: underline; }
   color: var(--muted);
 }
 
+/* Login hero — Motion Prompt #005 mask reveal (dark navy stage) */
+.gate-hero {
+  width: calc(100% + 40px);
+  margin: -24px -20px 16px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
+  background: #0F1A3D;
+  line-height: 0;
+}
+.gate-hero[hidden] {
+  display: none !important;
+}
+.gate-hero canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: top;
+}
+
 .google-slot {
   display: flex;
   justify-content: center;
