@@ -429,17 +429,25 @@ a:hover { text-decoration: underline; }
   min-height: 44px;
   margin: 8px 0 12px;
 }
+/* Login mascot — Motion Prompt #011 squash & stretch (dark navy stage) */
 .gate-mascot {
   display: block;
-  width: min(240px, 72%);
-  max-width: 240px;
-  height: auto;
+  width: 100%;
+  max-width: 539px;
   margin: 8px auto 0;
   border-radius: 12px;
-  object-fit: contain;
+  overflow: hidden;
+  background: #0F1A3D;
+  line-height: 0;
 }
-html[data-theme="dark"] .gate-mascot {
-  opacity: 0.92;
+.gate-mascot[hidden] {
+  display: none !important;
+}
+.gate-mascot canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  vertical-align: top;
 }
 .oauth-hint {
   font-size: 0.8rem;
