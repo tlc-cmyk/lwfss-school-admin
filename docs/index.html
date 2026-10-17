@@ -8,6 +8,15 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="學校行政" />
   <title>學校行政系統</title>
+  <script>
+    (function () {
+      try {
+        if (localStorage.getItem("lwfss-theme") === "dark") {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
@@ -51,6 +60,9 @@
                 <span class="home-bar-pick-label">改日期</span>
                 <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
               </label>
+              <button type="button" id="theme-toggle" class="home-theme-toggle" title="切換深色模式" aria-pressed="false" aria-label="切換深淺色">
+                <span class="theme-label-light">黑</span><span class="theme-label-dark">亮</span>
+              </button>
               <button type="button" id="sign-out" class="home-sign-out" title="登出">登出</button>
             </div>
           </div>
@@ -296,6 +308,7 @@
 
   </div>
 
+  <script src="js/theme.js"></script>
   <script src="js/config.js"></script>
   <script src="js/auth.js"></script>
   <script src="data/timetable.js"></script>
