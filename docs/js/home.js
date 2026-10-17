@@ -2171,15 +2171,47 @@
     applyClassRoomModeUI();
   }
 
+  // Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060
+  // Segmented control — slide thumb under the active 班別／課室 chip (0.25s easeInOutCubic via CSS).
+  function syncCrModeSegThumb(bar, instant) {
+    if (!bar || !bar.classList.contains("mp-seg")) return;
+    var thumb = bar.querySelector(".mp-seg-thumb");
+    var active = bar.querySelector("[data-cr-mode].active");
+    if (!thumb || !active) return;
+    var x = active.offsetLeft;
+    var w = active.offsetWidth;
+    if (instant) {
+      var prev = thumb.style.transition;
+      thumb.style.transition = "none";
+      thumb.style.width = w + "px";
+      thumb.style.transform = "translateX(" + x + "px)";
+      void thumb.offsetWidth;
+      thumb.style.transition = prev;
+    } else {
+      thumb.style.width = w + "px";
+      thumb.style.transform = "translateX(" + x + "px)";
+    }
+  }
+
   function applyClassRoomModeUI() {
     var mode = state.crMode === "room" ? "room" : "class";
     state.crMode = mode;
-    var modeBar = document.querySelector(".tt-cr-mode");
+    var modeBar = $("home-cr-mode-bar") || document.querySelector(".tt-cr-staff .tt-cr-mode");
     if (modeBar) {
       Array.prototype.forEach.call(modeBar.querySelectorAll("[data-cr-mode]"), function (btn) {
         var on = btn.getAttribute("data-cr-mode") === mode;
         btn.classList.toggle("active", on);
         btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      // Layout may not be ready while the panel is hidden; only mark ready once width > 0.
+      var instant = !modeBar.dataset.segReady;
+      syncCrModeSegThumb(modeBar, instant);
+      requestAnimationFrame(function () {
+        syncCrModeSegThumb(modeBar, !modeBar.dataset.segReady);
+        var thumb = modeBar.querySelector(".mp-seg-thumb");
+        if (thumb && parseFloat(thumb.style.width) > 0) {
+          modeBar.dataset.segReady = "1";
+        }
       });
     }
     var classLabel = $("home-cr-class-label");
@@ -2523,7 +2555,7 @@
   }
 
   function bindClassRoomControls() {
-    var modeBar = document.querySelector(".tt-cr-mode");
+    var modeBar = $("home-cr-mode-bar") || document.querySelector(".tt-cr-staff .tt-cr-mode");
     if (modeBar && modeBar.dataset.bound !== "1") {
       modeBar.dataset.bound = "1";
       modeBar.addEventListener("click", function (e) {
@@ -2534,6 +2566,15 @@
         state.crMode = mode;
         applyClassRoomModeUI();
         showClassRoomView();
+      });
+      if (typeof ResizeObserver !== "undefined") {
+        var ro = new ResizeObserver(function () {
+          syncCrModeSegThumb(modeBar, true);
+        });
+        ro.observe(modeBar);
+      }
+      window.addEventListener("resize", function () {
+        syncCrModeSegThumb(modeBar, true);
       });
     }
     var classSel = $("home-cr-class-select");

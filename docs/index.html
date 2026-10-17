@@ -122,9 +122,11 @@
           <div id="home-cr-day-grid" class="tt-day-grid" role="tablist" aria-label="循環日 D1–D10"></div>
 
           <div class="tt-cr-staff" data-role-view="staff">
-            <div class="tt-cr-mode" role="group" aria-label="查詢方式">
-              <button type="button" class="chip active" data-cr-mode="class" id="home-cr-mode-class">班別</button>
-              <button type="button" class="chip" data-cr-mode="room" id="home-cr-mode-room">課室</button>
+            <!-- Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060 -->
+            <div id="home-cr-mode-bar" class="tt-cr-mode mp-seg" role="group" aria-label="查詢方式">
+              <span class="mp-seg-thumb" aria-hidden="true"></span>
+              <button type="button" class="chip active" data-cr-mode="class" id="home-cr-mode-class" aria-pressed="true">班別</button>
+              <button type="button" class="chip" data-cr-mode="room" id="home-cr-mode-room" aria-pressed="false">課室</button>
             </div>
             <div class="tt-cr-pick-row">
               <label class="tt-teacher-label" for="home-cr-class-select" id="home-cr-class-label">班別</label>
