@@ -1524,7 +1524,12 @@
 
   window.SchoolAdminSeating = {
     show: showPanel,
-    isDirty: function () { return !!state.dirty; }
+    isDirty: function () { return !!state.dirty; },
+    /** Shared taught-scope picker (same as 座位表). Returns scopes array. */
+    getTaughtScopes: function (session) {
+      return loadTaughtScopes(session || getSession());
+    },
+    getScopes: function () { return state.scopes.slice(); }
   };
 
   document.addEventListener("schooladmin:authed", function () {

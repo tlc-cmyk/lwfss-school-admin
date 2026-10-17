@@ -2546,6 +2546,11 @@
         window.SchoolAdminSeating.show();
       }
     }
+    if (panelId === "classroom") {
+      if (window.SchoolAdminClassroom && typeof window.SchoolAdminClassroom.show === "function") {
+        window.SchoolAdminClassroom.show();
+      }
+    }
     if (panelId === "memo") {
       if (window.SchoolAdminPersonalMemo && typeof window.SchoolAdminPersonalMemo.show === "function") {
         window.SchoolAdminPersonalMemo.show();

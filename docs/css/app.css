@@ -2721,3 +2721,211 @@ html[data-theme="dark"] .tt-period.lesson .tt-period-time {
   color: var(--text);
 }
 html[data-theme="dark"] .tt-period.lesson .detail { color: var(--muted); }
+
+/* —— 我的課堂（點名） —— */
+.home-panel-classroom .cr-attend-toolbar {
+  margin-bottom: 8px;
+}
+.cr-attend-date-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary);
+  padding: 4px 2px;
+}
+.cr-attend-layout-src {
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+}
+.cr-attend-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  margin: 0 0 8px;
+}
+.cr-attend-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card, #fff);
+}
+.cr-attend-pill.is-present {
+  background: #ecfdf3;
+  border-color: #abefc6;
+  color: #067647;
+}
+.cr-attend-pill.is-absent {
+  background: #fef3f2;
+  border-color: #fecdca;
+  color: #b42318;
+}
+.cr-attend-pill.is-late {
+  background: #fffaeb;
+  border-color: #fecd89;
+  color: #b54708;
+}
+.cr-attend-pill.is-unmarked {
+  background: #f2f4f7;
+  border-color: #d0d5dd;
+  color: #475467;
+}
+.cr-attend-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cr-attend-cell {
+  position: relative;
+  cursor: pointer;
+}
+.cr-attend-cell[data-student-id]:hover {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.cr-attend-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1.15rem;
+  height: 1.15rem;
+  padding: 0 3px;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.15rem;
+  text-align: center;
+  border: 1px solid transparent;
+  background: #f2f4f7;
+  color: #475467;
+  z-index: 1;
+}
+.cr-attend-badge.is-present {
+  background: #067647;
+  color: #fff;
+  border-color: #067647;
+}
+.cr-attend-badge.is-absent {
+  background: #b42318;
+  color: #fff;
+  border-color: #b42318;
+}
+.cr-attend-badge.is-late {
+  background: #b54708;
+  color: #fff;
+  border-color: #b54708;
+}
+.cr-attend-badge.is-unmarked {
+  background: #e4e7ec;
+  color: #667085;
+}
+.cr-attend-cell.is-att-present {
+  box-shadow: inset 0 0 0 2px #067647;
+}
+.cr-attend-cell.is-att-absent {
+  box-shadow: inset 0 0 0 2px #b42318;
+  opacity: 0.85;
+}
+.cr-attend-cell.is-att-late {
+  box-shadow: inset 0 0 0 2px #b54708;
+}
+.cr-attend-legend-swatch {
+  display: inline-block;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 999px;
+  margin-right: 4px;
+  vertical-align: -1px;
+  border: 1px solid var(--border);
+}
+.cr-attend-legend-swatch.present { background: #067647; border-color: #067647; }
+.cr-attend-legend-swatch.absent { background: #b42318; border-color: #b42318; }
+.cr-attend-legend-swatch.late { background: #b54708; border-color: #b54708; }
+
+.cr-attend-unseated {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card, #fff);
+}
+.cr-attend-unseated-head {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--primary);
+}
+.cr-attend-unseated-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.cr-attend-unseated-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 22px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #eff8ff;
+  cursor: pointer;
+  font-size: 0.82rem;
+}
+.cr-attend-unseated-item.is-girl { background: #ffe4ec; }
+.cr-attend-unseated-item.is-boy { background: #dbebff; }
+.cr-attend-unseated-item .cr-attend-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: auto;
+}
+.cr-attend-unseated-item:hover,
+.cr-attend-unseated-item:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+html[data-theme="dark"] .cr-attend-pill.is-present {
+  background: rgba(6, 118, 71, 0.25);
+  color: #75e0a7;
+  border-color: #087443;
+}
+html[data-theme="dark"] .cr-attend-pill.is-absent {
+  background: rgba(180, 35, 24, 0.25);
+  color: #fda29b;
+  border-color: #912018;
+}
+html[data-theme="dark"] .cr-attend-pill.is-late {
+  background: rgba(181, 71, 8, 0.25);
+  color: #fec84b;
+  border-color: #93370d;
+}
+html[data-theme="dark"] .cr-attend-pill.is-unmarked {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  border-color: var(--border);
+}
+html[data-theme="dark"] .cr-attend-unseated {
+  background: var(--card);
+}
+html[data-theme="dark"] .cr-attend-unseated-item {
+  background: rgba(59, 130, 246, 0.15);
+}
+html[data-theme="dark"] .cr-attend-unseated-item.is-girl {
+  background: rgba(244, 114, 182, 0.18);
+}
+html[data-theme="dark"] .cr-attend-unseated-item.is-boy {
+  background: rgba(96, 165, 250, 0.18);
+}
+html[data-theme="dark"] .cr-attend-badge.is-unmarked {
+  background: #344054;
+  color: #d0d5dd;
+}
