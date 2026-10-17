@@ -544,7 +544,7 @@
     var rows = state.rows;
     var cols = state.cols;
     var html = '<div class="seat-board cr-attend-board" style="--seat-cols:' + cols + '">';
-    html += '<div class="seat-board-label seat-board-front">黑板／講台</div>';
+    html += '<div class="seat-board-label seat-board-back">課室後</div>';
     html += '<div class="seat-board-grid">';
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
@@ -577,7 +577,7 @@
       }
     }
     html += "</div>";
-    html += '<div class="seat-board-label seat-board-back">課室後</div>';
+    html += '<div class="seat-board-label seat-board-front">黑板／講台</div>';
     html += "</div>";
     box.innerHTML = html;
   }

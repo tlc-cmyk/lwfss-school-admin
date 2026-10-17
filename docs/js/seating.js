@@ -731,7 +731,7 @@
     var rows = state.rows;
     var cols = state.cols;
     var html = '<div class="seat-board" style="--seat-cols:' + cols + '">';
-    html += '<div class="seat-board-label seat-board-front">黑板／講台</div>';
+    html += '<div class="seat-board-label seat-board-back">課室後</div>';
     html += '<div class="seat-board-grid">';
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
@@ -760,7 +760,7 @@
       }
     }
     html += "</div>";
-    html += '<div class="seat-board-label seat-board-back">課室後</div>';
+    html += '<div class="seat-board-label seat-board-front">黑板／講台</div>';
     html += "</div>";
     box.innerHTML = html;
   }
@@ -1122,9 +1122,9 @@
       " · " + rows + "×" + cols +
       " · <span style=\"background:#ffe4ec;padding:1px 6px;border-radius:4px\">女</span> " +
       "<span style=\"background:#dbebff;padding:1px 6px;border-radius:4px\">男</span></div>" +
-      '<div class="front">黑板／講台</div>' +
-      "<table><tbody>" + cells + "</tbody></table>" +
       '<div class="back">課室後</div>' +
+      "<table><tbody>" + cells + "</tbody></table>" +
+      '<div class="front">黑板／講台</div>' +
       "<script>window.onload=function(){setTimeout(function(){window.print();},200);};<\/script>" +
       "</body></html>";
 

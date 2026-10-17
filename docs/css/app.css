@@ -2271,7 +2271,7 @@ html[data-app-role="student"] a[data-staff-only],
   color: var(--muted, #6b7280);
   padding: 4px 0 8px;
 }
-.seat-board-back { padding-top: 8px; padding-bottom: 2px; }
+.seat-board-front { padding-top: 8px; padding-bottom: 2px; }
 .seat-board-grid {
   display: grid;
   grid-template-columns: repeat(var(--seat-cols, 6), minmax(0, 1fr));
