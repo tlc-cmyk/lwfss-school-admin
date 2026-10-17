@@ -332,9 +332,9 @@
     return state.browseCycleDay;
   }
 
-  /** Message when browse date has no cycle day (holiday / non-school day). */
+  /** Sticky / panel label when browse date has no cycle day (holiday / non-school day). */
   function noCycleDayMessage() {
-    return browseIsToday() ? "今日無上課／假期" : "是日無上課／假期";
+    return "假期";
   }
 
   function startClock() {
