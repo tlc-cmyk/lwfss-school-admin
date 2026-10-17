@@ -575,10 +575,123 @@
     el.hidden = false;
   }
 
+  // Motion Prompt #006 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#006
+  // Typewriter / タイプライター — char reveal + pop scale + coral cursor (timings/easing kept).
+  var notesTypeRaf = 0;
+  var NOTES_TW = {
+    t0: 0.3,          // first char delay (s)
+    dt: 0.24,         // per-character interval (s)
+    stagger: 0.42,    // start offset between items (s)
+    blinkPeriod: 0.94,
+    blinkOn: 0.5,
+    holdAfter: 1.2,   // keep cursor blinking briefly after item finishes
+    coral: "#FF6B5C"
+  };
+
+  function stopNotesTypewriter() {
+    if (notesTypeRaf) {
+      cancelAnimationFrame(notesTypeRaf);
+      notesTypeRaf = 0;
+    }
+  }
+
+  function prefersReducedMotion() {
+    try {
+      return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function finishNoteItem(row) {
+    if (!row || !row.el) return;
+    row.el.textContent = row.title;
+    row.el.classList.remove("home-note-item--tw");
+    row.chars = null;
+    row.cursor = null;
+  }
+
+  /**
+   * Drive Motion Prompt #006 typewriter on each「今日事項」row.
+   * pop scale: 1 + 0.35·e^(−16t); cursor solid while typing, else 0.94 s blink.
+   */
+  function startNotesTypewriter(rows) {
+    stopNotesTypewriter();
+    if (!rows || !rows.length) return;
+
+    if (prefersReducedMotion()) {
+      rows.forEach(finishNoteItem);
+      return;
+    }
+
+    var tStart = performance.now();
+
+    function frame(now) {
+      var u = (now - tStart) / 1000;
+      var anyAlive = false;
+
+      rows.forEach(function (row, i) {
+        if (!row.chars) return;
+        var itemT0 = NOTES_TW.t0 + i * NOTES_TW.stagger;
+        var done = itemT0 + row.n * NOTES_TW.dt;
+        var n = 0;
+        if (u >= itemT0) {
+          n = Math.floor((u - itemT0) / NOTES_TW.dt) + 1;
+          if (n < 0) n = 0;
+          if (n > row.n) n = row.n;
+        }
+
+        for (var c = 0; c < row.n; c++) {
+          var span = row.chars[c];
+          if (c < n) {
+            var age = u - (itemT0 + c * NOTES_TW.dt);
+            if (age < 0) age = 0;
+            var pop = 1 + 0.35 * Math.exp(-age * 16);
+            span.style.opacity = "1";
+            span.style.transform = "scale(" + pop + ")";
+          } else {
+            span.style.opacity = "0";
+            span.style.transform = "scale(1.35)";
+          }
+        }
+
+        var typing = u >= itemT0 - 0.05 && u < done + 0.1;
+        var blink;
+        if (typing) {
+          blink = 1;
+        } else {
+          var phase = ((u % NOTES_TW.blinkPeriod) + NOTES_TW.blinkPeriod) % NOTES_TW.blinkPeriod;
+          blink = phase < NOTES_TW.blinkOn ? 1 : 0;
+        }
+
+        if (u >= done + NOTES_TW.holdAfter) {
+          finishNoteItem(row);
+          return;
+        }
+
+        anyAlive = true;
+        if (row.cursor) {
+          row.cursor.style.opacity = blink ? "1" : "0";
+          row.cursor.style.visibility = u >= itemT0 - 0.05 ? "visible" : "hidden";
+        }
+      });
+
+      if (anyAlive) {
+        notesTypeRaf = requestAnimationFrame(frame);
+      } else {
+        notesTypeRaf = 0;
+      }
+    }
+
+    notesTypeRaf = requestAnimationFrame(frame);
+  }
+
   function renderNotes(session) {
     var section = $("home-notes");
     var list = $("home-notes-list");
     if (!list || !section) return;
+
+    stopNotesTypewriter();
 
     var items = [];
     var seen = {};
@@ -610,12 +723,43 @@
       return;
     }
 
-    list.innerHTML = items
-      .map(function (title) {
-        return '<div class="home-note-item">' + escapeHtml(title) + "</div>";
-      })
-      .join("");
+    list.innerHTML = "";
+    var rows = items.map(function (title) {
+      var el = document.createElement("div");
+      el.className = "home-note-item home-note-item--tw";
+      el.setAttribute("aria-label", title);
+
+      var chars = Array.from(String(title));
+      var charEls = [];
+      chars.forEach(function (ch) {
+        var span = document.createElement("span");
+        span.className = "home-note-ch";
+        span.textContent = ch === " " ? "\u00a0" : ch;
+        span.style.opacity = "0";
+        span.style.transform = "scale(1.35)";
+        el.appendChild(span);
+        charEls.push(span);
+      });
+
+      var cursor = document.createElement("span");
+      cursor.className = "home-note-cursor";
+      cursor.setAttribute("aria-hidden", "true");
+      cursor.style.opacity = "0";
+      cursor.style.visibility = "hidden";
+      el.appendChild(cursor);
+
+      list.appendChild(el);
+      return {
+        el: el,
+        title: title,
+        chars: charEls,
+        cursor: cursor,
+        n: chars.length
+      };
+    });
+
     section.hidden = false;
+    startNotesTypewriter(rows);
   }
 
   var DAY_COUNT = 10;

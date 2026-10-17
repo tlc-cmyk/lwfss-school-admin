@@ -1006,6 +1006,26 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Motion Prompt #006 typewriter — char pop + coral caret */
+.home-note-item--tw {
+  text-overflow: clip;
+}
+.home-note-ch {
+  display: inline-block;
+  transform-origin: 50% 70%;
+  will-change: transform, opacity;
+}
+.home-note-cursor {
+  display: inline-block;
+  width: 2.5px;
+  height: 0.95em;
+  margin-left: 1px;
+  vertical-align: -0.12em;
+  border-radius: 1.25px;
+  background: #FF6B5C; /* Motion Prompt #006 C.coral */
+  box-shadow: 0 0 4px rgba(255, 107, 92, 0.45);
+  pointer-events: none;
+}
 
 /* Mobile: tighter sticky height */
 @media (max-width: 400px) {
@@ -2788,6 +2808,11 @@ html[data-theme="dark"] .home-top-notes {
   box-shadow: 0 1px 6px rgba(0,0,0,0.35), 0 0 12px rgba(34, 211, 238, 0.06);
 }
 html[data-theme="dark"] .home-notes-title { color: var(--neon-cyan); }
+html[data-theme="dark"] .home-note-cursor {
+  background: #FF6B5C;
+  box-shadow: 0 0 6px rgba(255, 107, 92, 0.65);
+}
+
 html[data-theme="dark"] .home-memo-label {
   background: rgba(26, 28, 46, 0.95);
   color: var(--neon-cyan);
