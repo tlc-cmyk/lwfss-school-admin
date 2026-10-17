@@ -4,8 +4,10 @@
  *
  * Ports kit helpers #022 needs (pure u-based draw). Content localized for
  * LWFSS school-admin; timings/easing unchanged from upstream.
- * Plays one sweep (+ sparkle) when the panel opens, then freezes on the
- * finished badge (no active band). Stub only — no payment backend.
+ * Plays one sweep (+ sparkle) when the panel opens (after layout/paint),
+ * then freezes on the finished badge. Also restarts a CSS sheen on the
+ * tab + panel title so the effect stays obvious on dark mode. Stub only
+ * — no payment backend.
  */
 (function () {
   "use strict";
@@ -46,7 +48,17 @@
 
   function rr(ctx, x, y, w, h, r) {
     ctx.beginPath();
-    ctx.roundRect(x, y, w, h, r);
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(x, y, w, h, r);
+      return;
+    }
+    var rr2 = Math.min(r, w / 2, h / 2);
+    ctx.moveTo(x + rr2, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr2);
+    ctx.arcTo(x + w, y + h, x, y + h, rr2);
+    ctx.arcTo(x, y + h, x, y, rr2);
+    ctx.arcTo(x, y, x + w, y, rr2);
+    ctx.closePath();
   }
 
   function txt(ctx, s, x, y, font, col, align, base, ls) {
@@ -128,14 +140,16 @@
       k.clip();
       k.translate(lerp(X - 130, X + BW + 130, p), Y + BH / 2);
       k.rotate(0.42);
-      var gr = k.createLinearGradient(-58, 0, 58, 0);
+      var gr = k.createLinearGradient(-72, 0, 72, 0);
       gr.addColorStop(0, "rgba(255,255,255,0)");
-      gr.addColorStop(0.5, "rgba(255,255,255,.72)");
+      gr.addColorStop(0.35, "rgba(255,255,255,.55)");
+      gr.addColorStop(0.5, "rgba(255,255,255,.95)");
+      gr.addColorStop(0.65, "rgba(255,255,255,.55)");
       gr.addColorStop(1, "rgba(255,255,255,0)");
       k.fillStyle = gr;
-      k.fillRect(-58, -160, 116, 320);
-      k.fillStyle = "rgba(255,255,255,.5)";
-      k.fillRect(78, -160, 12, 320);
+      k.fillRect(-72, -160, 144, 320);
+      k.fillStyle = "rgba(255,255,255,.85)";
+      k.fillRect(88, -160, 14, 320);
       k.restore();
     }
 
@@ -214,6 +228,22 @@
     rafId = requestAnimationFrame(frame);
   }
 
+  var startToken = 0;
+
+  function restartCssSheen() {
+    var nodes = [
+      document.getElementById("home-tab-member-pay"),
+      document.getElementById("member-pay-title")
+    ];
+    nodes.forEach(function (el) {
+      if (!el) return;
+      el.classList.remove("is-light-sweep");
+      // Force reflow so re-adding the class restarts the CSS animation.
+      void el.offsetWidth;
+      el.classList.add("is-light-sweep");
+    });
+  }
+
   function start() {
     if (!panelVisible()) return;
     if (!ensureCanvas()) return;
@@ -223,7 +253,9 @@
     }
     running = true;
     t0 = performance.now();
-    rafId = requestAnimationFrame(frame);
+    // Paint an immediate frame so the badge is visible before the first rAF.
+    // frame() schedules the next rAF itself while running.
+    frame(t0);
   }
 
   function stop() {
@@ -235,7 +267,16 @@
   }
 
   function show() {
-    start();
+    restartCssSheen();
+    // Wait until after layout/paint so we never burn the sweep while
+    // the panel still has 0×0 metrics (display:none → shown).
+    var token = ++startToken;
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (token !== startToken) return;
+        start();
+      });
+    });
   }
 
   window.SchoolAdminMemberPay = {

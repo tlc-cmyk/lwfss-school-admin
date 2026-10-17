@@ -2215,9 +2215,8 @@ html[data-app-role="staff"] .home-func-tab[data-role-view="staff"] {
   display: inline-flex;
 }
 html[data-app-role="staff"] .tt-student-block { display: none !important; }
-html[data-app-role="student"] a[data-staff-only],
 
-/* —— 會員付費 panel (stub) —— */
+/* —— 會員付費 panel (stub) + #022 light sweep —— */
 .home-panel-member-pay .home-member-pay-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -2230,15 +2229,33 @@ html[data-app-role="student"] a[data-staff-only],
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 auto 12px;
-  max-width: 100%;
+  margin: 0 auto 10px;
+  width: 100%;
+  max-width: 539px;
+  min-height: 140px;
+  aspect-ratio: 539 / 208;
   overflow: hidden;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #0b1228 0%, #152044 100%);
 }
 .member-pay-hero canvas {
   display: block;
-  width: min(100%, 539px);
+  width: 100%;
   height: auto;
-  max-height: 208px;
+  max-width: 539px;
+  /* Keep intrinsic 539×208 ratio; do not collapse to 0. */
+  min-height: 120px;
+}
+.member-pay-title {
+  position: relative;
+  display: inline-block;
+  margin: 0 auto 6px;
+  padding: 4px 12px;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: var(--primary-dark);
+  overflow: hidden;
+  border-radius: 8px;
 }
 .member-pay-placeholder {
   margin: 8px 0 6px;
@@ -2252,6 +2269,55 @@ html[data-app-role="student"] a[data-staff-only],
   font-size: 0.88rem;
 }
 .home-panel-member-pay .home-member-pay-student { margin-top: 0; }
+
+/* CSS light-sweep sheen on tab + panel title (replays via .is-light-sweep) */
+.member-pay-sheen {
+  position: relative;
+  overflow: hidden;
+}
+.member-pay-sheen::after {
+  content: "";
+  position: absolute;
+  top: -40%;
+  left: -60%;
+  width: 45%;
+  height: 180%;
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(255, 255, 255, 0.15) 65%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-140%) rotate(18deg);
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+.member-pay-sheen.is-light-sweep::after {
+  animation: member-pay-light-sweep 1.15s cubic-bezier(0.45, 0, 0.55, 1) 0.05s 1 both;
+}
+@keyframes member-pay-light-sweep {
+  0% {
+    opacity: 0;
+    transform: translateX(-140%) rotate(18deg);
+  }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translateX(280%) rotate(18deg);
+  }
+}
+#home-tab-member-pay.member-pay-sheen.is-light-sweep {
+  /* Keep tab label above the sheen */
+  isolation: isolate;
+}
+#home-tab-member-pay.member-pay-sheen > * {
+  position: relative;
+  z-index: 1;
+}
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -2639,8 +2705,23 @@ html[data-theme="dark"] .hero h2,
 html[data-theme="dark"] .gate h2,
 html[data-theme="dark"] .home-section-title,
 html[data-theme="dark"] .home-panel-title,
-html[data-theme="dark"] .member-pay-placeholder {
+html[data-theme="dark"] .member-pay-placeholder,
+html[data-theme="dark"] .member-pay-title {
   color: #fff;
+}
+html[data-theme="dark"] .member-pay-hero {
+  background: linear-gradient(160deg, #070b18 0%, #121a36 55%, #1a1040 100%);
+  box-shadow: inset 0 0 0 1px rgba(100, 200, 255, 0.18), 0 0 24px rgba(34, 211, 238, 0.08);
+}
+html[data-theme="dark"] .member-pay-sheen.is-light-sweep::after {
+  background: linear-gradient(
+    105deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(165, 243, 252, 0.25) 35%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(196, 181, 253, 0.3) 65%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 /* Primary buttons — full cyan→violet gradient */
