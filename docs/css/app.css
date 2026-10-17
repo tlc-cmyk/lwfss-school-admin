@@ -27,35 +27,49 @@ html[data-day-theme="bf"] {
   --shadow: 0 2px 12px rgba(21, 122, 82, 0.10);
 }
 
-/* —— Dark mode (data-theme on <html>) —— */
+/* —— Dark mode (data-theme on <html>) — neon cyan → violet on deep navy —— */
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #0f1419;
-  --card: #1a2332;
-  --primary: #6ba3e0;
-  --primary-dark: #a8c8f0;
-  --primary-soft: #1e3a5f;
-  --accent: #3cb896;
-  --free: #1a2a3d;
-  --free-border: #3a5a80;
+  /* Kit: deep navy/charcoal with radial depth */
+  --bg: #12141f;
+  --card: #1a1c2e;
+  /* Accents: neon cyan/teal → violet (primary for links/icons; headings near-white) */
+  --primary: #22d3ee;
+  --primary-dark: #e8eaf8;
+  --primary-soft: rgba(34, 211, 238, 0.12);
+  --accent: #2dd4bf;
+  --free: #161a2c;
+  --free-border: rgba(100, 180, 255, 0.28);
   --lesson: #2a2418;
   --lesson-border: #8a7040;
-  --text: #e8eef4;
-  --muted: #9aa8b8;
-  --border: #2d3a4a;
-  --danger: #e85a4f;
-  --shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
-  --surface-2: #141c26;
-  --surface-3: #222d3d;
+  --text: #ffffff;
+  --muted: #9499b3;
+  --border: rgba(100, 180, 255, 0.20);
+  --danger: #f07167;
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(100, 180, 255, 0.06);
+  --surface-2: #14162a;
+  --surface-3: #22253a;
+  /* Neon kit tokens */
+  --neon-cyan: #22d3ee;
+  --neon-teal: #2dd4bf;
+  --neon-violet: #8b5cf6;
+  --neon-purple: #a855f7;
+  --gradient-neon: linear-gradient(90deg, #22d3ee 0%, #8b5cf6 100%);
+  --gradient-neon-135: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
+  --glow-cyan: 0 0 14px rgba(34, 211, 238, 0.35);
+  --glow-violet: 0 0 14px rgba(139, 92, 246, 0.30);
+  --glass: rgba(26, 28, 46, 0.72);
+  --border-neon: rgba(100, 200, 255, 0.24);
 }
 html[data-theme="dark"][data-day-theme="bf"] {
-  --bg: #0f1a16;
-  --primary: #3cb896;
-  --primary-dark: #7dd4b4;
-  --primary-soft: #1a3d30;
-  --free: #1a3028;
-  --free-border: #3a7a5a;
-  --shadow: 0 2px 14px rgba(0, 0, 0, 0.4);
+  /* Keep BF green recognizable inside the neon dark world */
+  --bg: #0e1614;
+  --primary: #2dd4bf;
+  --primary-dark: #d8f5ec;
+  --primary-soft: rgba(45, 212, 191, 0.14);
+  --free: #142820;
+  --free-border: rgba(45, 212, 191, 0.35);
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(45, 212, 191, 0.08);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
@@ -2465,52 +2479,210 @@ html[data-app-role="student"] a[data-staff-only],
 }
 
 
-/* ========== Dark mode surface / accent overrides ========== */
-html[data-theme="dark"] .chip:hover { background: #2a4a72; }
-html[data-theme="dark"] .badge.live { background: #1a3d30; color: #7dd4b4; }
-html[data-theme="dark"] .badge.soon { background: #2a3140; color: #9aa8b8; }
+/* ========== Dark mode surface / accent overrides (neon kit) ========== */
+
+/* Page depth: subtle radial glow on deep navy */
+html[data-theme="dark"] body {
+  background:
+    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(88, 60, 180, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 90% 110%, rgba(20, 140, 180, 0.14) 0%, transparent 50%),
+    var(--bg);
+}
+
+/* App chrome / header */
+html[data-theme="dark"] .app-header {
+  background: var(--gradient-neon-135);
+  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.22), 0 4px 20px rgba(139, 92, 246, 0.18);
+}
+html[data-theme="dark"] .nav a {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+html[data-theme="dark"] .nav a:hover,
+html[data-theme="dark"] .nav a.active {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Cards / panels — glass + thin neon border */
+html[data-theme="dark"] .card,
+html[data-theme="dark"] .hero,
+html[data-theme="dark"] .module-card,
+html[data-theme="dark"] .gate,
+html[data-theme="dark"] .staff-only-note,
+html[data-theme="dark"] .home-panel-placeholder,
+html[data-theme="dark"] .home-docs-card,
+html[data-theme="dark"] .home-meet-card,
+html[data-theme="dark"] .home-memo-card,
+html[data-theme="dark"] .home-free-card,
+html[data-theme="dark"] .home-panel-docs .home-docs-card,
+html[data-theme="dark"] .home-panel-meet .home-meet-card,
+html[data-theme="dark"] .home-panel-memo .home-memo-card,
+html[data-theme="dark"] .home-panel-free .home-free-card {
+  background: var(--card);
+  border: 1px solid var(--border-neon);
+  box-shadow: var(--shadow), 0 0 24px rgba(34, 211, 238, 0.04);
+}
+html[data-theme="dark"] .module-card.live {
+  border-color: rgba(34, 211, 238, 0.45);
+  box-shadow: var(--shadow), 0 0 16px rgba(34, 211, 238, 0.12);
+}
+html[data-theme="dark"] .hero h2,
+html[data-theme="dark"] .gate h2,
+html[data-theme="dark"] .home-section-title,
+html[data-theme="dark"] .home-panel-title {
+  color: #fff;
+}
+
+/* Primary buttons — full cyan→violet gradient */
+html[data-theme="dark"] .btn {
+  background: var(--gradient-neon);
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 2px 12px rgba(34, 211, 238, 0.25), 0 2px 12px rgba(139, 92, 246, 0.18);
+}
+html[data-theme="dark"] .btn:hover {
+  filter: brightness(1.08);
+  background: var(--gradient-neon-135);
+}
 html[data-theme="dark"] .btn:disabled,
-html[data-theme="dark"] .btn.disabled { background: #3a4555; }
+html[data-theme="dark"] .btn.disabled {
+  background: #3a3f55;
+  box-shadow: none;
+  filter: none;
+  color: #8a90a8 !important;
+}
+
+/* Chips / badges */
+html[data-theme="dark"] .chip {
+  background: var(--glass);
+  color: var(--muted);
+  border: 1px solid var(--border-neon);
+}
+html[data-theme="dark"] .chip:hover {
+  background: rgba(34, 211, 238, 0.14);
+  color: var(--neon-cyan);
+  border-color: rgba(34, 211, 238, 0.4);
+}
+html[data-theme="dark"] .chip.active,
+html[data-theme="dark"] .deadlines-filters .chip.active,
+html[data-theme="dark"] .tt-cr-mode .chip.active {
+  background: var(--gradient-neon);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 10px rgba(34, 211, 238, 0.28);
+}
+html[data-theme="dark"] .badge.live {
+  background: rgba(45, 212, 191, 0.18);
+  color: #5eead4;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+}
+html[data-theme="dark"] .badge.soon {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
 html[data-theme="dark"] .period .room { background: rgba(255,255,255,0.08); }
-html[data-theme="dark"] .home-top-notes {
-  background: rgba(26, 35, 50, 0.96);
-  color: var(--text);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-}
-html[data-theme="dark"] .home-notes-title { color: var(--primary-dark); }
-html[data-theme="dark"] .home-memo-label {
-  background: rgba(26, 35, 50, 0.95);
-  color: var(--primary-dark);
-}
-html[data-theme="dark"] .home-memo-btn { background: var(--surface-3, #222d3d); }
-html[data-theme="dark"] .home-memo-btn:hover { background: #2a3a50; }
-html[data-theme="dark"] .home-memo-btn-danger {
-  background: #3a2220;
-  border-color: #8a4a44;
-}
-html[data-theme="dark"] .home-memo-btn-danger:hover { background: #4a2a28; }
-html[data-theme="dark"] .home-memo-row { background: var(--surface-2, #141c26); }
-html[data-theme="dark"] .home-memo-list-empty { background: var(--surface-2, #141c26); }
+
+/* Sticky chrome */
 html[data-theme="dark"] .home-sticky {
-  box-shadow: 0 10px 14px -12px rgba(0, 0, 0, 0.55);
+  background: transparent;
+  box-shadow: 0 12px 18px -14px rgba(0, 0, 0, 0.65);
 }
+html[data-theme="dark"] .home-func-bar {
+  background: transparent;
+}
+html[data-theme="dark"] .home-top-notes {
+  background: rgba(26, 28, 46, 0.92);
+  color: var(--text);
+  border: 1px solid var(--border-neon);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.35), 0 0 12px rgba(34, 211, 238, 0.06);
+}
+html[data-theme="dark"] .home-notes-title { color: var(--neon-cyan); }
+html[data-theme="dark"] .home-memo-label {
+  background: rgba(26, 28, 46, 0.95);
+  color: var(--neon-cyan);
+  border: 1px solid var(--border-neon);
+}
+html[data-theme="dark"] .home-memo-btn {
+  background: var(--glass);
+  border: 1px solid var(--border-neon);
+  color: var(--muted);
+}
+html[data-theme="dark"] .home-memo-btn:hover {
+  background: rgba(34, 211, 238, 0.14);
+  color: var(--neon-cyan);
+  border-color: rgba(34, 211, 238, 0.4);
+}
+html[data-theme="dark"] .home-memo-btn-danger {
+  background: rgba(240, 113, 103, 0.12);
+  border-color: rgba(240, 113, 103, 0.4);
+  color: #f07167;
+}
+html[data-theme="dark"] .home-memo-btn-danger:hover { background: rgba(240, 113, 103, 0.22); }
+html[data-theme="dark"] .home-memo-row,
+html[data-theme="dark"] .home-memo-list-empty {
+  background: var(--surface-2);
+  border-color: var(--border-neon);
+}
+
+/* Function tabs — inactive glass outline; active neon gradient */
 html[data-theme="dark"] .home-func-tab {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  background: var(--glass);
+  border: 1px solid var(--border-neon);
+  color: var(--muted);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+html[data-theme="dark"] .home-func-tab:hover {
+  background: rgba(34, 211, 238, 0.10);
+  color: var(--neon-cyan);
+  border-color: rgba(34, 211, 238, 0.4);
 }
 html[data-theme="dark"] .home-func-tab.active {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  background: var(--gradient-neon);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(34, 211, 238, 0.30), 0 2px 12px rgba(139, 92, 246, 0.22);
 }
+html[data-theme="dark"] .home-func-tab:focus-visible {
+  outline-color: var(--neon-cyan);
+}
+
+/* Day chips */
 html[data-theme="dark"] .tt-day-chip {
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  background: var(--glass);
+  border: 1px solid var(--border-neon);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+html[data-theme="dark"] .tt-day-chip.active {
+  background: var(--gradient-neon);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(34, 211, 238, 0.28);
 }
 html[data-theme="dark"] .tt-day-chip.has-today-mark,
 html[data-theme="dark"] .tt-day-chip.is-bf.has-today-mark {
-  background: #3a2220;
+  background: rgba(240, 113, 103, 0.14);
+  border-color: #f07167;
+  color: #f07167;
+  box-shadow: 0 0 0 1px rgba(240, 113, 103, 0.35);
+}
+html[data-theme="dark"] .tt-day-chip.has-today-mark.active,
+html[data-theme="dark"] .tt-day-chip.is-bf.has-today-mark.active {
+  background: linear-gradient(135deg, #f07167 0%, #c0392b 100%);
+  border-color: transparent;
+  color: #fff;
 }
 html[data-theme="dark"] .tt-day-chip.is-bf {
-  border-color: #3cb896;
-  color: #7dd4b4;
+  border-color: rgba(45, 212, 191, 0.5);
+  color: #5eead4;
 }
+html[data-theme="dark"] .tt-day-chip.is-bf.active {
+  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  border-color: transparent;
+  color: #fff;
+}
+
+/* Forms / inputs — dark fields, subtle neon borders */
 html[data-theme="dark"] .home-teacher-select,
 html[data-theme="dark"] select.home-teacher-select,
 html[data-theme="dark"] .meet-search,
@@ -2518,202 +2690,205 @@ html[data-theme="dark"] input[type="search"],
 html[data-theme="dark"] input[type="text"],
 html[data-theme="dark"] input[type="date"],
 html[data-theme="dark"] input[type="number"],
+html[data-theme="dark"] input[type="password"],
 html[data-theme="dark"] textarea,
-html[data-theme="dark"] select {
-  background: var(--card);
+html[data-theme="dark"] select,
+html[data-theme="dark"] .gate input,
+html[data-theme="dark"] .emergency input,
+html[data-theme="dark"] .search-row input,
+html[data-theme="dark"] .seat-title-input,
+html[data-theme="dark"] .seat-dim-input {
+  background: var(--surface-2);
   color: var(--text);
-  border-color: var(--border);
+  border: 1px solid var(--border-neon);
+  border-radius: 10px;
 }
+html[data-theme="dark"] .search-row input:focus,
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] textarea:focus,
+html[data-theme="dark"] select:focus {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18), var(--glow-cyan);
+  outline: none;
+}
+
+/* Tables / list rows */
 html[data-theme="dark"] .deadlines-item,
-html[data-theme="dark"] .deadline-row {
+html[data-theme="dark"] .deadline-row,
+html[data-theme="dark"] .deadline-item,
+html[data-theme="dark"] .home-free-row {
   background: var(--card);
+  border-color: var(--border-neon);
 }
+html[data-theme="dark"] .deadline-item.today {
+  background: rgba(34, 211, 238, 0.10);
+  border-color: rgba(34, 211, 238, 0.45);
+}
+html[data-theme="dark"] .deadline-month {
+  color: var(--neon-cyan);
+  border-bottom-color: var(--border-neon);
+}
+
+/* Meet panel */
 html[data-theme="dark"] .meet-pick-row,
 html[data-theme="dark"] .meet-selected-chip,
 html[data-theme="dark"] .meet-picker-list,
 html[data-theme="dark"] .meet-week-day {
   background: var(--card);
+  border-color: var(--border-neon);
 }
-html[data-theme="dark"] .meet-pick-row.is-on { background: #1e3a5f; }
+html[data-theme="dark"] .meet-pick-row.is-on {
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.4);
+}
 html[data-theme="dark"] .meet-slot {
-  background: #143028;
-  border-color: #2a6a4a;
+  background: rgba(45, 212, 191, 0.10);
+  border-color: rgba(45, 212, 191, 0.35);
 }
 html[data-theme="dark"] .meet-slot-period,
-html[data-theme="dark"] .meet-slot-tag { color: #7dd4b4; }
-html[data-theme="dark"] .meet-slot-tag { background: #1a3d30; }
-html[data-theme="dark"] .meet-rooms { border-top-color: #2a6a4a; }
+html[data-theme="dark"] .meet-slot-tag { color: #5eead4; }
+html[data-theme="dark"] .meet-slot-tag { background: rgba(45, 212, 191, 0.18); }
+html[data-theme="dark"] .meet-rooms { border-top-color: rgba(45, 212, 191, 0.3); }
 html[data-theme="dark"] .meet-rooms-label { color: var(--muted); }
 html[data-theme="dark"] .meet-room-chip {
-  background: var(--card);
+  background: var(--glass);
   color: var(--text);
+  border: 1px solid var(--border-neon);
 }
 html[data-theme="dark"] .meet-room-chip.is-class {
-  border-color: #3a6aa0;
-  background: #1a2e48;
-  color: #8cbcf0;
+  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(34, 211, 238, 0.10);
+  color: #67e8f9;
 }
 html[data-theme="dark"] .meet-room-chip.is-special {
-  border-color: var(--border);
-  background: var(--surface-2, #141c26);
+  border-color: var(--border-neon);
+  background: var(--surface-2);
   color: var(--muted);
 }
 html[data-theme="dark"] .meet-week-day.has-free {
-  border-color: #2a6a4a;
-  background: #122820;
+  border-color: rgba(45, 212, 191, 0.4);
+  background: rgba(45, 212, 191, 0.08);
 }
 html[data-theme="dark"] .meet-week-day.is-bf.has-free {
-  border-color: #3a6aa0;
-  background: #1a2e48;
+  border-color: rgba(34, 211, 238, 0.4);
+  background: rgba(34, 211, 238, 0.08);
 }
-html[data-theme="dark"] .meet-week-day.has-free .meet-week-count { color: #7dd4b4; }
-html[data-theme="dark"] .meet-count.is-ok { color: #7dd4b4; }
+html[data-theme="dark"] .meet-week-day.has-free .meet-week-count { color: #5eead4; }
+html[data-theme="dark"] .meet-count.is-ok { color: #5eead4; }
+
+/* Seating / attendance seats */
 html[data-theme="dark"] .seat-board,
 html[data-theme="dark"] .seat-roster {
   background: var(--card);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-neon);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 16px rgba(34, 211, 238, 0.05);
 }
 html[data-theme="dark"] .seat-cell {
-  background: var(--surface-2, #141c26);
-  border-color: var(--border);
+  background: var(--surface-2);
+  border-color: var(--border-neon);
   color: var(--text);
+  border-radius: 10px;
 }
 html[data-theme="dark"] .seat-cell.is-filled {
-  background: #1a2e48;
-  border-color: #3a6aa0;
+  background: rgba(34, 211, 238, 0.10);
+  border-color: rgba(34, 211, 238, 0.4);
 }
 html[data-theme="dark"] .seat-cell.is-filled.is-girl {
-  background: #3a2230;
-  border-color: #a05070;
+  background: rgba(168, 85, 247, 0.14);
+  border-color: rgba(168, 85, 247, 0.45);
 }
 html[data-theme="dark"] .seat-cell.is-filled.is-boy {
-  background: #1a2e48;
-  border-color: #4a7ab8;
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(56, 189, 248, 0.45);
 }
 html[data-theme="dark"] .seat-cell-name { color: var(--text); }
 html[data-theme="dark"] .seat-cell-empty { color: var(--muted); }
 html[data-theme="dark"] .seat-roster-item {
-  background: var(--surface-2, #141c26);
-  border-color: var(--border);
+  background: var(--surface-2);
+  border-color: var(--border-neon);
 }
 html[data-theme="dark"] .seat-roster-item.is-girl {
-  background: #3a2230;
-  border-color: #a05070;
+  background: rgba(168, 85, 247, 0.14);
+  border-color: rgba(168, 85, 247, 0.4);
 }
 html[data-theme="dark"] .seat-roster-item.is-boy {
-  background: #1a2e48;
-  border-color: #4a7ab8;
+  background: rgba(34, 211, 238, 0.10);
+  border-color: rgba(56, 189, 248, 0.4);
 }
 html[data-theme="dark"] .seat-roster-item:hover,
 html[data-theme="dark"] .seat-roster-item:focus {
-  border-color: #3a6aa0;
-  background: #1e3a5f;
+  border-color: var(--neon-cyan);
+  background: rgba(34, 211, 238, 0.16);
+  box-shadow: var(--glow-cyan);
 }
 html[data-theme="dark"] .seat-btn-pdf {
-  background: #143028;
-  border-color: #2a6a4a;
-  color: #7dd4b4;
+  background: rgba(45, 212, 191, 0.12);
+  border-color: rgba(45, 212, 191, 0.4);
+  color: #5eead4;
 }
 html[data-theme="dark"] .seat-btn-danger {
-  background: #3a2220;
-  border-color: #8a4a44;
-  color: #e85a4f;
+  background: rgba(240, 113, 103, 0.12);
+  border-color: rgba(240, 113, 103, 0.4);
+  color: #f07167;
 }
 html[data-theme="dark"] .seat-dirty {
-  background: #3a2e14;
-  border-color: #8a7040;
-  color: #e8c070;
-}
-html[data-theme="dark"] .seat-title-input,
-html[data-theme="dark"] .seat-dim-input {
-  background: var(--card);
-  color: var(--text);
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.4);
+  color: #fbbf24;
 }
 html[data-theme="dark"] .seat-cell.is-drag-over {
-  border-color: #3cb896;
-  background: #143028;
+  border-color: var(--neon-cyan);
+  background: rgba(34, 211, 238, 0.16);
+  box-shadow: var(--glow-cyan);
 }
-html[data-theme="dark"] .seat-legend-swatch.girl { background: #3a2230; }
-html[data-theme="dark"] .seat-legend-swatch.boy { background: #1a2e48; }
-html[data-theme="dark"] .seat-legend-swatch.neutral { background: #1a2e48; }
+html[data-theme="dark"] .seat-legend-swatch.girl { background: rgba(168, 85, 247, 0.35); }
+html[data-theme="dark"] .seat-legend-swatch.boy { background: rgba(34, 211, 238, 0.35); }
+html[data-theme="dark"] .seat-legend-swatch.neutral { background: rgba(100, 180, 255, 0.2); }
+html[data-theme="dark"] .seat-actions .chip.seat-btn-save {
+  background: var(--gradient-neon);
+  color: #fff;
+  border-color: transparent;
+}
 
-/* Sticky tones stay distinct; slightly deeper in dark for less glare */
+/* Sticky tones: deepen into neon world; keep holiday red / normal blue / BF green distinct */
 html[data-theme="dark"] .home-top[data-tone="normal"] {
-  background: linear-gradient(135deg, #155a9a 0%, #0a2f5c 100%);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(135deg, #0e4a82 0%, #081a36 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.18), 0 0 20px rgba(34, 211, 238, 0.08);
 }
 html[data-theme="dark"] .home-top[data-tone="holiday"] {
-  background: linear-gradient(135deg, #b83830 0%, #7a1814 100%);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(135deg, #9a2c28 0%, #4a1010 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(240, 113, 103, 0.28), 0 0 18px rgba(240, 113, 103, 0.1);
 }
 html[data-theme="dark"] .home-top[data-tone="bf"] {
-  background: linear-gradient(135deg, #116644 0%, #0a3a28 100%);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+  background: linear-gradient(135deg, #0c5a40 0%, #05241a 100%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(45, 212, 191, 0.28), 0 0 18px rgba(45, 212, 191, 0.1);
+}
+html[data-theme="dark"] .home-theme-toggle {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 8px rgba(34, 211, 238, 0.15);
 }
 
-/* Subject-tint lesson cards: keep hue, darken for contrast */
-html[data-theme="dark"] .tt-period.lesson {
-  filter: none;
-}
-html[data-theme="dark"] .tt-period.free .body,
-html[data-theme="dark"] .period.free .body {
-  color: var(--muted);
-}
-
-/* Gate login card inherits vars; soften Google button area */
-html[data-theme="dark"] .gate {
-  background: var(--card);
-}
-html[data-theme="dark"] .staff-only-note,
-html[data-theme="dark"] .home-panel-placeholder,
-html[data-theme="dark"] .home-docs-card,
-html[data-theme="dark"] .home-meet-card,
-html[data-theme="dark"] .home-memo-card {
-  background: var(--card);
-  border-color: var(--border);
-  color: var(--text);
-}
-
-html[data-theme="dark"] .deadline-item.today {
-  background: #143028;
-  border-color: #3cb896;
-}
-html[data-theme="dark"] .home-free-row { background: var(--card); }
+/* Period status chip on sticky — keep high-contrast white pill */
 html[data-theme="dark"] .home-status-chip.is-period {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.94);
   color: #9b1e18;
 }
 
-/* Timetable free/break + subject pastels in dark mode */
-html[data-theme="dark"] .tt-period.free {
-  background: var(--surface-2, #141c26);
-  border-color: var(--border);
-  opacity: 1;
-}
-html[data-theme="dark"] .tt-period.free .tt-period-left {
-  background: rgba(255,255,255,0.04);
-}
-html[data-theme="dark"] .tt-period.free .tt-pnum { background: #5a6575; }
-html[data-theme="dark"] .tt-period.free .tt-period-time,
-html[data-theme="dark"] .tt-period.free .subj.free-label { color: var(--muted); }
-html[data-theme="dark"] .tt-period.break {
-  background: #2a2418;
-  border-color: #6a5a3a;
-  opacity: 1;
-}
-html[data-theme="dark"] .tt-period.break .tt-pnum { background: #8a7040; }
-html[data-theme="dark"] .tt-period.break .tt-period-time { color: #c8b890; }
+/* Timetable period cards */
 html[data-theme="dark"] .tt-period.lesson {
-  background: color-mix(in srgb, var(--subj-bg, #fff) 28%, #1a2332 72%);
-  border-color: color-mix(in srgb, var(--subj-border, #888) 45%, #2d3a4a 55%);
+  filter: none;
+  background: color-mix(in srgb, var(--subj-bg, #fff) 22%, #1a1c2e 78%);
+  border-color: color-mix(in srgb, var(--subj-border, #888) 40%, rgba(100, 180, 255, 0.25) 60%);
   color: var(--text);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
 html[data-theme="dark"] .tt-period.lesson .tt-period-left {
-  background: color-mix(in srgb, var(--subj-left, #fff) 32%, #1a2332 68%);
-  border-right-color: color-mix(in srgb, var(--subj-border, #888) 40%, #2d3a4a 60%);
+  background: color-mix(in srgb, var(--subj-left, #fff) 28%, #1a1c2e 72%);
+  border-right-color: color-mix(in srgb, var(--subj-border, #888) 35%, rgba(100, 180, 255, 0.2) 65%);
 }
 html[data-theme="dark"] .tt-period.lesson .tt-pnum {
-  background: var(--subj-accent, var(--primary));
+  background: var(--subj-accent, var(--neon-violet));
 }
 html[data-theme="dark"] .tt-period.lesson .subj,
 html[data-theme="dark"] .tt-period.lesson .detail,
@@ -2721,6 +2896,51 @@ html[data-theme="dark"] .tt-period.lesson .tt-period-time {
   color: var(--text);
 }
 html[data-theme="dark"] .tt-period.lesson .detail { color: var(--muted); }
+html[data-theme="dark"] .tt-period.free {
+  background: var(--surface-2);
+  border-color: var(--border-neon);
+  opacity: 1;
+}
+html[data-theme="dark"] .tt-period.free .tt-period-left {
+  background: rgba(255,255,255,0.03);
+}
+html[data-theme="dark"] .tt-period.free .tt-pnum { background: #4a5168; }
+html[data-theme="dark"] .tt-period.free .tt-period-time,
+html[data-theme="dark"] .tt-period.free .subj.free-label,
+html[data-theme="dark"] .tt-period.free .body,
+html[data-theme="dark"] .period.free .body {
+  color: var(--muted);
+}
+html[data-theme="dark"] .tt-period.break {
+  background: #2a2418;
+  border-color: #6a5a3a;
+  opacity: 1;
+}
+html[data-theme="dark"] .tt-period.break .tt-pnum { background: #8a7040; }
+html[data-theme="dark"] .tt-period.break .tt-period-time { color: #c8b890; }
+
+/* Gate / login extras */
+html[data-theme="dark"] .oauth-hint {
+  background: rgba(139, 92, 246, 0.10);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: var(--muted);
+}
+html[data-theme="dark"] .oauth-hint code {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--neon-cyan);
+}
+html[data-theme="dark"] .footer-nav a,
+html[data-theme="dark"] .footer-nav-btn {
+  background: var(--glass);
+  color: var(--neon-cyan);
+  border: 1px solid var(--border-neon);
+}
+html[data-theme="dark"] .footer-nav a:hover,
+html[data-theme="dark"] .footer-nav a.active,
+html[data-theme="dark"] .footer-nav-btn:hover {
+  background: rgba(34, 211, 238, 0.14);
+  color: #fff;
+}
 
 /* —— 我的課堂（點名） —— */
 .home-panel-classroom .cr-attend-toolbar {
@@ -2893,39 +3113,56 @@ html[data-theme="dark"] .tt-period.lesson .detail { color: var(--muted); }
   outline-offset: 1px;
 }
 
+html[data-theme="dark"] .cr-attend-pill {
+  background: var(--glass);
+  border-color: var(--border-neon);
+  color: var(--text);
+}
 html[data-theme="dark"] .cr-attend-pill.is-present {
-  background: rgba(6, 118, 71, 0.25);
-  color: #75e0a7;
-  border-color: #087443;
+  background: rgba(45, 212, 191, 0.18);
+  color: #5eead4;
+  border-color: rgba(45, 212, 191, 0.4);
 }
 html[data-theme="dark"] .cr-attend-pill.is-absent {
-  background: rgba(180, 35, 24, 0.25);
+  background: rgba(240, 113, 103, 0.18);
   color: #fda29b;
-  border-color: #912018;
+  border-color: rgba(240, 113, 103, 0.4);
 }
 html[data-theme="dark"] .cr-attend-pill.is-late {
-  background: rgba(181, 71, 8, 0.25);
-  color: #fec84b;
-  border-color: #93370d;
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
 }
 html[data-theme="dark"] .cr-attend-pill.is-unmarked {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--muted);
-  border-color: var(--border);
+  border-color: var(--border-neon);
 }
 html[data-theme="dark"] .cr-attend-unseated {
   background: var(--card);
+  border-color: var(--border-neon);
 }
 html[data-theme="dark"] .cr-attend-unseated-item {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(34, 211, 238, 0.12);
+  border-color: rgba(34, 211, 238, 0.3);
 }
 html[data-theme="dark"] .cr-attend-unseated-item.is-girl {
-  background: rgba(244, 114, 182, 0.18);
+  background: rgba(168, 85, 247, 0.16);
+  border-color: rgba(168, 85, 247, 0.35);
 }
 html[data-theme="dark"] .cr-attend-unseated-item.is-boy {
-  background: rgba(96, 165, 250, 0.18);
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.35);
 }
 html[data-theme="dark"] .cr-attend-badge.is-unmarked {
-  background: #344054;
-  color: #d0d5dd;
+  background: #3a3f55;
+  color: #c8cdd8;
+}
+html[data-theme="dark"] .cr-attend-cell[data-student-id]:hover {
+  outline-color: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+html[data-theme="dark"] .cr-attend-date-label,
+html[data-theme="dark"] .cr-attend-unseated-head {
+  color: var(--neon-cyan);
 }

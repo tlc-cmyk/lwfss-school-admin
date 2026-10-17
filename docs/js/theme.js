@@ -6,7 +6,7 @@
 (function () {
   var KEY = "lwfss-theme";
   var META_LIGHT = "#1a3a6c";
-  var META_DARK = "#0f1419";
+  var META_DARK = "#12141f";
 
   function read() {
     try {
