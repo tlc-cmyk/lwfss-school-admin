@@ -254,9 +254,10 @@
     state.cols = cols;
     state.seats = {};
     var max = Math.min(roster.length, rows * cols);
+    // Blackboard is at bottom: fill front-right first (bottom row, right→left), then row above.
     for (var i = 0; i < max; i++) {
-      var r = Math.floor(i / cols);
-      var c = i % cols;
+      var r = rows - 1 - Math.floor(i / cols);
+      var c = cols - 1 - (i % cols);
       var stu = roster[i];
       state.seats[seatKey(r, c)] = {
         r: r,

@@ -916,15 +916,16 @@
     }
     state.seats = {};
     var i = 0;
-    for (var r = 0; r < state.rows && i < state.roster.length; r++) {
-      for (var c = 0; c < state.cols && i < state.roster.length; c++) {
+    // Blackboard is at bottom: fill front-right first (bottom row, right→left), then row above.
+    for (var r = state.rows - 1; r >= 0 && i < state.roster.length; r--) {
+      for (var c = state.cols - 1; c >= 0 && i < state.roster.length; c--) {
         var stu = state.roster[i++];
         state.seats[seatKey(r, c)] = seatObjFromStudent(stu, r, c);
       }
     }
     state.dirty = true;
     state.selectedSeat = null;
-    setStatus("已按名單次序自動編位（可再調整）。");
+    setStatus("已按學號從黑板前最右方編位（可再調整）。");
     renderAll();
   }
 
