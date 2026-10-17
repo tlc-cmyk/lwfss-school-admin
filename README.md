@@ -97,7 +97,7 @@ DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；
 |----|------|
 | `personal_memos` | 每人每日一列：`owner_email`＋`memo_date`（複合 PK）、`body`、`updated_at` |
 
-DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `owner_email`＝JWT email；本校 `@g.lwfss.edu.hk`）。前端：sticky 頂卡第三行**只顯示**目前瀏覽日期嘅備忘摘要；功能欄「備忘」面板揀日期、編輯、儲存、刪除當日（`docs/js/personal-memo.js`）。教職員同學生登入後都可用。
+DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `owner_email`＝JWT email；本校 `@g.lwfss.edu.hk`）。前端：sticky 頂卡第三行**只顯示**目前瀏覽日期嘅備忘摘要；功能欄「備忘」面板揀日期編輯／儲存，下方「已寫備忘」清單列每則右側有**更新**（載入編輯）／**刪除**（`docs/js/personal-memo.js`）。教職員同學生登入後都可用。
 
 ### 約開會（共同空堂）
 

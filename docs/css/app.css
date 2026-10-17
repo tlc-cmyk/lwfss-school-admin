@@ -1030,6 +1030,86 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 }
 .home-memo-status.is-err { color: var(--danger); }
 
+.home-memo-list-block {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.home-memo-list-title {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.home-memo-list-meta {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+}
+.home-memo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.home-memo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fafc;
+  min-width: 0;
+}
+.home-memo-row.is-active {
+  border-color: #90b4e8;
+  background: var(--primary-soft);
+}
+.home-memo-row-main {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.home-memo-row-date {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.home-memo-row-preview {
+  font-size: 0.78rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-memo-row-preview.is-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+.home-memo-row-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.home-memo-row-actions .home-memo-btn {
+  height: 1.75rem;
+  padding: 0 8px;
+  font-size: 0.72rem;
+}
+.home-memo-list-empty {
+  margin: 0;
+  padding: 12px 10px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: #fafbfc;
+}
+
+
 /* Legacy class kept for any leftover markup */
 .home-notes { /* unused standalone; notes live in .home-top-notes */ }
 .home-bar { /* unused; replaced by .home-top */ }
