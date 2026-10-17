@@ -872,6 +872,149 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   .home-bar-who { max-width: 36%; font-size: 0.7rem; }
 }
 
+
+/* Personal memo (個人備忘錄) — sticky top, own notes only */
+.home-memo {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255,255,255,0.22);
+}
+.home-memo[hidden] { display: none !important; }
+.home-memo-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.home-memo-label {
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  color: var(--primary-dark);
+  white-space: nowrap;
+}
+.home-memo-preview {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #fff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.98;
+}
+.home-memo-preview[hidden] { display: none !important; }
+.home-memo-empty {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.78);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-memo-empty[hidden] { display: none !important; }
+.home-memo-edit-btn {
+  flex: 0 0 auto;
+  height: 1.7rem;
+  padding: 0 9px;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
+}
+.home-memo-edit-btn:hover,
+.home-memo-edit-btn:focus-visible {
+  background: rgba(255,255,255,0.28);
+  outline: none;
+}
+.home-memo-editor {
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.96);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.home-memo-editor[hidden] { display: none !important; }
+.home-memo-input-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  margin-bottom: 4px;
+}
+.home-memo-input {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  min-height: 4.2rem;
+  max-height: 12rem;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--text);
+  background: #fff;
+}
+.home-memo-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.home-memo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+.home-memo-btn {
+  height: 1.85rem;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #f5f7fa;
+  color: var(--text);
+  font-size: 0.74rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+.home-memo-btn:hover { background: #e8eef5; }
+.home-memo-btn-save {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+.home-memo-btn-save:hover { background: var(--primary-dark); }
+.home-memo-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.home-memo-status {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 0;
+}
+.home-memo-status.is-err { color: var(--danger); }
+
 /* Legacy class kept for any leftover markup */
 .home-notes { /* unused standalone; notes live in .home-top-notes */ }
 .home-bar { /* unused; replaced by .home-top */ }

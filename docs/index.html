@@ -57,6 +57,26 @@
 
           <!-- auth.js fills this; visually folded into home-who above -->
           <div id="signed-in-as" class="home-top-signed-sr" aria-live="polite"></div>
+
+          <!-- Row 3: 個人備忘錄（只顯示自己；編輯／儲存） -->
+          <div id="home-memo" class="home-memo" aria-label="個人備忘錄" hidden>
+            <div class="home-memo-bar">
+              <span class="home-memo-label">個人備忘錄</span>
+              <span id="home-memo-preview" class="home-memo-preview" hidden></span>
+              <span id="home-memo-empty" class="home-memo-empty">尚未寫備忘</span>
+              <button type="button" id="home-memo-edit-btn" class="home-memo-edit-btn" aria-expanded="false" title="編輯個人備忘錄">編輯</button>
+            </div>
+            <div id="home-memo-editor" class="home-memo-editor" hidden>
+              <label class="home-memo-input-label" for="home-memo-input">備忘內容</label>
+              <textarea id="home-memo-input" class="home-memo-input" rows="3" maxlength="2000" placeholder="只會顯示俾你自己睇…"></textarea>
+              <div class="home-memo-actions">
+                <button type="button" id="home-memo-save" class="home-memo-btn home-memo-btn-save">儲存</button>
+                <button type="button" id="home-memo-clear" class="home-memo-btn">清空</button>
+                <button type="button" id="home-memo-cancel" class="home-memo-btn">取消</button>
+                <span id="home-memo-status" class="home-memo-status" aria-live="polite"></span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄" data-role-view="staff">
@@ -236,5 +256,6 @@
   <script src="js/home.js"></script>
   <script src="js/seating.js"></script>
   <script src="js/staff-deadlines.js"></script>
+  <script src="js/personal-memo.js"></script>
 </body>
 </html>

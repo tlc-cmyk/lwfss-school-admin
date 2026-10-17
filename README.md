@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：主頁 sticky 頂卡＋功能欄；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；座位表；文件遞交清單及校務會議（教職員）
+- **模組**：主頁 sticky 頂卡＋功能欄；個人備忘錄；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；座位表；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts` |
+| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos` |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -41,6 +41,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 - `seating_charts_*`（教職員：INSERT／UPDATE 僅 `owner_email`＝自己 **且** 任教該 `scope`（整班／科目分組／合班 token）；layout 學生必須屬該範圍；DELETE 僅 owner；SELECT 自己或任教同 scope）
+- `personal_memos_*`（任何已登入 `@g.lwfss.edu.hk`：SELECT／INSERT／UPDATE／DELETE **僅** `owner_email`＝JWT email；每人一列）
 
 條件（約）：
 
@@ -48,14 +49,14 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 ```
 
-時間表／學生等讀取表只有 SELECT 政策；`seating_charts` 另有教職員 INSERT／UPDATE／DELETE（僅 owner）。未登入或非本校電郵讀唔到列（實測 anon key 查 `teachers` 回傳 `[]`）。  
+時間表／學生等讀取表只有 SELECT 政策；`seating_charts` 另有教職員 INSERT／UPDATE／DELETE（僅 owner）；`personal_memos` 有本校帳戶 CRUD（僅自己）。未登入或非本校電郵讀唔到列（實測 anon key 查 `teachers` 回傳 `[]`）。  
 **不要**把 `service_role` key 或 Google Client Secret 放進這個倉庫。
 
 ### 主頁（登入後 · sticky 頂卡＋功能欄，唔顯示校網）
 
 設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
-1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼／職稱）＋**早會主題**（`assembly_by_day`）＋今日事項（≤3）＋改日期。唔再堆疊校網 header、今日卡、事項卡三層。登出喺頂卡右上角；唔再顯示底欄 footer。
+1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘錄**（只顯示自己；編輯／儲存）。唔再堆疊校網 header、今日卡、事項卡三層。
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
 4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**座位表**／文件／會議／即時空堂／約開會。切換只換下方面板。
@@ -90,6 +91,15 @@ Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不
 
 DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；layout 學生必須屬該範圍）。前端：功能欄「座位表」→ **若老師喺 `student_groups`（Excel 分組名單）有列，只顯示嗰啲分組**（例如 TLC：S4 ICT／S5 MATH／S6 MATH）；班主任先另加整班；冇分組先用時間表整班／合班 → 編格 → 儲存；「匯出 PDF」列印預覽。
 
+### 個人備忘錄
+
+| 表 | 說明 |
+|----|------|
+| `personal_memos` | 每人一列：`owner_email`（PK）、`body`、`updated_at`；只顯示自己嘅備忘 |
+
+DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `owner_email`＝JWT email；本校 `@g.lwfss.edu.hk`）。前端：sticky 頂卡第三行顯示單行摘要；撳「編輯」展開文字框→「儲存」（`docs/js/personal-memo.js`）。教職員同學生登入後都可用。
+
+
 ---
 
 ## 目錄結構
@@ -108,6 +118,7 @@ school-admin/
 │   ├── students.sql        # students / student_groups / class_teachers DDL+RLS
 │   ├── seed_students.sql   # 2026-2027 學生＋分組種子
 │   ├── seating_charts.sql  # seating_charts DDL+RLS
+│   ├── personal_memos.sql  # personal_memos DDL+RLS
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
 │   ├── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
@@ -123,6 +134,7 @@ school-admin/
 │   ├── js/home.js          # 主頁精簡：今日條、今日事項、模組 pill、課表
 │   ├── js/timetable.js     # 雲端時間表 + 今日循環日
 │   ├── js/seating.js       # 座位表編輯／儲存／PDF
+│   ├── js/personal-memo.js # 個人備忘錄（sticky 顯示／儲存）
 │   ├── js/staff-deadlines.js
 │   └── data/
 │       ├── timetable.json  # 本地備份
