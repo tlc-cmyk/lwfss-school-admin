@@ -18,7 +18,7 @@
   var C = {
     navy: "#0F1A3D",
     navy3: "#2A3D80",
-    coral: "#FF6B5C",
+    green: "#1a5c3a",
     yel: "#FFC83D"
   };
 
@@ -68,7 +68,7 @@
     k.fillStyle = C.navy3;
     rr(k, 40, floor, w - 80, 5, 2.5);
     k.fill();
-    k.fillStyle = "rgba(0,0,0,.32)";
+    k.fillStyle = "rgba(26,92,58,.35)";
     k.beginPath();
     k.ellipse(
       X,
@@ -97,7 +97,7 @@
     k.save();
     k.translate(X, yb);
     k.scale(sx, sy);
-    k.fillStyle = C.coral;
+    k.fillStyle = C.green;
     k.beginPath();
     k.arc(0, -R, R, 0, 7);
     k.fill();

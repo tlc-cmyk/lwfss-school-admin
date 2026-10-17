@@ -449,6 +449,39 @@ a:hover { text-decoration: underline; }
   height: auto;
   vertical-align: top;
 }
+
+/* Login screen — full deep navy (page + gate card + hero/mascot stages) */
+body:has(#gate:not(.hidden)) {
+  background: #0F1A3D;
+}
+html[data-theme="dark"] body:has(#gate:not(.hidden)) {
+  background: #0F1A3D;
+}
+body:has(#gate:not(.hidden)) .gate {
+  background: #0F1A3D;
+  border-color: transparent;
+  box-shadow: none;
+  color: #e8eaf8;
+}
+html[data-theme="dark"] body:has(#gate:not(.hidden)) .gate {
+  background: #0F1A3D;
+  border-color: transparent;
+  box-shadow: none;
+}
+body:has(#gate:not(.hidden)) .gate h2 {
+  color: #fff;
+}
+body:has(#gate:not(.hidden)) .gate p,
+body:has(#gate:not(.hidden)) .gate .oauth-hint {
+  color: rgba(232, 234, 248, 0.78);
+}
+body:has(#gate:not(.hidden)) .gate-hero,
+body:has(#gate:not(.hidden)) .gate-mascot {
+  background: #0F1A3D;
+}
+body:has(#gate:not(.hidden)) .gate-hr {
+  border-top-color: rgba(255, 255, 255, 0.12);
+}
 .oauth-hint {
   font-size: 0.8rem;
   color: var(--muted);
