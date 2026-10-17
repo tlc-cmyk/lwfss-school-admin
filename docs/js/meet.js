@@ -1,0 +1,522 @@
+(function () {
+  "use strict";
+
+  var MIN_PICK = 2;
+  var MAX_PICK = 8;
+
+  // Same Day→bell mapping as home.js (Day 5／10 = BF)
+  var BELLS = {
+    byCycleDay: {
+      "1": "general", "2": "general", "3": "general", "4": "general", "5": "bf",
+      "6": "general", "7": "general", "8": "general", "9": "general", "10": "bf"
+    },
+    schedules: {
+      general: {
+        id: "general",
+        label: "一般上課時間",
+        periods: {
+          "1": { start: "08:30", end: "09:15" },
+          "2": { start: "09:15", end: "10:00" },
+          "3": { start: "10:20", end: "11:05" },
+          "4": { start: "11:05", end: "11:50" },
+          "5": { start: "11:50", end: "12:35" },
+          "6": { start: "14:05", end: "14:50" },
+          "7": { start: "14:50", end: "15:35" }
+        }
+      },
+      bf: {
+        id: "bf",
+        label: "BF上課時間",
+        periods: {
+          "1": { start: "08:30", end: "09:15" },
+          "2": { start: "09:15", end: "10:00" },
+          "3": { start: "10:20", end: "11:05" },
+          "4": { start: "11:05", end: "11:50" },
+          "5": { start: "11:50", end: "12:35" },
+          "6": { start: "13:45", end: "14:30" },
+          "7": { start: "14:30", end: "15:15" },
+          "8": { start: "15:15", end: "16:45" }
+        }
+      }
+    }
+  };
+
+  var state = {
+    mode: "day",       // "day" | "week"
+    day: 1,            // cycle day 1–10 when mode=day
+    selected: {},      // uppercase code -> true
+    filter: "",
+    bound: false
+  };
+
+  function $(id) { return document.getElementById(id); }
+
+  function escapeHtml(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function getSession() {
+    return (window.SchoolAdminAuth && SchoolAdminAuth.getSession()) ||
+      window.__schoolAdminSession || null;
+  }
+
+  function getData() {
+    if (window.SchoolAdminHome && typeof SchoolAdminHome.getTimetableData === "function") {
+      var d = SchoolAdminHome.getTimetableData();
+      if (d && d.teachers) return d;
+    }
+    return window.TIMETABLE_DATA || null;
+  }
+
+  function scheduleIdForDay(d) {
+    return BELLS.byCycleDay[String(d)] || "general";
+  }
+
+  function periodBell(d, p) {
+    if (window.SchoolAdminHome && typeof SchoolAdminHome.periodBell === "function") {
+      var b = SchoolAdminHome.periodBell(d, p);
+      if (b) return b;
+    }
+    var sched = BELLS.schedules[scheduleIdForDay(d)] || BELLS.schedules.general;
+    return (sched.periods && sched.periods[String(p)]) || null;
+  }
+
+  function periodsForDay(day) {
+    if (window.SchoolAdminHome && typeof SchoolAdminHome.periodsForDay === "function") {
+      return SchoolAdminHome.periodsForDay(day);
+    }
+    return day === 5 || day === 10 ? 8 : 7;
+  }
+
+  function bellLabelForDay(d) {
+    if (window.SchoolAdminHome && typeof SchoolAdminHome.bellLabelForDay === "function") {
+      return SchoolAdminHome.bellLabelForDay(d) || "";
+    }
+    var sched = BELLS.schedules[scheduleIdForDay(d)];
+    return (sched && sched.label) || "";
+  }
+
+  function selectedCodes() {
+    return Object.keys(state.selected).filter(function (c) { return state.selected[c]; })
+      .sort(function (a, b) { return a.localeCompare(b); });
+  }
+
+  function selectedCount() {
+    return selectedCodes().length;
+  }
+
+  function teacherList() {
+    var data = getData();
+    if (!data || !data.teachers) return [];
+    return data.teachers.slice().sort(function (a, b) {
+      return String(a.code).localeCompare(String(b.code));
+    });
+  }
+
+  function findTeacher(code) {
+    var q = String(code || "").toUpperCase();
+    if (!q) return null;
+    var list = teacherList();
+    for (var i = 0; i < list.length; i++) {
+      if (String(list[i].code).toUpperCase() === q) return list[i];
+    }
+    return null;
+  }
+
+  /** True if teacher has a lesson at day/period. */
+  function isBusy(teacher, day, period) {
+    if (!teacher || day == null || period == null) return false;
+    var dayKey = String(day);
+    var periodKey = String(period);
+    var cell = teacher.schedule && teacher.schedule[dayKey] && teacher.schedule[dayKey][periodKey];
+    return !!cell;
+  }
+
+  /** Free periods for one teacher on one day. */
+  function freePeriodsFor(teacher, day) {
+    var maxP = periodsForDay(day);
+    var free = [];
+    for (var p = 1; p <= maxP; p++) {
+      if (!isBusy(teacher, day, p)) free.push(p);
+    }
+    return free;
+  }
+
+  /** Intersection of free periods across selected codes for one day. */
+  function sharedFreeForDay(codes, day) {
+    if (!codes || codes.length < MIN_PICK) return [];
+    var teachers = [];
+    for (var i = 0; i < codes.length; i++) {
+      var t = findTeacher(codes[i]);
+      if (!t) return [];
+      teachers.push(t);
+    }
+    var base = freePeriodsFor(teachers[0], day);
+    var out = [];
+    for (var j = 0; j < base.length; j++) {
+      var p = base[j];
+      var allFree = true;
+      for (var k = 1; k < teachers.length; k++) {
+        if (isBusy(teachers[k], day, p)) { allFree = false; break; }
+      }
+      if (allFree) out.push(p);
+    }
+    return out;
+  }
+
+  function selfCode() {
+    var session = getSession();
+    if (!session || !session.staff) return "";
+    var sn = (session.staff.short_name || "").trim().toUpperCase();
+    if (sn && findTeacher(sn)) return sn;
+    return "";
+  }
+
+  function ensureDefaultSelf() {
+    if (selectedCount() > 0) return;
+    var me = selfCode();
+    if (me) state.selected[me] = true;
+  }
+
+  function syncDayFromHome() {
+    if (window.SchoolAdminHome && typeof SchoolAdminHome.getSelectedDay === "function") {
+      var d = SchoolAdminHome.getSelectedDay();
+      if (d >= 1 && d <= 10) state.day = d;
+    } else if (window.SchoolAdminHome && typeof SchoolAdminHome.getTodayCycleDay === "function") {
+      var td = SchoolAdminHome.getTodayCycleDay();
+      if (td >= 1 && td <= 10) state.day = td;
+    }
+  }
+
+  function setHint(msg, isErr) {
+    var el = $("meet-hint");
+    if (!el) return;
+    el.textContent = msg || "";
+    el.classList.toggle("is-err", !!isErr);
+  }
+
+  function renderModeBar() {
+    var bar = $("meet-mode-bar");
+    if (!bar) return;
+    Array.prototype.forEach.call(bar.querySelectorAll("[data-meet-mode]"), function (btn) {
+      var on = btn.getAttribute("data-meet-mode") === state.mode;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    var dayWrap = $("meet-day-wrap");
+    if (dayWrap) {
+      var show = state.mode === "day";
+      dayWrap.classList.toggle("hidden", !show);
+      if (show) dayWrap.removeAttribute("hidden");
+      else dayWrap.setAttribute("hidden", "");
+    }
+  }
+
+  function renderDayGrid() {
+    var grid = $("meet-day-grid");
+    if (!grid) return;
+    var html = [];
+    for (var d = 1; d <= 10; d++) {
+      var isBf = d === 5 || d === 10;
+      var cls = "tt-day-chip" + (d === state.day ? " active" : "") + (isBf ? " is-bf" : "");
+      html.push(
+        '<button type="button" class="' + cls + '" role="tab" data-meet-day="' + d + '"' +
+        ' aria-selected="' + (d === state.day ? "true" : "false") + '"' +
+        ' title="Day ' + d + (isBf ? " · BF" : "") + '">D' + d + "</button>"
+      );
+    }
+    grid.innerHTML = html.join("");
+  }
+
+  function renderSelectedChips() {
+    var wrap = $("meet-selected");
+    var countEl = $("meet-count");
+    var codes = selectedCodes();
+    if (countEl) {
+      countEl.textContent = "已選 " + codes.length + "／" + MAX_PICK;
+      countEl.classList.toggle("is-ok", codes.length >= MIN_PICK && codes.length <= MAX_PICK);
+      countEl.classList.toggle("is-warn", codes.length > 0 && codes.length < MIN_PICK);
+    }
+    if (!wrap) return;
+    if (!codes.length) {
+      wrap.innerHTML = '<span class="meet-selected-empty">尚未選擇同事（請選 ' + MIN_PICK + "–" + MAX_PICK + " 人）</span>";
+      return;
+    }
+    var html = [];
+    codes.forEach(function (code) {
+      var t = findTeacher(code);
+      var name = t ? (t.chi || t.eng || "") : "";
+      html.push(
+        '<button type="button" class="meet-chip" data-meet-remove="' + escapeHtml(code) + '"' +
+        ' title="移除 ' + escapeHtml(code) + '">' +
+        '<span class="meet-chip-code">' + escapeHtml(code) + "</span>" +
+        (name ? '<span class="meet-chip-name">' + escapeHtml(name) + "</span>" : "") +
+        '<span class="meet-chip-x" aria-hidden="true">×</span>' +
+        "</button>"
+      );
+    });
+    wrap.innerHTML = html.join("");
+  }
+
+  function renderPicker() {
+    var list = $("meet-picker-list");
+    if (!list) return;
+    var teachers = teacherList();
+    var q = String(state.filter || "").trim().toLowerCase();
+    var html = [];
+    var shown = 0;
+    teachers.forEach(function (t) {
+      var code = String(t.code || "").toUpperCase();
+      if (!code) return;
+      var name = t.chi || t.eng || "";
+      var hay = (code + " " + name + " " + (t.eng || "")).toLowerCase();
+      if (q && hay.indexOf(q) < 0) return;
+      shown++;
+      var checked = !!state.selected[code];
+      var disabled = !checked && selectedCount() >= MAX_PICK;
+      html.push(
+        '<label class="meet-pick-row' + (checked ? " is-on" : "") + (disabled ? " is-disabled" : "") + '">' +
+          '<input type="checkbox" data-meet-code="' + escapeHtml(code) + '"' +
+          (checked ? " checked" : "") + (disabled ? " disabled" : "") + " />" +
+          '<span class="meet-pick-code">' + escapeHtml(code) + "</span>" +
+          '<span class="meet-pick-name">' + escapeHtml(name || "—") + "</span>" +
+        "</label>"
+      );
+    });
+    if (!teachers.length) {
+      list.innerHTML = '<p class="meet-empty">時間表載入中…</p>';
+      return;
+    }
+    if (!shown) {
+      list.innerHTML = '<p class="meet-empty">找不到符合「' + escapeHtml(state.filter) + "」的教師</p>";
+      return;
+    }
+    list.innerHTML = html.join("");
+  }
+
+  function formatSlot(day, period) {
+    var bell = periodBell(day, period);
+    var time = bell ? (bell.start + "–" + bell.end) : "";
+    return {
+      day: day,
+      period: period,
+      label: "第" + period + "節",
+      time: time,
+      bellLabel: bellLabelForDay(day)
+    };
+  }
+
+  function renderResults() {
+    var box = $("meet-results");
+    if (!box) return;
+    var codes = selectedCodes();
+    var n = codes.length;
+
+    if (!getData() || !teacherList().length) {
+      box.innerHTML = '<p class="meet-empty">時間表載入中，請稍候…</p>';
+      setHint("");
+      return;
+    }
+
+    if (n < MIN_PICK) {
+      box.innerHTML = '<p class="meet-empty">請選擇至少 ' + MIN_PICK + " 位同事，以計算共同空堂。</p>";
+      setHint("尚欠 " + (MIN_PICK - n) + " 人", true);
+      return;
+    }
+    if (n > MAX_PICK) {
+      box.innerHTML = '<p class="meet-empty">最多選擇 ' + MAX_PICK + " 人。</p>";
+      setHint("已超過上限", true);
+      return;
+    }
+
+    setHint("共同空堂＝所選同事在該節皆無課（按 lessons／時間表）");
+
+    var names = codes.map(function (c) {
+      var t = findTeacher(c);
+      return c + (t && (t.chi || t.eng) ? "（" + (t.chi || t.eng) + "）" : "");
+    }).join("、");
+
+    if (state.mode === "day") {
+      var day = state.day || 1;
+      var shared = sharedFreeForDay(codes, day);
+      var bellLab = bellLabelForDay(day);
+      var head =
+        '<div class="meet-result-head">' +
+          "<strong>Day " + day + "</strong>" +
+          (bellLab ? " · " + escapeHtml(bellLab) : "") +
+          " · 共同空堂 <strong>" + shared.length + "</strong> 節" +
+        "</div>" +
+        '<p class="meet-result-who muted">對象：' + escapeHtml(names) + "</p>";
+
+      if (!shared.length) {
+        box.innerHTML = head + '<p class="meet-empty">呢日冇共同空堂。可試其他 Day，或改為「全日週」睇邊日得。</p>';
+        return;
+      }
+
+      var cards = shared.map(function (p) {
+        var s = formatSlot(day, p);
+        return (
+          '<div class="meet-slot">' +
+            '<span class="meet-slot-period">' + escapeHtml(s.label) + "</span>" +
+            (s.time ? '<span class="meet-slot-time">' + escapeHtml(s.time) + "</span>" : "") +
+            '<span class="meet-slot-tag">共同空堂</span>' +
+          "</div>"
+        );
+      });
+      box.innerHTML = head + '<div class="meet-slot-list">' + cards.join("") + "</div>";
+      return;
+    }
+
+    // week mode: D1–D10
+    var dayBlocks = [];
+    var total = 0;
+    for (var d = 1; d <= 10; d++) {
+      var free = sharedFreeForDay(codes, d);
+      total += free.length;
+      var lab = bellLabelForDay(d);
+      var isBf = d === 5 || d === 10;
+      var inner;
+      if (!free.length) {
+        inner = '<p class="meet-day-none">無共同空堂</p>';
+      } else {
+        inner = '<div class="meet-slot-list meet-slot-list-compact">' + free.map(function (p) {
+          var s = formatSlot(d, p);
+          return (
+            '<div class="meet-slot">' +
+              '<span class="meet-slot-period">' + escapeHtml(s.label) + "</span>" +
+              (s.time ? '<span class="meet-slot-time">' + escapeHtml(s.time) + "</span>" : "") +
+            "</div>"
+          );
+        }).join("") + "</div>";
+      }
+      dayBlocks.push(
+        '<section class="meet-week-day' + (isBf ? " is-bf" : "") + (free.length ? " has-free" : "") + '">' +
+          '<header class="meet-week-day-h">' +
+            "<strong>Day " + d + "</strong>" +
+            (lab ? '<span class="muted"> · ' + escapeHtml(lab) + "</span>" : "") +
+            '<span class="meet-week-count">' + free.length + " 節</span>" +
+          "</header>" +
+          inner +
+        "</section>"
+      );
+    }
+
+    box.innerHTML =
+      '<div class="meet-result-head">' +
+        "全日週（D1–D10）· 共 <strong>" + total + "</strong> 個共同空堂時段" +
+      "</div>" +
+      '<p class="meet-result-who muted">對象：' + escapeHtml(names) + "</p>" +
+      '<div class="meet-week-grid">' + dayBlocks.join("") + "</div>";
+  }
+
+  function renderAll() {
+    renderModeBar();
+    renderDayGrid();
+    renderSelectedChips();
+    renderPicker();
+    renderResults();
+  }
+
+  function toggleCode(code, wantOn) {
+    var c = String(code || "").toUpperCase();
+    if (!c || !findTeacher(c)) return;
+    if (wantOn) {
+      if (state.selected[c]) return;
+      if (selectedCount() >= MAX_PICK) {
+        setHint("最多選 " + MAX_PICK + " 人", true);
+        return;
+      }
+      state.selected[c] = true;
+    } else {
+      delete state.selected[c];
+    }
+    renderAll();
+  }
+
+  function bind() {
+    if (state.bound) return;
+    state.bound = true;
+
+    var modeBar = $("meet-mode-bar");
+    if (modeBar) {
+      modeBar.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-meet-mode]");
+        if (!btn || !modeBar.contains(btn)) return;
+        var m = btn.getAttribute("data-meet-mode");
+        if (!m || m === state.mode) return;
+        state.mode = m;
+        renderAll();
+      });
+    }
+
+    var dayGrid = $("meet-day-grid");
+    if (dayGrid) {
+      dayGrid.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-meet-day]");
+        if (!btn || !dayGrid.contains(btn)) return;
+        var d = parseInt(btn.getAttribute("data-meet-day"), 10);
+        if (!(d >= 1 && d <= 10) || d === state.day) return;
+        state.day = d;
+        renderAll();
+      });
+    }
+
+    var search = $("meet-search");
+    if (search) {
+      search.addEventListener("input", function () {
+        state.filter = search.value || "";
+        renderPicker();
+      });
+    }
+
+    var picker = $("meet-picker-list");
+    if (picker) {
+      picker.addEventListener("change", function (e) {
+        var input = e.target;
+        if (!input || input.getAttribute("data-meet-code") == null) return;
+        toggleCode(input.getAttribute("data-meet-code"), !!input.checked);
+      });
+    }
+
+    var selected = $("meet-selected");
+    if (selected) {
+      selected.addEventListener("click", function (e) {
+        var btn = e.target.closest("[data-meet-remove]");
+        if (!btn || !selected.contains(btn)) return;
+        toggleCode(btn.getAttribute("data-meet-remove"), false);
+      });
+    }
+
+    var clearBtn = $("meet-clear");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", function () {
+        state.selected = {};
+        ensureDefaultSelf();
+        renderAll();
+      });
+    }
+  }
+
+  function show() {
+    var session = getSession();
+    if (!session || session.role !== "staff") return;
+    bind();
+    syncDayFromHome();
+    ensureDefaultSelf();
+    renderAll();
+  }
+
+  window.SchoolAdminMeet = {
+    show: show,
+    refresh: function () {
+      if (document.getElementById("home-panel-meet") &&
+          !document.getElementById("home-panel-meet").classList.contains("hidden")) {
+        show();
+      }
+    }
+  };
+})();

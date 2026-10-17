@@ -252,9 +252,38 @@
           </div>
         </section>
 
-        <section id="home-panel-meet" class="home-panel home-panel-placeholder hidden" role="tabpanel" aria-labelledby="home-tab-meet" data-panel="meet" hidden>
-          <h2 class="home-panel-title">約開會</h2>
-          <p class="muted">功能稍後推出。</p>
+        <section id="home-panel-meet" class="home-panel home-panel-meet hidden" role="tabpanel" aria-labelledby="home-tab-meet" data-panel="meet" hidden>
+          <div class="home-meet-card" data-role-view="staff">
+            <h2 class="home-panel-title">約開會</h2>
+            <p class="muted meet-intro">揀 2–8 位同事，計出大家共同空堂（按時間表 lessons；鐘聲跟 Day／一般或 BF）。</p>
+
+            <div class="meet-mode tt-cr-mode" id="meet-mode-bar" role="group" aria-label="查看範圍">
+              <button type="button" class="chip active" data-meet-mode="day" aria-pressed="true">單日</button>
+              <button type="button" class="chip" data-meet-mode="week" aria-pressed="false">全日週</button>
+            </div>
+
+            <div id="meet-day-wrap" class="meet-day-wrap">
+              <div id="meet-day-grid" class="tt-day-grid" role="tablist" aria-label="循環日 D1–D10"></div>
+            </div>
+
+            <div class="meet-pick-block">
+              <div class="meet-pick-head">
+                <label class="tt-teacher-label" for="meet-search">選擇同事</label>
+                <span id="meet-count" class="meet-count">已選 0／8</span>
+                <button type="button" id="meet-clear" class="chip meet-clear-btn" title="清空選擇（保留自己）">清空</button>
+              </div>
+              <input type="search" id="meet-search" class="meet-search" placeholder="搜尋短碼或姓名…" autocomplete="off" aria-label="搜尋同事" />
+              <div id="meet-selected" class="meet-selected" aria-label="已選同事"></div>
+              <div id="meet-picker-list" class="meet-picker-list" aria-label="同事名單"></div>
+            </div>
+
+            <p id="meet-hint" class="meet-hint muted" aria-live="polite"></p>
+            <div id="meet-results" class="meet-results" aria-live="polite"></div>
+          </div>
+          <div class="staff-only-note home-meet-student" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">僅供教職員</h2>
+            <p>約開會（共同空堂）只供教職員使用。學生介面不會顯示此內容。</p>
+          </div>
         </section>
       </div>
     </main>
@@ -268,5 +297,6 @@
   <script src="js/seating.js"></script>
   <script src="js/staff-deadlines.js"></script>
   <script src="js/personal-memo.js"></script>
+  <script src="js/meet.js"></script>
 </body>
 </html>

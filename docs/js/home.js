@@ -1127,6 +1127,7 @@
       renderTimetableSection(session);
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
+      if (state.activePanel === "meet") refreshMeetPanel();
       return;
     }
 
@@ -1206,6 +1207,7 @@
         renderTimetableSection(session);
         showClassRoomView();
         if (state.activePanel === "free") renderFreePanel();
+        if (state.activePanel === "meet") refreshMeetPanel();
         startClock();
       }
 
@@ -1243,6 +1245,7 @@
       renderTimetableSection(session);
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
+      if (state.activePanel === "meet") refreshMeetPanel();
     });
   }
 
@@ -1641,6 +1644,7 @@
       fillClassRoomSelects();
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
+      if (state.activePanel === "meet") refreshMeetPanel();
       return;
     }
     var client = getClient();
@@ -1672,6 +1676,7 @@
       fillClassRoomSelects();
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
+      if (state.activePanel === "meet") refreshMeetPanel();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
@@ -2546,6 +2551,11 @@
         window.SchoolAdminPersonalMemo.show();
       }
     }
+    if (panelId === "meet") {
+      if (window.SchoolAdminMeet && typeof window.SchoolAdminMeet.show === "function") {
+        window.SchoolAdminMeet.show();
+      }
+    }
   }
 
   function bindFuncBar() {
@@ -2646,9 +2656,20 @@
     if (window.__schoolAdminSession) onAuthed();
   }
 
+  function refreshMeetPanel() {
+    if (window.SchoolAdminMeet && typeof window.SchoolAdminMeet.refresh === "function") {
+      window.SchoolAdminMeet.refresh();
+    }
+  }
+
   window.SchoolAdminHome = {
     getBrowseDate: function () { return state.browseDate || todayHK(); },
     getTodayCycleDay: function () { return state.todayCycleDay; },
+    getSelectedDay: function () { return state.selectedDay; },
+    getTimetableData: function () { return getData(); },
+    periodBell: periodBell,
+    periodsForDay: periodsForDay,
+    bellLabelForDay: bellLabelForDay,
     todayHK: todayHK
   };
 
