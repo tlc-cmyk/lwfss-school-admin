@@ -396,6 +396,18 @@ a:hover { text-decoration: underline; }
   min-height: 44px;
   margin: 8px 0 12px;
 }
+.gate-mascot {
+  display: block;
+  width: min(240px, 72%);
+  max-width: 240px;
+  height: auto;
+  margin: 8px auto 0;
+  border-radius: 12px;
+  object-fit: contain;
+}
+html[data-theme="dark"] .gate-mascot {
+  opacity: 0.92;
+}
 .oauth-hint {
   font-size: 0.8rem;
   color: var(--muted);
