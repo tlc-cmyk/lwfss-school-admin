@@ -4,6 +4,7 @@
  *
  * Ports only the kit helpers #005 needs (pure u-based draw). Content localized
  * for LWFSS school-admin; timings/easing unchanged from upstream.
+ * Plays one CYC (4.7s) then freezes (no loop).
  */
 (function () {
   "use strict";
@@ -161,13 +162,21 @@
       return;
     }
     if (!ctx && !ensureCanvas()) return;
-    var u = ((now - t0) / 1000) % CYC;
+    var elapsed = (now - t0) / 1000;
+    // One full CYC (4.7s) only — freeze on last frame, do not loop.
+    var done = elapsed >= CYC;
+    var u = done ? CYC : elapsed;
     var dpr = canvas.width / CW;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, CW, CH);
     ctx.save();
     drawMaskReveal(ctx, CW, CH, u);
     ctx.restore();
+    if (done) {
+      running = false;
+      rafId = 0;
+      return;
+    }
     rafId = requestAnimationFrame(frame);
   }
 
