@@ -58,34 +58,24 @@
           <!-- auth.js fills this; visually folded into home-who above -->
           <div id="signed-in-as" class="home-top-signed-sr" aria-live="polite"></div>
 
-          <!-- Row 3: 個人備忘錄（只顯示自己；編輯／儲存） -->
+          <!-- Row 3: 個人備忘錄（只顯示；編輯在功能欄「備忘」） -->
           <div id="home-memo" class="home-memo" aria-label="個人備忘錄" hidden>
             <div class="home-memo-bar">
-              <span class="home-memo-label">個人備忘錄</span>
+              <span class="home-memo-label">個人備忘</span>
               <span id="home-memo-preview" class="home-memo-preview" hidden></span>
-              <span id="home-memo-empty" class="home-memo-empty">尚未寫備忘</span>
-              <button type="button" id="home-memo-edit-btn" class="home-memo-edit-btn" aria-expanded="false" title="編輯個人備忘錄">編輯</button>
-            </div>
-            <div id="home-memo-editor" class="home-memo-editor" hidden>
-              <label class="home-memo-input-label" for="home-memo-input">備忘內容</label>
-              <textarea id="home-memo-input" class="home-memo-input" rows="3" maxlength="2000" placeholder="只會顯示俾你自己睇…"></textarea>
-              <div class="home-memo-actions">
-                <button type="button" id="home-memo-save" class="home-memo-btn home-memo-btn-save">儲存</button>
-                <button type="button" id="home-memo-clear" class="home-memo-btn">清空</button>
-                <button type="button" id="home-memo-cancel" class="home-memo-btn">取消</button>
-                <span id="home-memo-status" class="home-memo-status" aria-live="polite"></span>
-              </div>
+              <span id="home-memo-empty" class="home-memo-empty">今日未有備忘</span>
             </div>
           </div>
         </section>
 
-        <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄" data-role-view="staff">
+        <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄">
           <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">時間表</button>
-          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-class-room" id="home-tab-class-room" data-panel="class-room">班別／課室</button>
-          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-seating" id="home-tab-seating" data-panel="seating">座位表</button>
-          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs">文件／會議</button>
-          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free">即時空堂</button>
-          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet">約開會</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-class-room" id="home-tab-class-room" data-panel="class-room" data-role-view="staff">班別／課室</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-seating" id="home-tab-seating" data-panel="seating" data-role-view="staff">座位表</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs" data-role-view="staff">文件／會議</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free" data-role-view="staff">即時空堂</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-memo" id="home-tab-memo" data-panel="memo">備忘</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet" data-role-view="staff">約開會</button>
         </nav>
       </div>
 
@@ -238,6 +228,27 @@
           <div class="staff-only-note home-free-student" data-role-view="student" aria-label="學生提示">
             <h2 class="home-panel-title">僅供教職員</h2>
             <p>即時空堂只供教職員查閱。學生介面不會顯示此內容。</p>
+          </div>
+        </section>
+
+        <section id="home-panel-memo" class="home-panel home-panel-memo hidden" role="tabpanel" aria-labelledby="home-tab-memo" data-panel="memo" hidden>
+          <div class="home-memo-card">
+            <h2 class="home-panel-title">個人備忘錄</h2>
+            <p class="muted home-memo-panel-hint">只顯示俾你自己睇；可按日期寫備忘。頂卡會顯示目前瀏覽日期嘅備忘。</p>
+            <div class="home-memo-panel-toolbar">
+              <label class="home-memo-date-label" for="memo-date-input">日期
+                <input type="date" id="memo-date-input" class="home-memo-date-input" aria-label="選擇備忘日期" />
+              </label>
+              <button type="button" id="memo-date-today" class="chip" title="改為今日">今日</button>
+            </div>
+            <label class="home-memo-input-label" for="memo-body-input">備忘內容</label>
+            <textarea id="memo-body-input" class="home-memo-input" rows="6" maxlength="2000" placeholder="只會顯示俾你自己睇…"></textarea>
+            <div class="home-memo-actions">
+              <button type="button" id="memo-save" class="home-memo-btn home-memo-btn-save">儲存</button>
+              <button type="button" id="memo-clear" class="home-memo-btn">清空</button>
+              <button type="button" id="memo-delete" class="home-memo-btn home-memo-btn-danger">刪除當日</button>
+              <span id="memo-status" class="home-memo-status" aria-live="polite"></span>
+            </div>
           </div>
         </section>
 

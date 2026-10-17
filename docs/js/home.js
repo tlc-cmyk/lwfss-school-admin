@@ -548,6 +548,11 @@
 
     // Assembly / next-lesson removed from sticky top (keep-only compact bar).
     renderNotes(session);
+    try {
+      document.dispatchEvent(new CustomEvent("schooladmin:browse-date", {
+        detail: { date: state.browseDate || todayHK() }
+      }));
+    } catch (e) { /* ignore */ }
   }
 
   function renderAssembly() {
@@ -2536,6 +2541,11 @@
         window.SchoolAdminSeating.show();
       }
     }
+    if (panelId === "memo") {
+      if (window.SchoolAdminPersonalMemo && typeof window.SchoolAdminPersonalMemo.show === "function") {
+        window.SchoolAdminPersonalMemo.show();
+      }
+    }
   }
 
   function bindFuncBar() {
@@ -2587,6 +2597,9 @@
       if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
       state.browseDate = v;
       window.__userPickedDay = false;
+      try {
+        document.dispatchEvent(new CustomEvent("schooladmin:browse-date", { detail: { date: v } }));
+      } catch (e) { /* ignore */ }
       var session = getSession();
       if (session) loadCycleAndCalendar(session);
     });
@@ -2632,6 +2645,12 @@
     fillClassRoomSelects();
     if (window.__schoolAdminSession) onAuthed();
   }
+
+  window.SchoolAdminHome = {
+    getBrowseDate: function () { return state.browseDate || todayHK(); },
+    getTodayCycleDay: function () { return state.todayCycleDay; },
+    todayHK: todayHK
+  };
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);

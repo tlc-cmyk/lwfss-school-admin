@@ -41,7 +41,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 - `seating_charts_*`（教職員：INSERT／UPDATE 僅 `owner_email`＝自己 **且** 任教該 `scope`（整班／科目分組／合班 token）；layout 學生必須屬該範圍；DELETE 僅 owner；SELECT 自己或任教同 scope）
-- `personal_memos_*`（任何已登入 `@g.lwfss.edu.hk`：SELECT／INSERT／UPDATE／DELETE **僅** `owner_email`＝JWT email；每人一列）
+- `personal_memos_*`（任何已登入 `@g.lwfss.edu.hk`：SELECT／INSERT／UPDATE／DELETE **僅** `owner_email`＝JWT email；複合鍵 `owner_email`＋`memo_date`，每日一列）
 
 條件（約）：
 
@@ -56,11 +56,11 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 
 設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
-1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘錄**（只顯示自己；編輯／儲存）。唔再堆疊校網 header、今日卡、事項卡三層。
+1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘**（只顯示目前瀏覽日期嘅自己備忘，無編輯）。唔再堆疊校網 header、今日卡、事項卡三層。
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
-4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**座位表**／文件／會議／即時空堂／約開會。切換只換下方面板。
-5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；約開會而家用 placeholder。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
+4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**座位表**／文件／會議／即時空堂／**備忘**／約開會。切換只換下方面板。學生只見時間表＋備忘。
+5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；**備忘** tab＝揀日期、編輯／儲存／刪除當日個人備忘（`personal_memos`）；約開會而家用 placeholder。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 
@@ -95,9 +95,9 @@ DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；
 
 | 表 | 說明 |
 |----|------|
-| `personal_memos` | 每人一列：`owner_email`（PK）、`body`、`updated_at`；只顯示自己嘅備忘 |
+| `personal_memos` | 每人每日一列：`owner_email`＋`memo_date`（複合 PK）、`body`、`updated_at` |
 
-DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `owner_email`＝JWT email；本校 `@g.lwfss.edu.hk`）。前端：sticky 頂卡第三行顯示單行摘要；撳「編輯」展開文字框→「儲存」（`docs/js/personal-memo.js`）。教職員同學生登入後都可用。
+DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `owner_email`＝JWT email；本校 `@g.lwfss.edu.hk`）。前端：sticky 頂卡第三行**只顯示**目前瀏覽日期嘅備忘摘要；功能欄「備忘」面板揀日期、編輯、儲存、刪除當日（`docs/js/personal-memo.js`）。教職員同學生登入後都可用。
 
 
 ---
@@ -134,7 +134,7 @@ school-admin/
 │   ├── js/home.js          # 主頁精簡：今日條、今日事項、模組 pill、課表
 │   ├── js/timetable.js     # 雲端時間表 + 今日循環日
 │   ├── js/seating.js       # 座位表編輯／儲存／PDF
-│   ├── js/personal-memo.js # 個人備忘錄（sticky 顯示／儲存）
+│   ├── js/personal-memo.js # 個人備忘錄（sticky 顯示；面板編輯／按日）
 │   ├── js/staff-deadlines.js
 │   └── data/
 │       ├── timetable.json  # 本地備份

@@ -1,17 +1,24 @@
 -- Personal memos (個人備忘錄) — Supabase Postgres
--- One row per authenticated @g.lwfss.edu.hk user; RLS: own row only.
+-- One row per authenticated @g.lwfss.edu.hk user per calendar date.
+-- RLS: SELECT/INSERT/UPDATE/DELETE only where owner_email = jwt email.
 
 CREATE TABLE IF NOT EXISTS public.personal_memos (
-  owner_email text PRIMARY KEY,
+  owner_email text NOT NULL,
+  memo_date date NOT NULL,
   body text NOT NULL DEFAULT '',
   updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY (owner_email, memo_date),
   CONSTRAINT personal_memos_owner_email_domain
     CHECK (owner_email ~~* '%@g.lwfss.edu.hk')
 );
 
-COMMENT ON TABLE public.personal_memos IS 'Per-user personal memo (個人備忘錄); owner_email = JWT email';
-COMMENT ON COLUMN public.personal_memos.owner_email IS 'Lowercased Google Workspace email (PK)';
-COMMENT ON COLUMN public.personal_memos.body IS 'Memo text shown on sticky top (own only)';
+CREATE INDEX IF NOT EXISTS idx_personal_memos_owner_date
+  ON public.personal_memos (owner_email, memo_date DESC);
+
+COMMENT ON TABLE public.personal_memos IS 'Per-user per-date personal memo (個人備忘錄); own rows only';
+COMMENT ON COLUMN public.personal_memos.owner_email IS 'Lowercased Google Workspace email';
+COMMENT ON COLUMN public.personal_memos.memo_date IS 'Calendar date this memo applies to (HK date)';
+COMMENT ON COLUMN public.personal_memos.body IS 'Memo text; sticky top shows browse/today date only';
 
 CREATE OR REPLACE FUNCTION public.personal_memos_set_updated_at()
 RETURNS trigger

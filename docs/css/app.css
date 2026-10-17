@@ -873,7 +873,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 }
 
 
-/* Personal memo (個人備忘錄) — sticky top, own notes only */
+/* Personal memo (個人備忘錄) — sticky display-only; edit in 功能欄「備忘」 */
 .home-memo {
   margin-top: 6px;
   padding-top: 6px;
@@ -921,38 +921,47 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   white-space: nowrap;
 }
 .home-memo-empty[hidden] { display: none !important; }
-.home-memo-edit-btn {
-  flex: 0 0 auto;
-  height: 1.7rem;
-  padding: 0 9px;
-  border: 1px solid rgba(255,255,255,0.4);
-  border-radius: 8px;
-  background: rgba(255,255,255,0.16);
-  color: #fff;
-  font-size: 0.68rem;
+
+/* 備忘 panel */
+.home-panel-memo .home-memo-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 14px 16px;
+  box-shadow: var(--shadow);
+}
+.home-memo-panel-hint {
+  margin: 4px 0 12px;
+  font-size: 0.82rem;
+}
+.home-memo-panel-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.home-memo-date-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
   font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  line-height: 1;
-  white-space: nowrap;
+  color: var(--primary-dark);
 }
-.home-memo-edit-btn:hover,
-.home-memo-edit-btn:focus-visible {
-  background: rgba(255,255,255,0.28);
-  outline: none;
-}
-.home-memo-editor {
-  margin-top: 6px;
-  padding: 8px;
-  border-radius: 10px;
-  background: rgba(255,255,255,0.96);
+.home-memo-date-input {
+  height: 2rem;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  background: #fff;
   color: var(--text);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
-.home-memo-editor[hidden] { display: none !important; }
 .home-memo-input-label {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--primary-dark);
   margin-bottom: 4px;
@@ -961,14 +970,14 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   display: block;
   width: 100%;
   resize: vertical;
-  min-height: 4.2rem;
-  max-height: 12rem;
-  padding: 8px 10px;
+  min-height: 8rem;
+  max-height: 20rem;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  font-size: 0.9rem;
+  line-height: 1.45;
   color: var(--text);
   background: #fff;
 }
@@ -981,16 +990,16 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 10px;
 }
 .home-memo-btn {
-  height: 1.85rem;
-  padding: 0 10px;
+  height: 1.95rem;
+  padding: 0 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: #f5f7fa;
   color: var(--text);
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   font-weight: 700;
   font-family: inherit;
   cursor: pointer;
@@ -1003,12 +1012,18 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   color: #fff;
 }
 .home-memo-btn-save:hover { background: var(--primary-dark); }
+.home-memo-btn-danger {
+  border-color: #e8b4ae;
+  color: var(--danger);
+  background: #fff5f4;
+}
+.home-memo-btn-danger:hover { background: #ffe8e6; }
 .home-memo-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 .home-memo-status {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--muted);
   min-width: 0;
@@ -1705,13 +1720,21 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .home-panel-free .home-free-student { margin-top: 0; }
 
 html[data-app-role="staff"] .tt-teacher-row[data-role-view="staff"]:not(.hidden),
-html[data-app-role="staff"] .home-func-bar[data-role-view="staff"]:not(.hidden),
+html[data-app-role="staff"] .home-func-bar:not(.hidden),
 html[data-app-role="student"] .tt-student-block[data-role-view="student"]:not(.hidden) {
   display: flex;
 }
-html[data-app-role="student"] .tt-teacher-row,
-html[data-app-role="student"] .home-func-bar {
+html[data-app-role="student"] .tt-teacher-row {
   display: none !important;
+}
+html[data-app-role="student"] .home-func-bar {
+  display: flex !important;
+}
+html[data-app-role="student"] .home-func-tab[data-role-view="staff"] {
+  display: none !important;
+}
+html[data-app-role="staff"] .home-func-tab[data-role-view="staff"] {
+  display: inline-flex;
 }
 html[data-app-role="staff"] .tt-student-block { display: none !important; }
 html[data-app-role="student"] a[data-staff-only],
