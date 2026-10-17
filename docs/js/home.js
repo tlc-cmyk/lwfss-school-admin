@@ -2561,6 +2561,11 @@
         window.SchoolAdminMeet.show();
       }
     }
+    if (panelId === "member-pay") {
+      if (window.SchoolAdminMemberPay && typeof window.SchoolAdminMemberPay.show === "function") {
+        window.SchoolAdminMemberPay.show();
+      }
+    }
   }
 
   function bindFuncBar() {
