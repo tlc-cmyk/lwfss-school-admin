@@ -816,7 +816,7 @@
 
   /**
    * Circular D1–D10 chip scroller: tripled track + transform, touch inertia,
-   * snap-to-center. Click still selects; 改日期 sync via scrollToDay.
+   * snap-to-center. Click still selects; browse-date sync via scrollToDay.
    */
   function createDayScroller(grid) {
     var prev = getDayScroller(grid);
@@ -1343,7 +1343,7 @@
 
       window.__todayCycleDay = state.todayCycleDay;
 
-      // Sticky 改日期 drives D1–D10 for 時間表／班別／課室 unless user tapped a Day chip.
+      // Sticky browse date drives D1–D10 for 時間表／班別／課室 unless user tapped a Day chip.
       if (!window.__userPickedDay) {
         state.selectedDay = state.browseCycleDay || null;
       } else if (!state.selectedDay) {
@@ -2809,20 +2809,36 @@
     });
   }
 
+  function applyBrowseDate(iso) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+    state.browseDate = iso;
+    window.__userPickedDay = false;
+    var input = $("home-date-input");
+    if (input && input.value !== iso) input.value = iso;
+    try {
+      document.dispatchEvent(new CustomEvent("schooladmin:browse-date", { detail: { date: iso } }));
+    } catch (e) { /* ignore */ }
+    var session = getSession();
+    if (session) loadCycleAndCalendar(session);
+  }
+
   function bindDatePicker() {
     var input = $("home-date-input");
     if (!input || input.dataset.bound === "1") return;
     input.dataset.bound = "1";
     input.addEventListener("change", function () {
       var v = (input.value || "").trim();
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
-      state.browseDate = v;
-      window.__userPickedDay = false;
-      try {
-        document.dispatchEvent(new CustomEvent("schooladmin:browse-date", { detail: { date: v } }));
-      } catch (e) { /* ignore */ }
-      var session = getSession();
-      if (session) loadCycleAndCalendar(session);
+      applyBrowseDate(v);
+    });
+  }
+
+  /** 「即時」— clear browse-date override and show today's timetable. */
+  function bindLiveToday() {
+    var btn = $("home-live");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", function () {
+      applyBrowseDate(todayHK());
     });
   }
 
@@ -2837,6 +2853,7 @@
     bindTeacherSelect();
     bindClassRoomControls();
     bindDatePicker();
+    bindLiveToday();
     bindFuncBar();
     switchHomePanel(state.activePanel || "tt");
     renderHomeBar(session);

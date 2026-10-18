@@ -36,7 +36,10 @@
           <!-- Row 1: date · time · Day/status · name -->
           <div class="home-top-row home-top-row-main">
             <div class="home-bar-when">
-              <span id="home-date" class="home-bar-date">載入日期…</span>
+              <label class="home-bar-date-hit" for="home-date-input" title="選擇日期">
+                <span id="home-date" class="home-bar-date">載入日期…</span>
+                <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
+              </label>
               <span class="home-bar-sep" aria-hidden="true">·</span>
               <span id="home-clock" class="home-bar-clock" aria-label="現在時間">--:--</span>
             </div>
@@ -47,18 +50,14 @@
             <span id="home-who" class="home-bar-who"></span>
           </div>
 
-          <!-- Row 2: 今日事項 + 改日期 / 登出 -->
+          <!-- Row 2: 今日事項 + 即時 / 登出 -->
           <div class="home-top-row home-top-row-tools">
             <div id="home-notes" class="home-top-notes" aria-label="今日事項" hidden>
               <h2 class="home-notes-title">今日事項</h2>
               <div id="home-notes-list" class="home-notes-list"></div>
             </div>
             <div class="home-top-actions">
-              <label class="home-bar-pick" for="home-date-input" title="改日期">
-                <span class="home-bar-pick-icon" aria-hidden="true">📅</span>
-                <span class="home-bar-pick-label">改日期</span>
-                <input type="date" id="home-date-input" class="home-bar-date-input" aria-label="選擇日期" />
-              </label>
+              <button type="button" id="home-live" class="home-bar-live" title="即時（回到今日時間表）" aria-label="即時，顯示今日時間表">即時</button>
               <button type="button" id="theme-toggle" class="home-theme-toggle" title="切換深色模式" aria-pressed="false" aria-label="切換深淺色">
                 <span class="theme-label-light">黑</span><span class="theme-label-dark">亮</span>
               </button>

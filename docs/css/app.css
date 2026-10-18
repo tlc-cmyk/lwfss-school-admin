@@ -924,12 +924,32 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   font-weight: 600;
   font-size: 0.75rem;
 }
+.home-bar-date-hit {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  max-width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 1px 2px;
+  border-radius: 4px;
+  cursor: pointer;
+  overflow: hidden; /* clip native date-input hit target */
+  -webkit-tap-highlight-color: transparent;
+}
+.home-bar-date-hit:hover,
+.home-bar-date-hit:focus-within {
+  background: rgba(255,255,255,0.14);
+}
 .home-bar-date {
   font-size: 0.78rem;
   font-weight: 600;
   opacity: 0.95;
   line-height: 1.2;
   white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-color: rgba(255,255,255,0.45);
+  text-underline-offset: 2px;
 }
 .home-bar-clock {
   font-size: 0.95rem;
@@ -949,6 +969,33 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   min-width: 0;
   flex: 1 1 auto;
 }
+/* 「即時」— reset browse date to today (replaces former 改日期 control) */
+.home-bar-live {
+  flex: 0 0 auto;
+  height: 1.9rem;
+  min-width: 1.9rem;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.16);
+  cursor: pointer;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  line-height: 1;
+}
+.home-bar-live:hover,
+.home-bar-live:focus-visible {
+  background: rgba(255,255,255,0.28);
+  outline: none;
+}
+/* Legacy class kept for any leftover markup */
 .home-bar-pick {
   position: relative;
   flex: 0 0 auto;
@@ -963,7 +1010,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   border: 1px solid rgba(255,255,255,0.35);
   background: rgba(255,255,255,0.16);
   cursor: pointer;
-  overflow: hidden; /* clip native date-input hit target on mobile Chrome */
+  overflow: hidden;
   color: #fff;
 }
 .home-bar-pick-icon { font-size: 0.9rem; line-height: 1; }
@@ -1149,8 +1196,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   .home-bar-date { font-size: 0.72rem; }
   .home-bar-clock { font-size: 0.88rem; }
   .home-bar-day { font-size: 0.8rem; }
-  .home-bar-pick-label { display: none; } /* icon-only 改日期 on narrow */
-  .home-bar-pick { min-width: 1.9rem; padding: 0; width: 1.9rem; }
+  .home-bar-live { padding: 0 6px; font-size: 0.64rem; }
   .home-bar-who { max-width: 36%; font-size: 0.7rem; }
 }
 
