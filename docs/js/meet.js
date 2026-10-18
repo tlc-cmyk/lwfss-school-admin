@@ -354,20 +354,81 @@
     }
   }
 
+  // Motion Prompt #060 — slide thumb under the active D1–D10 chip.
+  function syncMeetDaySegThumb(bar, instant) {
+    if (!bar || !bar.classList.contains("mp-seg")) return;
+    var thumb = bar.querySelector(".mp-seg-thumb");
+    var active = bar.querySelector("[data-meet-day].active");
+    if (!thumb || !active) return;
+    var x = active.offsetLeft;
+    var w = active.offsetWidth;
+    if (instant) {
+      var prev = thumb.style.transition;
+      thumb.style.transition = "none";
+      thumb.style.width = w + "px";
+      thumb.style.transform = "translateX(" + x + "px)";
+      void thumb.offsetWidth;
+      thumb.style.transition = prev;
+    } else {
+      thumb.style.width = w + "px";
+      thumb.style.transform = "translateX(" + x + "px)";
+    }
+  }
+
+  function ensureMeetDaySegBuilt(grid) {
+    if (!grid) return;
+    if (!grid.querySelector(".mp-seg-thumb")) {
+      var thumb = document.createElement("span");
+      thumb.className = "mp-seg-thumb";
+      thumb.setAttribute("aria-hidden", "true");
+      grid.insertBefore(thumb, grid.firstChild);
+    }
+    if (grid.querySelectorAll("[data-meet-day]").length === 10) return;
+    // Keep thumb; rebuild only day chips.
+    Array.prototype.forEach.call(grid.querySelectorAll("[data-meet-day]"), function (el) {
+      el.parentNode.removeChild(el);
+    });
+    var frag = document.createDocumentFragment();
+    for (var d = 1; d <= 10; d++) {
+      var isBf = d === 5 || d === 10;
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "chip" + (isBf ? " is-bf" : "");
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("data-meet-day", String(d));
+      btn.title = "Day " + d + (isBf ? " · BF" : "");
+      btn.textContent = "D" + d;
+      frag.appendChild(btn);
+    }
+    grid.appendChild(frag);
+    delete grid.dataset.segReady;
+  }
+
   function renderDayGrid() {
     var grid = $("meet-day-grid");
     if (!grid) return;
-    var html = [];
-    for (var d = 1; d <= 10; d++) {
-      var isBf = d === 5 || d === 10;
-      var cls = "tt-day-chip" + (d === state.day ? " active" : "") + (isBf ? " is-bf" : "");
-      html.push(
-        '<button type="button" class="' + cls + '" role="tab" data-meet-day="' + d + '"' +
-        ' aria-selected="' + (d === state.day ? "true" : "false") + '"' +
-        ' title="Day ' + d + (isBf ? " · BF" : "") + '">D' + d + "</button>"
-      );
+    ensureMeetDaySegBuilt(grid);
+    Array.prototype.forEach.call(grid.querySelectorAll("[data-meet-day]"), function (btn) {
+      var d = parseInt(btn.getAttribute("data-meet-day"), 10);
+      var on = d === state.day;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    var dayWrap = $("meet-day-wrap");
+    var visible = dayWrap && !dayWrap.classList.contains("hidden") && !dayWrap.hasAttribute("hidden");
+    if (!visible) {
+      delete grid.dataset.segReady;
+      return;
     }
-    grid.innerHTML = html.join("");
+    var instant = !grid.dataset.segReady;
+    syncMeetDaySegThumb(grid, instant);
+    requestAnimationFrame(function () {
+      syncMeetDaySegThumb(grid, !grid.dataset.segReady);
+      var thumb = grid.querySelector(".mp-seg-thumb");
+      if (thumb && parseFloat(thumb.style.width) > 0) {
+        grid.dataset.segReady = "1";
+      }
+    });
   }
 
   function renderSelectedChips() {
@@ -615,6 +676,15 @@
         if (!(d >= 1 && d <= 10) || d === state.day) return;
         state.day = d;
         renderAll();
+      });
+      if (typeof ResizeObserver !== "undefined") {
+        var dayRo = new ResizeObserver(function () {
+          syncMeetDaySegThumb(dayGrid, true);
+        });
+        dayRo.observe(dayGrid);
+      }
+      window.addEventListener("resize", function () {
+        syncMeetDaySegThumb(dayGrid, true);
       });
     }
 

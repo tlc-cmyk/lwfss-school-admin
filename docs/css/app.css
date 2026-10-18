@@ -2081,6 +2081,28 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
 .meet-mode { margin-bottom: 10px; }
 .meet-mode.mp-seg { margin-bottom: 12px; }
 .meet-day-wrap { margin-bottom: 12px; }
+/* Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060
+   約開會 D1–D10: stretch track across 10 segments; reuse .mp-seg thumb motion. */
+#meet-day-grid.mp-seg,
+.meet-day-seg.mp-seg {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 0;
+  box-sizing: border-box;
+}
+#meet-day-grid.mp-seg .chip,
+.meet-day-seg.mp-seg .chip {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 6px 2px;
+  font-size: 0.82rem;
+}
+#meet-day-grid.mp-seg .chip.is-bf:not(.active),
+.meet-day-seg.mp-seg .chip.is-bf:not(.active) {
+  color: #1a6b48;
+}
+
 .meet-day-wrap.hidden,
 .meet-day-wrap[hidden] { display: none !important; }
 .meet-pick-block {
@@ -2911,6 +2933,10 @@ html[data-theme="dark"] .mp-seg .chip.active {
   color: #fff;
   border-color: transparent;
   box-shadow: none;
+}
+html[data-theme="dark"] #meet-day-grid.mp-seg .chip.is-bf:not(.active),
+html[data-theme="dark"] .meet-day-seg.mp-seg .chip.is-bf:not(.active) {
+  color: #5eead4;
 }
 html[data-theme="dark"] .badge.live {
   background: rgba(45, 212, 191, 0.18);
