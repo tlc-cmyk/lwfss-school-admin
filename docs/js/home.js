@@ -2,6 +2,7 @@
   "use strict";
 
   var PAGE = 1000;
+  var ACADEMIC_YEAR = "2026-2027";
   var cloudStarted = false;
   var clockTimer = null;
   var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
@@ -2158,6 +2159,71 @@
     return rooms;
   }
 
+
+  /** Normalize to a CLASS_CODES entry (e.g. 1A) or "". */
+  function normalizeClassCode(raw) {
+    var code = String(raw == null ? "" : raw).trim().toUpperCase();
+    if (!code) return "";
+    for (var i = 0; i < CLASS_CODES.length; i++) {
+      if (String(CLASS_CODES[i]).toUpperCase() === code) return CLASS_CODES[i];
+    }
+    return "";
+  }
+
+  /**
+   * 班主任班別 — prefer staff.class_teacher (loaded at auth), else class_teachers by short_name.
+   * Same sources as seating / classroom 班主任 scopes.
+   */
+  function resolveFormClassSync(session) {
+    if (!session || !session.staff) return "";
+    return normalizeClassCode(session.staff.class_teacher);
+  }
+
+  function resolveFormClassFromCloud(session) {
+    var client = getClient();
+    var short = session && session.staff && session.staff.short_name
+      ? String(session.staff.short_name).trim()
+      : "";
+    if (!client || !short) return Promise.resolve("");
+    return client
+      .from("class_teachers")
+      .select("class_code")
+      .ilike("teacher_short_name", short)
+      .eq("academic_year", ACADEMIC_YEAR)
+      .order("sort_order", { ascending: true })
+      .limit(1)
+      .then(function (res) {
+        if (!res || res.error || !res.data || !res.data.length) return "";
+        return normalizeClassCode(res.data[0].class_code);
+      })
+      .catch(function () { return ""; });
+  }
+
+  /** On open of 班別／課室: form class (if any) + today's cycle Day. */
+  function applyClassRoomOpenDefaultsSync() {
+    if (state.todayCycleDay) {
+      selectDayFromScroller(state.todayCycleDay, { fromDateSync: true, force: true });
+    }
+    var form = resolveFormClassSync(getSession());
+    if (form) {
+      state.crMode = "class";
+      state.crClass = form;
+    }
+    return form;
+  }
+
+  function ensureFormClassDefaultFromCloud() {
+    if (state.crClass) return Promise.resolve(false);
+    var session = getSession();
+    if (!session || session.role !== "staff") return Promise.resolve(false);
+    return resolveFormClassFromCloud(session).then(function (form) {
+      if (!form) return false;
+      state.crMode = "class";
+      state.crClass = form;
+      return true;
+    });
+  }
+
   function fillClassRoomSelects() {
     var classSel = $("home-cr-class-select");
     var roomSel = $("home-cr-room-select");
@@ -2762,9 +2828,15 @@
     });
 
     if (panelId === "class-room") {
+      applyClassRoomOpenDefaultsSync();
       fillClassRoomSelects();
       showClassRoomView();
       scrollTodayDayIntoView();
+      ensureFormClassDefaultFromCloud().then(function (updated) {
+        if (!updated) return;
+        fillClassRoomSelects();
+        showClassRoomView();
+      });
     }
     if (panelId === "free") {
       renderFreePanel();
