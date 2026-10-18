@@ -1789,6 +1789,49 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   box-shadow: 0 1px 3px rgba(192, 57, 43, 0.35);
 }
 
+/* Motion Prompt #095 animated mesh — current lesson card(s) only
+   // Motion Prompt #095 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#095 */
+.tt-period.lesson.is-current.has-lesson-now-gradient {
+  position: relative;
+  /* Canvas paints the fill; keep red current affordance on border/shadow */
+  background: transparent;
+  --subj-bg: transparent;
+  --subj-left: rgba(255, 255, 255, 0.10);
+  color: #fff;
+}
+.tt-period.lesson.is-current > canvas.lesson-now-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+}
+.tt-period.lesson.is-current.has-lesson-now-gradient > .tt-period-left,
+.tt-period.lesson.is-current.has-lesson-now-gradient > .tt-period-body {
+  position: relative;
+  z-index: 1;
+}
+.tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-left {
+  background: rgba(255, 255, 255, 0.10);
+  border-right-color: rgba(255, 255, 255, 0.22);
+}
+.tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-time,
+.tt-period.lesson.is-current.has-lesson-now-gradient .subj,
+.tt-period.lesson.is-current.has-lesson-now-gradient .detail {
+  color: #fff;
+}
+.tt-period.lesson.is-current.has-lesson-now-gradient .detail {
+  color: rgba(255, 255, 255, 0.88);
+}
+.tt-period.lesson.is-current.has-lesson-now-gradient .room,
+.tt-period.lesson.is-current.has-lesson-now-gradient .tt-g {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
 /* Break rows: beat general .tt-period.is-current / .is-past */
 .tt-period.break.is-current {
   min-height: 0;
@@ -3184,6 +3227,25 @@ html[data-theme="dark"] .tt-period.lesson {
   border-color: color-mix(in srgb, var(--subj-border, #888) 40%, rgba(100, 180, 255, 0.25) 60%);
   color: var(--text);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
+}
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient {
+  background: transparent;
+  --subj-bg: transparent;
+  --subj-left: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28), 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-left {
+  background: rgba(255, 255, 255, 0.06);
+  border-right-color: rgba(34, 211, 238, 0.25);
+}
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-time,
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .subj,
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .detail {
+  color: #fff;
+}
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .detail {
+  color: rgba(255, 255, 255, 0.82);
 }
 html[data-theme="dark"] .tt-period.lesson .tt-period-left {
   background: color-mix(in srgb, var(--subj-left, #fff) 28%, #1a1c2e 72%);

@@ -1703,6 +1703,7 @@
       countEl.textContent = busy + " / " + maxp + " 節";
     }
     if (result) result.classList.remove("hidden");
+    if (window.LwfssLessonNowGradient) window.LwfssLessonNowGradient.refresh();
   }
 
   function showSelectedTeacher() {
@@ -2491,6 +2492,7 @@
       countEl.textContent = busy + " / " + maxp + " 節";
     }
     if (result) result.classList.remove("hidden");
+    if (window.LwfssLessonNowGradient) window.LwfssLessonNowGradient.refresh();
   }
 
   function showClassRoomView() {
