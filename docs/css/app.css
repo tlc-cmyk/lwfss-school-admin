@@ -2077,7 +2077,6 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   box-shadow: var(--shadow);
 }
 .home-panel-meet .home-panel-title { margin-bottom: 4px; }
-.meet-intro { margin: 0 0 12px; font-size: 0.88rem; }
 .meet-mode { margin-bottom: 10px; }
 .meet-mode.mp-seg { margin-bottom: 12px; }
 .meet-day-wrap { margin-bottom: 12px; }

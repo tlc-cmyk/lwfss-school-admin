@@ -306,7 +306,7 @@
   }
 
   // Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060
-  // Segmented control — slide thumb under the active 單日／全日週 chip (0.25s easeInOutCubic via CSS).
+  // Segmented control — slide thumb under the active 單日／循環周 chip (0.25s easeInOutCubic via CSS).
   function syncMeetModeSegThumb(bar, instant) {
     if (!bar || !bar.classList.contains("mp-seg")) return;
     var thumb = bar.querySelector(".mp-seg-thumb");
@@ -552,7 +552,7 @@
         '<p class="meet-result-who muted">對象：' + escapeHtml(names) + "</p>";
 
       if (!shared.length) {
-        box.innerHTML = head + '<p class="meet-empty">呢日冇共同空堂。可試其他 Day，或改為「全日週」睇邊日得。</p>';
+        box.innerHTML = head + '<p class="meet-empty">呢日冇共同空堂。可試其他 Day，或改為「循環周」睇邊日得。</p>';
         return;
       }
 
@@ -612,7 +612,7 @@
 
     box.innerHTML =
       '<div class="meet-result-head">' +
-        "全日週（D1–D10）· 共 <strong>" + total + "</strong> 個共同空堂時段" +
+        "循環周（D1–D10）· 共 <strong>" + total + "</strong> 個共同空堂時段" +
       "</div>" +
       '<p class="meet-result-who muted">對象：' + escapeHtml(names) + "</p>" +
       '<div class="meet-week-grid">' + dayBlocks.join("") + "</div>";
