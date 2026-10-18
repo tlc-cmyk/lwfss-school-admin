@@ -305,6 +305,28 @@
     el.classList.toggle("is-err", !!isErr);
   }
 
+  // Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060
+  // Segmented control — slide thumb under the active 單日／全日週 chip (0.25s easeInOutCubic via CSS).
+  function syncMeetModeSegThumb(bar, instant) {
+    if (!bar || !bar.classList.contains("mp-seg")) return;
+    var thumb = bar.querySelector(".mp-seg-thumb");
+    var active = bar.querySelector("[data-meet-mode].active");
+    if (!thumb || !active) return;
+    var x = active.offsetLeft;
+    var w = active.offsetWidth;
+    if (instant) {
+      var prev = thumb.style.transition;
+      thumb.style.transition = "none";
+      thumb.style.width = w + "px";
+      thumb.style.transform = "translateX(" + x + "px)";
+      void thumb.offsetWidth;
+      thumb.style.transition = prev;
+    } else {
+      thumb.style.width = w + "px";
+      thumb.style.transform = "translateX(" + x + "px)";
+    }
+  }
+
   function renderModeBar() {
     var bar = $("meet-mode-bar");
     if (!bar) return;
@@ -312,6 +334,16 @@
       var on = btn.getAttribute("data-meet-mode") === state.mode;
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    // Layout may not be ready while the panel is hidden; only mark ready once width > 0.
+    var instant = !bar.dataset.segReady;
+    syncMeetModeSegThumb(bar, instant);
+    requestAnimationFrame(function () {
+      syncMeetModeSegThumb(bar, !bar.dataset.segReady);
+      var thumb = bar.querySelector(".mp-seg-thumb");
+      if (thumb && parseFloat(thumb.style.width) > 0) {
+        bar.dataset.segReady = "1";
+      }
     });
     var dayWrap = $("meet-day-wrap");
     if (dayWrap) {
@@ -562,6 +594,15 @@
         if (!m || m === state.mode) return;
         state.mode = m;
         renderAll();
+      });
+      if (typeof ResizeObserver !== "undefined") {
+        var ro = new ResizeObserver(function () {
+          syncMeetModeSegThumb(modeBar, true);
+        });
+        ro.observe(modeBar);
+      }
+      window.addEventListener("resize", function () {
+        syncMeetModeSegThumb(modeBar, true);
       });
     }
 
