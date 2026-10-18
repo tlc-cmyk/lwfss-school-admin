@@ -2122,6 +2122,41 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
   border-color: rgba(255, 255, 255, 0.28);
 }
 
+/* Motion Prompt #015 Particles — under #home-panel-tt when holiday/off
+   // Motion Prompt #015 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#015 */
+.tt-holiday-particles {
+  display: none;
+  margin: 12px auto 4px;
+  width: 100%;
+  max-width: 539px;
+  min-height: 120px;
+  aspect-ratio: 539 / 208;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 12px;
+}
+.tt-holiday-particles.is-active:not([hidden]),
+.tt-holiday-particles:not([hidden]).is-active {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.tt-holiday-particles[hidden] {
+  display: none !important;
+}
+.tt-holiday-particles canvas.tt-holiday-particles-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 539px;
+  min-height: 100px;
+}
+/* Only mount visually when html tone is holiday (JS also gates). */
+html:not([data-tone="holiday"]) .tt-holiday-particles {
+  display: none !important;
+}
+/* prefers-reduced-motion: JS freezes on FREEZE_U (no CSS keyframes here). */
+
 /* Break rows: beat general .tt-period.is-current / .is-past */
 .tt-period.break.is-current {
   min-height: 0;
