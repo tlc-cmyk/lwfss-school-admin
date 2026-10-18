@@ -688,34 +688,13 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 
 /* Sticky top card — compact 2-row; tone by cycle type (holiday/normal/bf) */
 .home-top {
-  position: relative;
-  overflow: hidden;
   color: #fff;
   border-radius: 14px;
   padding: 8px 10px 8px;
   margin-bottom: 8px;
-  /* Fallback solid until / if canvas (#095) paints; JS adds .has-home-top-gradient */
+  /* default = normal blue until JS sets data-tone */
   background: linear-gradient(135deg, #1a6bb5 0%, #0d3f7a 100%);
   box-shadow: 0 3px 12px rgba(13, 63, 122, 0.28);
-}
-/* Motion Prompt #095 animated mesh — canvas under content, no hit-testing */
-.home-top > canvas.home-top-bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-  pointer-events: none;
-  z-index: 0;
-}
-.home-top.has-home-top-gradient {
-  /* Canvas fills the bar; keep tone box-shadows only */
-  background: transparent;
-}
-.home-top-row,
-.home-memo {
-  position: relative;
-  z-index: 1;
 }
 .home-top[data-tone="holiday"] {
   background: linear-gradient(135deg, #d6453d 0%, #9b1e18 100%);
@@ -728,12 +707,6 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .home-top[data-tone="bf"] {
   background: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
   box-shadow: 0 3px 12px rgba(13, 82, 56, 0.28);
-}
-/* Canvas (#095) owns the fill; keep per-tone box-shadow only */
-.home-top.has-home-top-gradient[data-tone="holiday"],
-.home-top.has-home-top-gradient[data-tone="normal"],
-.home-top.has-home-top-gradient[data-tone="bf"] {
-  background: transparent;
 }
 .home-top-signed-sr {
   position: absolute;
@@ -3179,8 +3152,7 @@ html[data-theme="dark"] .seat-actions .chip.seat-btn-save {
   border-color: transparent;
 }
 
-/* Sticky tones: deepen into neon world; keep holiday red / normal blue / BF green distinct.
-   Solid gradients are no-JS fallback; .has-home-top-gradient lets #095 canvas paint instead. */
+/* Sticky tones: deepen into neon world; keep holiday red / normal blue / BF green distinct */
 html[data-theme="dark"] .home-top[data-tone="normal"] {
   background: linear-gradient(135deg, #0e4a82 0%, #081a36 100%);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.18), 0 0 20px rgba(34, 211, 238, 0.08);
@@ -3192,12 +3164,6 @@ html[data-theme="dark"] .home-top[data-tone="holiday"] {
 html[data-theme="dark"] .home-top[data-tone="bf"] {
   background: linear-gradient(135deg, #0c5a40 0%, #05241a 100%);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(45, 212, 191, 0.28), 0 0 18px rgba(45, 212, 191, 0.1);
-}
-html[data-theme="dark"] .home-top.has-home-top-gradient,
-html[data-theme="dark"] .home-top.has-home-top-gradient[data-tone="normal"],
-html[data-theme="dark"] .home-top.has-home-top-gradient[data-tone="holiday"],
-html[data-theme="dark"] .home-top.has-home-top-gradient[data-tone="bf"] {
-  background: transparent;
 }
 html[data-theme="dark"] .home-theme-toggle {
   background: rgba(0, 0, 0, 0.28);
