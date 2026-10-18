@@ -1566,6 +1566,11 @@
       "</span>";
   }
 
+  function formatPeriodTime(start, end) {
+    if (!start || !end) return "";
+    return String(start) + "–" + String(end);
+  }
+
   function makeBreakRow(slot, live, curSlot, nowMins) {
     var extra = "";
     var isCurrent = false;
@@ -1582,11 +1587,15 @@
     row.className = ("tt-period break" + extra).trim();
     row.setAttribute("data-break", slot.key || "");
     var label = breakSlotLabel(slot);
+    var timeStr = formatPeriodTime(slot.start, slot.end);
     row.innerHTML =
       '<div class="tt-period-left">' +
         '<span class="tt-pnum">' + escapeHtml(label) + "</span>" +
-        '<span class="tt-period-time">' + escapeHtml(slot.start) + " — " + escapeHtml(slot.end) + "</span>" +
+        (timeStr ? '<span class="tt-period-time">' + escapeHtml(timeStr) + "</span>" : "") +
         (isCurrent ? breakCountdownHtml(slot.end) : "") +
+      "</div>" +
+      '<div class="tt-period-body">' +
+        '<div class="subj break-label">' + escapeHtml(label) + "</div>" +
       "</div>";
     if (isCurrent) row.setAttribute("aria-current", "true");
     return row;
@@ -1646,7 +1655,7 @@
         }
       }
       var timeHtml = bell
-        ? '<span class="tt-period-time">' + escapeHtml(bell.start) + " — " + escapeHtml(bell.end) + "</span>"
+        ? '<span class="tt-period-time">' + escapeHtml(formatPeriodTime(bell.start, bell.end)) + "</span>"
         : "";
       var cdHtml = (isCurrent && bell) ? countdownHtml(bell.end) : "";
 
@@ -1675,15 +1684,21 @@
           : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
         var trailing = "";
+        var metaHtml = "";
         if (useChips) {
           trailing = splitGroupsHtml(merged, teacher.code);
+          if (detailText) {
+            metaHtml = '<div class="tt-meta"><span class="tt-tag detail">' +
+              escapeHtml(detailText) + "</span></div>";
+          }
         } else {
           if (cell.teacher && cell.teacher !== teacher.code) {
             detailText += (detailText ? " · " : "") + cell.teacher;
           }
-          if (cell.room) {
-            trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
-          }
+          var tags = [];
+          if (detailText) tags.push('<span class="tt-tag detail">' + escapeHtml(detailText) + "</span>");
+          if (cell.room) tags.push('<span class="tt-tag room">' + escapeHtml(cell.room) + "</span>");
+          if (tags.length) metaHtml = '<div class="tt-meta">' + tags.join("") + "</div>";
         }
         row.innerHTML =
           '<div class="tt-period-left">' +
@@ -1693,7 +1708,7 @@
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(titleText) + "</div>" +
-            '<div class="detail">' + escapeHtml(detailText) + "</div>" +
+            metaHtml +
             trailing +
           "</div>";
       } else {
@@ -2384,7 +2399,7 @@
         }
       }
       var timeHtml = bell
-        ? '<span class="tt-period-time">' + escapeHtml(bell.start) + " — " + escapeHtml(bell.end) + "</span>"
+        ? '<span class="tt-period-time">' + escapeHtml(formatPeriodTime(bell.start, bell.end)) + "</span>"
         : "";
       var cdHtml = (isCurrent && bell) ? countdownHtml(bell.end) : "";
       var groups = groupLessonsForPeriod(byPeriod[p] || []);
@@ -2471,6 +2486,7 @@
           }
         }
         var trailing = "";
+        var roomTag = "";
         if (isSplit) {
           trailing = splitGroupsHtml(slots, null);
         } else if (isElective && mode === "room" && focusSlot) {
@@ -2481,10 +2497,21 @@
             label: focusSlot.label || focusLabel
           }], null);
         } else if (mode === "class" && cell.room) {
-          trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+          roomTag = cell.room;
         } else if (mode === "room" && cell.room && groups.length > 1) {
-          trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+          roomTag = cell.room;
         }
+        var metaTags = [];
+        var detailJoined = detailBits.join(" · ");
+        if (detailJoined) {
+          metaTags.push('<span class="tt-tag detail">' + escapeHtml(detailJoined) + "</span>");
+        }
+        if (roomTag) {
+          metaTags.push('<span class="tt-tag room">' + escapeHtml(roomTag) + "</span>");
+        }
+        var metaHtml = metaTags.length
+          ? '<div class="tt-meta">' + metaTags.join("") + "</div>"
+          : "";
         row.innerHTML =
           '<div class="tt-period-left">' +
             '<span class="tt-pnum">P' + p + "</span>" +
@@ -2493,7 +2520,7 @@
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(titleText) + "</div>" +
-            '<div class="detail">' + escapeHtml(detailBits.join(" · ")) + "</div>" +
+            metaHtml +
             trailing +
           "</div>";
         if (isCurrent && gi === 0) row.setAttribute("aria-current", "true");
