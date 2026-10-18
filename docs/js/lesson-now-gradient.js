@@ -33,10 +33,9 @@
   ];
 
   /**
-   * Choice (light): retint #095 mesh to the active data-tone family
-   * (holiday red / normal blue / bf green) so current-lesson cards stay
-   * in the same calm hue as chrome. Motion timings unchanged.
-   * Dark keeps the neon cyan/orange kit as-is.
+   * Retint #095 mesh to the active data-tone family (holiday red /
+   * normal blue / bf green) in both light and dark so current-lesson
+   * cards stay one-hue with chrome. Motion timings unchanged.
    */
   var PALETTES = {
     light_normal: {
@@ -63,18 +62,36 @@
       c3: "#B8E0C8",
       scrim: "rgba(8, 40, 28, 0.36)"
     },
-    /* legacy alias */
-    light: null,
-    dark: {
+    dark_normal: {
       base: "#081428",
-      c0: "#FF6A3A",
-      c1: "#C45A38",
-      c2: "#22d3ee",
-      c3: "#3B64E8",
-      scrim: "rgba(0, 0, 0, 0.28)"
-    }
+      c0: "#5EB0F0",
+      c1: "#3D8FD0",
+      c2: "#1A5A9C",
+      c3: "#0E4A82",
+      scrim: "rgba(0, 0, 0, 0.32)"
+    },
+    dark_holiday: {
+      base: "#1A0C0C",
+      c0: "#F07167",
+      c1: "#D6453D",
+      c2: "#9B1E18",
+      c3: "#6B1212",
+      scrim: "rgba(0, 0, 0, 0.32)"
+    },
+    dark_bf: {
+      base: "#061410",
+      c0: "#3DCC8C",
+      c1: "#157A52",
+      c2: "#0D5238",
+      c3: "#0C5A40",
+      scrim: "rgba(0, 0, 0, 0.32)"
+    },
+    /* legacy aliases */
+    light: null,
+    dark: null
   };
   PALETTES.light = PALETTES.light_normal;
+  PALETTES.dark = PALETTES.dark_normal;
 
   /** @type {Map<Element, {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, cssW: number, cssH: number, ro: ResizeObserver|null}>} */
   var instances = new Map();
@@ -104,9 +121,8 @@
   }
 
   function palette() {
-    if (isDark()) return PALETTES.dark;
-    var key = "light_" + activeTone();
-    return PALETTES[key] || PALETTES.light_normal;
+    var key = (isDark() ? "dark_" : "light_") + activeTone();
+    return PALETTES[key] || (isDark() ? PALETTES.dark_normal : PALETTES.light_normal);
   }
 
   /**

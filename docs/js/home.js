@@ -508,7 +508,7 @@
     el.className = "home-next-lesson" + (done ? " is-done" : "");
   }
 
-  /** Sticky + app chrome tone: holiday=red, normal=blue, bf=green (light mode). */
+  /** Sticky + app chrome tone: holiday=red, normal=blue, bf=green (light + dark). */
   function topToneForDay(day) {
     if (!day) return "holiday";
     return scheduleIdForDay(day) === "bf" ? "bf" : "normal";
@@ -518,7 +518,7 @@
     var tone = topToneForDay(day);
     var top = $("home-top");
     if (top) top.setAttribute("data-tone", tone);
-    /* Propagate to <html> so light-mode CSS vars tint whole app chrome. */
+    /* Propagate to <html> so CSS vars tint whole app chrome (light + dark). */
     var root = document.documentElement;
     if (root.getAttribute("data-tone") !== tone) {
       root.setAttribute("data-tone", tone);

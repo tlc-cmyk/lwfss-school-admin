@@ -1,13 +1,14 @@
 /* ==========================================================================
-   Light mode tone system (data-tone on <html>)
+   Tone system (data-tone on <html>) — light + dark
    -------------------------------------------------------------------------
    holiday = red family · normal = blue family · bf = green family
-   One hue per tone; neutrals (--text/--bg/--card/--muted/--border) stay gray.
-   Colored tokens drive chrome only (primary, accents, borders, focus, thumbs).
-   Dark mode (霓虹) ignores these light tone overrides unless noted.
+   One hue per tone (shades only). Neutrals stay gray/near-black.
+   Colored tokens drive chrome (primary, accents, borders, focus, thumbs,
+   tabs, mp-seg, buttons, links). Dark = deep backgrounds + tone accents;
+   no cyan↔violet neon rainbow.
    ========================================================================== */
 :root {
-  /* Neutrals — shared across tones */
+  /* Neutrals — shared across light tones */
   --bg: #f0f4f8;
   --card: #ffffff;
   --text: #1a2332;
@@ -112,67 +113,171 @@ html[data-day-theme="bf"]:not([data-theme="dark"]) {
   --home-top-shadow: 0 3px 12px rgba(13, 82, 56, 0.28);
 }
 
-/* —— Dark mode (data-theme on <html>) — neon cyan → violet on deep navy —— */
+/* —— Dark mode default = normal (blue) until data-tone set ——
+   Deep navy + blue-family accents (shades only). Neon kit tokens remapped
+   to the active tone so chrome rules (tabs/mp-seg/buttons/links) stay one-hue. */
 html[data-theme="dark"] {
   color-scheme: dark;
-  /* Kit: deep navy/charcoal with radial depth */
-  --bg: #12141f;
-  --card: #1a1c2e;
-  /* Accents: neon cyan/teal → violet (primary for links/icons; headings near-white) */
-  --primary: #22d3ee;
-  --primary-dark: #e8eaf8;
-  --primary-soft: rgba(34, 211, 238, 0.12);
-  --accent: #2dd4bf;
-  --free: #161a2c;
-  --free-border: rgba(100, 180, 255, 0.28);
-  --lesson: #2a2418;
-  --lesson-border: #8a7040;
+  --bg: #0e1420;
+  --card: #161e2e;
+  --primary: #5eb0f0;
+  --primary-dark: #d4e6f8;
+  --primary-soft: rgba(94, 176, 240, 0.14);
+  --accent: #6bb8f0;
+  --free: #141c28;
+  --free-border: rgba(94, 176, 240, 0.30);
+  --lesson: #1a2030;
+  --lesson-border: rgba(94, 176, 240, 0.28);
   --text: #ffffff;
   --muted: #9499b3;
-  --border: rgba(100, 180, 255, 0.20);
-  --danger: #f07167;
-  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(100, 180, 255, 0.06);
-  --surface-2: #14162a;
-  --surface-3: #22253a;
-  /* Neon kit tokens */
-  --neon-cyan: #22d3ee;
-  --neon-teal: #2dd4bf;
-  --neon-violet: #8b5cf6;
-  --neon-purple: #a855f7;
-  --gradient-neon: linear-gradient(90deg, #22d3ee 0%, #8b5cf6 100%);
-  --gradient-neon-135: linear-gradient(135deg, #22d3ee 0%, #8b5cf6 100%);
-  --glow-cyan: 0 0 14px rgba(34, 211, 238, 0.35);
-  --glow-violet: 0 0 14px rgba(139, 92, 246, 0.30);
-  --glass: rgba(26, 28, 46, 0.72);
-  --border-neon: rgba(100, 200, 255, 0.24);
-  /* Chrome tokens used by shared (light+dark) rules — keep neon, not light blue */
-  --tone-rgb: 34, 211, 238;
-  --tone-border: rgba(100, 180, 255, 0.28);
-  --tone-soft: rgba(34, 211, 238, 0.12);
-  --focus-ring: rgba(34, 211, 238, 0.18);
-  --seg-thumb: #22d3ee;
-  --current-accent: #f07167;
-  --typewriter-caret: #FF6B5C;
-  --home-top-grad: linear-gradient(135deg, #1a6bb5 0%, #0d3f7a 100%);
-  --home-top-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+  --border: rgba(94, 176, 240, 0.20);
+  --danger: #f07167; /* semantic danger — always red */
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(94, 176, 240, 0.08);
+  --surface-2: #121a28;
+  --surface-3: #1c2638;
+  --glass: rgba(22, 30, 46, 0.72);
+  /* Tone chrome */
+  --tone-fill: #3d8fd0;
+  --tone-deep: #1a5a9c;
+  --tone-border: rgba(94, 176, 240, 0.30);
+  --tone-soft: rgba(94, 176, 240, 0.14);
+  --tone-rgb: 94, 176, 240;
+  --focus-ring: rgba(94, 176, 240, 0.20);
+  --seg-thumb: #5eb0f0;
+  --current-accent: #5eb0f0;
+  --typewriter-caret: #5eb0f0;
+  --home-top-grad: linear-gradient(135deg, #0e4a82 0%, #081a36 100%);
+  --home-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(94, 176, 240, 0.18);
+  /* Remapped "neon" kit → blue shades only (used by dark chrome rules) */
+  --neon-cyan: #5eb0f0;
+  --neon-teal: #6bb8f0;
+  --neon-violet: #3d8fd0;
+  --neon-purple: #1a5a9c;
+  --gradient-neon: linear-gradient(90deg, #5eb0f0 0%, #1a5a9c 100%);
+  --gradient-neon-135: linear-gradient(135deg, #5eb0f0 0%, #1a5a9c 100%);
+  --glow-cyan: 0 0 14px rgba(94, 176, 240, 0.35);
+  --glow-violet: 0 0 14px rgba(26, 90, 156, 0.28);
+  --border-neon: rgba(94, 176, 240, 0.24);
 }
+
+/* Dark holiday = red family */
+html[data-theme="dark"][data-tone="holiday"] {
+  --bg: #161010;
+  --card: #221818;
+  --primary: #f07167;
+  --primary-dark: #f5d4d0;
+  --primary-soft: rgba(240, 113, 103, 0.14);
+  --accent: #f08078;
+  --free: #1c1414;
+  --free-border: rgba(240, 113, 103, 0.32);
+  --lesson: #241818;
+  --lesson-border: rgba(240, 113, 103, 0.28);
+  --border: rgba(240, 113, 103, 0.22);
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(240, 113, 103, 0.10);
+  --surface-2: #1a1212;
+  --surface-3: #2a1c1c;
+  --glass: rgba(34, 24, 24, 0.72);
+  --tone-fill: #d6453d;
+  --tone-deep: #9b1e18;
+  --tone-border: rgba(240, 113, 103, 0.32);
+  --tone-soft: rgba(240, 113, 103, 0.14);
+  --tone-rgb: 240, 113, 103;
+  --focus-ring: rgba(240, 113, 103, 0.22);
+  --seg-thumb: #f07167;
+  --current-accent: #f07167;
+  --typewriter-caret: #f07167;
+  --home-top-grad: linear-gradient(135deg, #9a2c28 0%, #4a1010 100%);
+  --home-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(240, 113, 103, 0.28);
+  --neon-cyan: #f07167;
+  --neon-teal: #f08078;
+  --neon-violet: #d6453d;
+  --neon-purple: #9b1e18;
+  --gradient-neon: linear-gradient(90deg, #f07167 0%, #9b1e18 100%);
+  --gradient-neon-135: linear-gradient(135deg, #f07167 0%, #9b1e18 100%);
+  --glow-cyan: 0 0 14px rgba(240, 113, 103, 0.35);
+  --glow-violet: 0 0 14px rgba(155, 30, 24, 0.28);
+  --border-neon: rgba(240, 113, 103, 0.26);
+}
+
+/* Dark normal = blue family (explicit; same as default dark) */
+html[data-theme="dark"][data-tone="normal"] {
+  --bg: #0e1420;
+  --card: #161e2e;
+  --primary: #5eb0f0;
+  --primary-dark: #d4e6f8;
+  --primary-soft: rgba(94, 176, 240, 0.14);
+  --accent: #6bb8f0;
+  --free: #141c28;
+  --free-border: rgba(94, 176, 240, 0.30);
+  --lesson: #1a2030;
+  --lesson-border: rgba(94, 176, 240, 0.28);
+  --border: rgba(94, 176, 240, 0.20);
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(94, 176, 240, 0.08);
+  --surface-2: #121a28;
+  --surface-3: #1c2638;
+  --glass: rgba(22, 30, 46, 0.72);
+  --tone-fill: #3d8fd0;
+  --tone-deep: #1a5a9c;
+  --tone-border: rgba(94, 176, 240, 0.30);
+  --tone-soft: rgba(94, 176, 240, 0.14);
+  --tone-rgb: 94, 176, 240;
+  --focus-ring: rgba(94, 176, 240, 0.20);
+  --seg-thumb: #5eb0f0;
+  --current-accent: #5eb0f0;
+  --typewriter-caret: #5eb0f0;
+  --home-top-grad: linear-gradient(135deg, #0e4a82 0%, #081a36 100%);
+  --home-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(94, 176, 240, 0.18);
+  --neon-cyan: #5eb0f0;
+  --neon-teal: #6bb8f0;
+  --neon-violet: #3d8fd0;
+  --neon-purple: #1a5a9c;
+  --gradient-neon: linear-gradient(90deg, #5eb0f0 0%, #1a5a9c 100%);
+  --gradient-neon-135: linear-gradient(135deg, #5eb0f0 0%, #1a5a9c 100%);
+  --glow-cyan: 0 0 14px rgba(94, 176, 240, 0.35);
+  --glow-violet: 0 0 14px rgba(26, 90, 156, 0.28);
+  --border-neon: rgba(94, 176, 240, 0.24);
+}
+
+/* Dark BF = green family (true green shades — not teal/cyan) */
 html[data-theme="dark"][data-tone="bf"],
 html[data-theme="dark"][data-day-theme="bf"] {
-  /* Keep BF green recognizable inside the neon dark world */
   --bg: #0e1614;
-  --primary: #2dd4bf;
-  --primary-dark: #d8f5ec;
-  --primary-soft: rgba(45, 212, 191, 0.14);
+  --card: #14201c;
+  --primary: #3dcc8c;
+  --primary-dark: #d0f0e0;
+  --primary-soft: rgba(61, 204, 140, 0.14);
+  --accent: #4ad698;
   --free: #142820;
-  --free-border: rgba(45, 212, 191, 0.35);
-  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(45, 212, 191, 0.08);
-  --tone-rgb: 45, 212, 191;
-  --tone-border: rgba(45, 212, 191, 0.35);
-  --tone-soft: rgba(45, 212, 191, 0.14);
-  --focus-ring: rgba(45, 212, 191, 0.20);
-  --seg-thumb: #2dd4bf;
-  --home-top-grad: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
+  --free-border: rgba(61, 204, 140, 0.32);
+  --lesson: #16241e;
+  --lesson-border: rgba(61, 204, 140, 0.28);
+  --border: rgba(61, 204, 140, 0.22);
+  --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(61, 204, 140, 0.10);
+  --surface-2: #101a16;
+  --surface-3: #1a2822;
+  --glass: rgba(20, 32, 28, 0.72);
+  --tone-fill: #157a52;
+  --tone-deep: #0d5238;
+  --tone-border: rgba(61, 204, 140, 0.32);
+  --tone-soft: rgba(61, 204, 140, 0.14);
+  --tone-rgb: 61, 204, 140;
+  --focus-ring: rgba(61, 204, 140, 0.22);
+  --seg-thumb: #3dcc8c;
+  --current-accent: #3dcc8c;
+  --typewriter-caret: #3dcc8c;
+  --home-top-grad: linear-gradient(135deg, #0c5a40 0%, #05241a 100%);
+  --home-top-shadow: 0 4px 16px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(61, 204, 140, 0.28);
+  --neon-cyan: #3dcc8c;
+  --neon-teal: #4ad698;
+  --neon-violet: #157a52;
+  --neon-purple: #0d5238;
+  --gradient-neon: linear-gradient(90deg, #3dcc8c 0%, #0d5238 100%);
+  --gradient-neon-135: linear-gradient(135deg, #3dcc8c 0%, #0d5238 100%);
+  --glow-cyan: 0 0 14px rgba(61, 204, 140, 0.35);
+  --glow-violet: 0 0 14px rgba(13, 82, 56, 0.28);
+  --border-neon: rgba(61, 204, 140, 0.26);
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
 body {
@@ -796,8 +901,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 14px 14px 28px;
 }
 
-/* Sticky top card — compact 2-row; light tones from html[data-tone] vars.
-   Keep element data-tone for dark-mode neon overrides below. */
+/* Sticky top card — compact 2-row; tones from html[data-tone] vars (light+dark). */
 .home-top {
   color: #fff;
   border-radius: 14px;
@@ -819,8 +923,9 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   background: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
   box-shadow: 0 3px 12px rgba(13, 82, 56, 0.28);
 }
-html:not([data-theme="dark"]) .home-top,
-html:not([data-theme="dark"]) .home-top[data-tone] {
+/* When html[data-tone] is set, vars win over element fallbacks (light + dark). */
+html[data-tone] .home-top,
+html[data-tone] .home-top[data-tone] {
   background: var(--home-top-grad);
   box-shadow: var(--home-top-shadow);
 }
@@ -1932,7 +2037,7 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
 }
 .tt-period.is-past { opacity: 0.48; filter: grayscale(0.15); }
 /* is-current must beat .tt-period.lesson.tt-subj-* (3 classes).
-   Light mode: tint toward active tone (--current-accent). Dark keeps red-ish neon via dark overrides. */
+   Tint toward active tone (--current-accent) in light and dark. */
 .tt-period.lesson.is-current,
 .tt-period.free.is-current,
 .tt-period.is-current {
@@ -2986,20 +3091,20 @@ html[data-app-role="staff"] .tt-student-block { display: none !important; }
 }
 
 
-/* ========== Dark mode surface / accent overrides (neon kit) ========== */
+/* ========== Dark mode surface / accent overrides (tone-tinted) ========== */
 
 /* Page depth: subtle radial glow on deep navy */
 html[data-theme="dark"] body {
   background:
-    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(88, 60, 180, 0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 80% 50% at 90% 110%, rgba(20, 140, 180, 0.14) 0%, transparent 50%),
+    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(var(--tone-rgb), 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 80% 50% at 90% 110%, rgba(var(--tone-rgb), 0.10) 0%, transparent 50%),
     var(--bg);
 }
 
 /* App chrome / header */
 html[data-theme="dark"] .app-header {
   background: var(--gradient-neon-135);
-  box-shadow: 0 4px 20px rgba(34, 211, 238, 0.22), 0 4px 20px rgba(139, 92, 246, 0.18);
+  box-shadow: 0 4px 20px rgba(var(--tone-rgb), 0.28);
 }
 html[data-theme="dark"] .nav a {
   background: rgba(0, 0, 0, 0.22);
@@ -3010,7 +3115,7 @@ html[data-theme="dark"] .nav a.active {
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* Cards / panels — glass + thin neon border */
+/* Cards / panels — glass + thin tone border */
 html[data-theme="dark"] .card,
 html[data-theme="dark"] .hero,
 html[data-theme="dark"] .module-card,
@@ -3029,11 +3134,11 @@ html[data-theme="dark"] .home-panel-free .home-free-card,
 html[data-theme="dark"] .home-panel-member-pay .home-member-pay-card {
   background: var(--card);
   border: 1px solid var(--border-neon);
-  box-shadow: var(--shadow), 0 0 24px rgba(34, 211, 238, 0.04);
+  box-shadow: var(--shadow), 0 0 24px rgba(var(--tone-rgb), 0.05);
 }
 html[data-theme="dark"] .module-card.live {
-  border-color: rgba(34, 211, 238, 0.45);
-  box-shadow: var(--shadow), 0 0 16px rgba(34, 211, 238, 0.12);
+  border-color: rgba(var(--tone-rgb), 0.45);
+  box-shadow: var(--shadow), 0 0 16px rgba(var(--tone-rgb), 0.12);
 }
 html[data-theme="dark"] .hero h2,
 html[data-theme="dark"] .gate h2,
@@ -3044,26 +3149,26 @@ html[data-theme="dark"] .member-pay-title {
   color: #fff;
 }
 html[data-theme="dark"] .member-pay-hero {
-  background: linear-gradient(160deg, #070b18 0%, #121a36 55%, #1a1040 100%);
-  box-shadow: inset 0 0 0 1px rgba(100, 200, 255, 0.18), 0 0 24px rgba(34, 211, 238, 0.08);
+  background: linear-gradient(160deg, var(--bg) 0%, var(--surface-2) 55%, var(--card) 100%);
+  box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.18), 0 0 24px rgba(var(--tone-rgb), 0.08);
 }
 html[data-theme="dark"] .member-pay-sheen.is-light-sweep::after {
   background: linear-gradient(
     105deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(165, 243, 252, 0.25) 35%,
+    rgba(var(--tone-rgb), 0.22) 35%,
     rgba(255, 255, 255, 0.95) 50%,
-    rgba(196, 181, 253, 0.3) 65%,
+    rgba(var(--tone-rgb), 0.18) 65%,
     rgba(255, 255, 255, 0) 100%
   );
 }
 
-/* Primary buttons — full cyan→violet gradient */
+/* Primary buttons — tone fill→deep gradient */
 html[data-theme="dark"] .btn {
   background: var(--gradient-neon);
   color: #fff !important;
   border: none;
-  box-shadow: 0 2px 12px rgba(34, 211, 238, 0.25), 0 2px 12px rgba(139, 92, 246, 0.18);
+  box-shadow: 0 2px 12px rgba(var(--tone-rgb), 0.28);
 }
 html[data-theme="dark"] .btn:hover {
   filter: brightness(1.08);
@@ -3084,9 +3189,9 @@ html[data-theme="dark"] .chip {
   border: 1px solid var(--border-neon);
 }
 html[data-theme="dark"] .chip:hover {
-  background: rgba(34, 211, 238, 0.14);
+  background: rgba(var(--tone-rgb), 0.14);
   color: var(--neon-cyan);
-  border-color: rgba(34, 211, 238, 0.4);
+  border-color: rgba(var(--tone-rgb), 0.4);
 }
 html[data-theme="dark"] .chip.active,
 html[data-theme="dark"] .deadlines-filters .chip.active,
@@ -3094,7 +3199,7 @@ html[data-theme="dark"] .tt-cr-mode .chip.active {
   background: var(--gradient-neon);
   color: #fff;
   border-color: transparent;
-  box-shadow: 0 2px 10px rgba(34, 211, 238, 0.28);
+  box-shadow: 0 2px 10px rgba(var(--tone-rgb), 0.28);
 }
 /* #060 segmented control — dark */
 html[data-theme="dark"] .mp-seg {
@@ -3103,7 +3208,7 @@ html[data-theme="dark"] .mp-seg {
 }
 html[data-theme="dark"] .mp-seg-thumb {
   background: var(--gradient-neon);
-  box-shadow: 0 2px 10px rgba(34, 211, 238, 0.28);
+  box-shadow: 0 2px 10px rgba(var(--tone-rgb), 0.28);
 }
 html[data-theme="dark"] .mp-seg .chip {
   background: transparent;
@@ -3124,12 +3229,12 @@ html[data-theme="dark"] .mp-seg .chip.active {
 }
 html[data-theme="dark"] #meet-day-grid.mp-seg .chip.is-bf:not(.active),
 html[data-theme="dark"] .meet-day-seg.mp-seg .chip.is-bf:not(.active) {
-  color: #5eead4;
+  color: var(--primary);
 }
 html[data-theme="dark"] .badge.live {
-  background: rgba(45, 212, 191, 0.18);
-  color: #5eead4;
-  border: 1px solid rgba(45, 212, 191, 0.35);
+  background: rgba(var(--tone-rgb), 0.18);
+  color: var(--primary);
+  border: 1px solid rgba(var(--tone-rgb), 0.35);
 }
 html[data-theme="dark"] .badge.soon {
   background: rgba(255, 255, 255, 0.06);
@@ -3149,12 +3254,12 @@ html[data-theme="dark"] .home-top-notes {
   background: rgba(26, 28, 46, 0.92);
   color: var(--text);
   border: 1px solid var(--border-neon);
-  box-shadow: 0 1px 6px rgba(0,0,0,0.35), 0 0 12px rgba(34, 211, 238, 0.06);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.35), 0 0 12px rgba(var(--tone-rgb), 0.06);
 }
 html[data-theme="dark"] .home-notes-title { color: var(--neon-cyan); }
 html[data-theme="dark"] .home-note-cursor {
-  background: #FF6B5C;
-  box-shadow: 0 0 6px rgba(255, 107, 92, 0.65);
+  background: var(--typewriter-caret, var(--primary));
+  box-shadow: 0 0 6px rgba(var(--tone-rgb), 0.55);
 }
 
 html[data-theme="dark"] .home-memo-label {
@@ -3168,9 +3273,9 @@ html[data-theme="dark"] .home-memo-btn {
   color: var(--muted);
 }
 html[data-theme="dark"] .home-memo-btn:hover {
-  background: rgba(34, 211, 238, 0.14);
+  background: rgba(var(--tone-rgb), 0.14);
   color: var(--neon-cyan);
-  border-color: rgba(34, 211, 238, 0.4);
+  border-color: rgba(var(--tone-rgb), 0.4);
 }
 html[data-theme="dark"] .home-memo-btn-danger {
   background: rgba(240, 113, 103, 0.12);
@@ -3184,7 +3289,7 @@ html[data-theme="dark"] .home-memo-list-empty {
   border-color: var(--border-neon);
 }
 
-/* Function tabs — inactive glass outline; active neon gradient */
+/* Function tabs — inactive glass outline; active tone gradient */
 html[data-theme="dark"] .home-func-tab {
   background: var(--glass);
   border: 1px solid var(--border-neon);
@@ -3192,15 +3297,15 @@ html[data-theme="dark"] .home-func-tab {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 html[data-theme="dark"] .home-func-tab:hover {
-  background: rgba(34, 211, 238, 0.10);
+  background: rgba(var(--tone-rgb), 0.10);
   color: var(--neon-cyan);
-  border-color: rgba(34, 211, 238, 0.4);
+  border-color: rgba(var(--tone-rgb), 0.4);
 }
 html[data-theme="dark"] .home-func-tab.active {
   background: var(--gradient-neon);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 2px 12px rgba(34, 211, 238, 0.30), 0 2px 12px rgba(139, 92, 246, 0.22);
+  box-shadow: 0 2px 12px rgba(var(--tone-rgb), 0.30), 0 2px 12px rgba(var(--tone-rgb), 0.22);
 }
 html[data-theme="dark"] .home-func-tab:focus-visible {
   outline-color: var(--neon-cyan);
@@ -3217,7 +3322,7 @@ html[data-theme="dark"] .tt-day-chip.active {
   background: var(--gradient-neon);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 2px 10px rgba(34, 211, 238, 0.28);
+  box-shadow: 0 2px 10px rgba(var(--tone-rgb), 0.28);
 }
 html[data-theme="dark"] .tt-day-chip.has-today-mark,
 html[data-theme="dark"] .tt-day-chip.is-bf.has-today-mark {
@@ -3233,16 +3338,16 @@ html[data-theme="dark"] .tt-day-chip.is-bf.has-today-mark.active {
   color: #fff;
 }
 html[data-theme="dark"] .tt-day-chip.is-bf {
-  border-color: rgba(45, 212, 191, 0.5);
-  color: #5eead4;
+  border-color: var(--tone-border);
+  color: var(--primary);
 }
 html[data-theme="dark"] .tt-day-chip.is-bf.active {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+  background: var(--gradient-neon);
   border-color: transparent;
   color: #fff;
 }
 
-/* Forms / inputs — dark fields, subtle neon borders */
+/* Forms / inputs — dark fields, subtle tone borders */
 html[data-theme="dark"] .home-teacher-select,
 html[data-theme="dark"] select.home-teacher-select,
 html[data-theme="dark"] .meet-search,
@@ -3268,7 +3373,7 @@ html[data-theme="dark"] input:focus,
 html[data-theme="dark"] textarea:focus,
 html[data-theme="dark"] select:focus {
   border-color: var(--neon-cyan);
-  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18), var(--glow-cyan);
+  box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.18), var(--glow-cyan);
   outline: none;
 }
 
@@ -3281,8 +3386,8 @@ html[data-theme="dark"] .home-free-row {
   border-color: var(--border-neon);
 }
 html[data-theme="dark"] .deadline-item.today {
-  background: rgba(34, 211, 238, 0.10);
-  border-color: rgba(34, 211, 238, 0.45);
+  background: rgba(var(--tone-rgb), 0.10);
+  border-color: rgba(var(--tone-rgb), 0.45);
 }
 html[data-theme="dark"] .deadline-month {
   color: var(--neon-cyan);
@@ -3298,17 +3403,17 @@ html[data-theme="dark"] .meet-week-day {
   border-color: var(--border-neon);
 }
 html[data-theme="dark"] .meet-pick-row.is-on {
-  background: rgba(34, 211, 238, 0.12);
-  border-color: rgba(34, 211, 238, 0.4);
+  background: rgba(var(--tone-rgb), 0.12);
+  border-color: rgba(var(--tone-rgb), 0.4);
 }
 html[data-theme="dark"] .meet-slot {
-  background: rgba(45, 212, 191, 0.10);
-  border-color: rgba(45, 212, 191, 0.35);
+  background: rgba(var(--tone-rgb), 0.10);
+  border-color: rgba(var(--tone-rgb), 0.35);
 }
 html[data-theme="dark"] .meet-slot-period,
-html[data-theme="dark"] .meet-slot-tag { color: #5eead4; }
-html[data-theme="dark"] .meet-slot-tag { background: rgba(45, 212, 191, 0.18); }
-html[data-theme="dark"] .meet-rooms { border-top-color: rgba(45, 212, 191, 0.3); }
+html[data-theme="dark"] .meet-slot-tag { color: var(--primary); }
+html[data-theme="dark"] .meet-slot-tag { background: rgba(var(--tone-rgb), 0.18); }
+html[data-theme="dark"] .meet-rooms { border-top-color: rgba(var(--tone-rgb), 0.3); }
 html[data-theme="dark"] .meet-rooms-label { color: var(--muted); }
 html[data-theme="dark"] .meet-room-chip {
   background: var(--glass);
@@ -3316,9 +3421,9 @@ html[data-theme="dark"] .meet-room-chip {
   border: 1px solid var(--border-neon);
 }
 html[data-theme="dark"] .meet-room-chip.is-class {
-  border-color: rgba(34, 211, 238, 0.45);
-  background: rgba(34, 211, 238, 0.10);
-  color: #67e8f9;
+  border-color: rgba(var(--tone-rgb), 0.45);
+  background: rgba(var(--tone-rgb), 0.10);
+  color: var(--primary);
 }
 html[data-theme="dark"] .meet-room-chip.is-special {
   border-color: var(--border-neon);
@@ -3326,22 +3431,22 @@ html[data-theme="dark"] .meet-room-chip.is-special {
   color: var(--muted);
 }
 html[data-theme="dark"] .meet-week-day.has-free {
-  border-color: rgba(45, 212, 191, 0.4);
-  background: rgba(45, 212, 191, 0.08);
+  border-color: rgba(var(--tone-rgb), 0.4);
+  background: rgba(var(--tone-rgb), 0.08);
 }
 html[data-theme="dark"] .meet-week-day.is-bf.has-free {
-  border-color: rgba(34, 211, 238, 0.4);
-  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(var(--tone-rgb), 0.4);
+  background: rgba(var(--tone-rgb), 0.08);
 }
-html[data-theme="dark"] .meet-week-day.has-free .meet-week-count { color: #5eead4; }
-html[data-theme="dark"] .meet-count.is-ok { color: #5eead4; }
+html[data-theme="dark"] .meet-week-day.has-free .meet-week-count { color: var(--primary); }
+html[data-theme="dark"] .meet-count.is-ok { color: var(--primary); }
 
 /* Seating / attendance seats */
 html[data-theme="dark"] .seat-board,
 html[data-theme="dark"] .seat-roster {
   background: var(--card);
   border: 1px solid var(--border-neon);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 16px rgba(34, 211, 238, 0.05);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35), 0 0 16px rgba(var(--tone-rgb), 0.05);
 }
 html[data-theme="dark"] .seat-cell {
   background: var(--surface-2);
@@ -3350,16 +3455,16 @@ html[data-theme="dark"] .seat-cell {
   border-radius: 10px;
 }
 html[data-theme="dark"] .seat-cell.is-filled {
-  background: rgba(34, 211, 238, 0.10);
-  border-color: rgba(34, 211, 238, 0.4);
+  background: rgba(var(--tone-rgb), 0.10);
+  border-color: rgba(var(--tone-rgb), 0.4);
 }
 html[data-theme="dark"] .seat-cell.is-filled.is-girl {
-  background: rgba(168, 85, 247, 0.14);
-  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(244, 114, 182, 0.14);
+  border-color: rgba(244, 114, 182, 0.40);
 }
 html[data-theme="dark"] .seat-cell.is-filled.is-boy {
-  background: rgba(34, 211, 238, 0.12);
-  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(96, 165, 250, 0.12);
+  border-color: rgba(96, 165, 250, 0.40);
 }
 html[data-theme="dark"] .seat-cell-name { color: var(--text); }
 html[data-theme="dark"] .seat-cell-empty { color: var(--muted); }
@@ -3368,23 +3473,23 @@ html[data-theme="dark"] .seat-roster-item {
   border-color: var(--border-neon);
 }
 html[data-theme="dark"] .seat-roster-item.is-girl {
-  background: rgba(168, 85, 247, 0.14);
-  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(244, 114, 182, 0.14);
+  border-color: rgba(244, 114, 182, 0.4);
 }
 html[data-theme="dark"] .seat-roster-item.is-boy {
-  background: rgba(34, 211, 238, 0.10);
-  border-color: rgba(56, 189, 248, 0.4);
+  background: rgba(96, 165, 250, 0.10);
+  border-color: rgba(96, 165, 250, 0.4);
 }
 html[data-theme="dark"] .seat-roster-item:hover,
 html[data-theme="dark"] .seat-roster-item:focus {
   border-color: var(--neon-cyan);
-  background: rgba(34, 211, 238, 0.16);
+  background: rgba(var(--tone-rgb), 0.16);
   box-shadow: var(--glow-cyan);
 }
 html[data-theme="dark"] .seat-btn-pdf {
-  background: rgba(45, 212, 191, 0.12);
-  border-color: rgba(45, 212, 191, 0.4);
-  color: #5eead4;
+  background: rgba(var(--tone-rgb), 0.12);
+  border-color: rgba(var(--tone-rgb), 0.4);
+  color: var(--primary);
 }
 html[data-theme="dark"] .seat-btn-danger {
   background: rgba(240, 113, 103, 0.12);
@@ -3398,35 +3503,28 @@ html[data-theme="dark"] .seat-dirty {
 }
 html[data-theme="dark"] .seat-cell.is-drag-over {
   border-color: var(--neon-cyan);
-  background: rgba(34, 211, 238, 0.16);
+  background: rgba(var(--tone-rgb), 0.16);
   box-shadow: var(--glow-cyan);
 }
-html[data-theme="dark"] .seat-legend-swatch.girl { background: rgba(168, 85, 247, 0.35); }
-html[data-theme="dark"] .seat-legend-swatch.boy { background: rgba(34, 211, 238, 0.35); }
-html[data-theme="dark"] .seat-legend-swatch.neutral { background: rgba(100, 180, 255, 0.2); }
+html[data-theme="dark"] .seat-legend-swatch.girl { background: rgba(244, 114, 182, 0.35); }
+html[data-theme="dark"] .seat-legend-swatch.boy { background: rgba(96, 165, 250, 0.35); }
+html[data-theme="dark"] .seat-legend-swatch.neutral { background: rgba(var(--tone-rgb), 0.2); }
 html[data-theme="dark"] .seat-actions .chip.seat-btn-save {
   background: var(--gradient-neon);
   color: #fff;
   border-color: transparent;
 }
 
-/* Sticky tones: deepen into neon world; keep holiday red / normal blue / BF green distinct */
-html[data-theme="dark"] .home-top[data-tone="normal"] {
-  background: linear-gradient(135deg, #0e4a82 0%, #081a36 100%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.18), 0 0 20px rgba(34, 211, 238, 0.08);
-}
-html[data-theme="dark"] .home-top[data-tone="holiday"] {
-  background: linear-gradient(135deg, #9a2c28 0%, #4a1010 100%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(240, 113, 103, 0.28), 0 0 18px rgba(240, 113, 103, 0.1);
-}
-html[data-theme="dark"] .home-top[data-tone="bf"] {
-  background: linear-gradient(135deg, #0c5a40 0%, #05241a 100%);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(45, 212, 191, 0.28), 0 0 18px rgba(45, 212, 191, 0.1);
+/* Sticky tones: deep tone gradients from html[data-tone] vars */
+html[data-theme="dark"] .home-top,
+html[data-theme="dark"] .home-top[data-tone] {
+  background: var(--home-top-grad);
+  box-shadow: var(--home-top-shadow);
 }
 html[data-theme="dark"] .home-theme-toggle {
   background: rgba(0, 0, 0, 0.28);
   border-color: rgba(255, 255, 255, 0.55);
-  box-shadow: 0 0 8px rgba(34, 211, 238, 0.15);
+  box-shadow: 0 0 8px rgba(var(--tone-rgb), 0.15);
 }
 
 /* Period status chip on sticky — keep high-contrast white pill */
@@ -3439,7 +3537,7 @@ html[data-theme="dark"] .home-status-chip.is-period {
 html[data-theme="dark"] .tt-period.lesson {
   filter: none;
   background: color-mix(in srgb, var(--subj-bg, #fff) 22%, #1a1c2e 78%);
-  border-color: color-mix(in srgb, var(--subj-border, #888) 40%, rgba(100, 180, 255, 0.25) 60%);
+  border-color: color-mix(in srgb, var(--subj-border, #888) 40%, rgba(var(--tone-rgb), 0.25) 60%);
   color: var(--text);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
@@ -3448,11 +3546,11 @@ html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient {
   --subj-bg: transparent;
   --subj-left: rgba(255, 255, 255, 0.08);
   color: #fff;
-  box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.28), 0 4px 16px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px rgba(var(--tone-rgb), 0.28), 0 4px 16px rgba(0, 0, 0, 0.45);
 }
 html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-left {
   background: rgba(255, 255, 255, 0.06);
-  border-right-color: rgba(34, 211, 238, 0.25);
+  border-right-color: rgba(var(--tone-rgb), 0.25);
 }
 html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-time,
 html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .subj,
@@ -3467,7 +3565,7 @@ html[data-theme="dark"] .tt-period.lesson .tt-period-left {
   border-right-color: color-mix(in srgb, var(--subj-border, #888) 35%, rgba(100, 180, 255, 0.2) 65%);
 }
 html[data-theme="dark"] .tt-period.lesson .tt-pnum {
-  background: var(--subj-accent, var(--neon-violet));
+  background: var(--subj-accent, var(--primary));
 }
 html[data-theme="dark"] .tt-period.lesson .subj,
 html[data-theme="dark"] .tt-period.lesson .detail,
@@ -3500,8 +3598,8 @@ html[data-theme="dark"] .tt-period.break .tt-period-time { color: #c8b890; }
 
 /* Gate / login extras */
 html[data-theme="dark"] .oauth-hint {
-  background: rgba(139, 92, 246, 0.10);
-  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(var(--tone-rgb), 0.10);
+  border-color: rgba(var(--tone-rgb), 0.35);
   color: var(--muted);
 }
 html[data-theme="dark"] .oauth-hint code {
@@ -3517,7 +3615,7 @@ html[data-theme="dark"] .footer-nav-btn {
 html[data-theme="dark"] .footer-nav a:hover,
 html[data-theme="dark"] .footer-nav a.active,
 html[data-theme="dark"] .footer-nav-btn:hover {
-  background: rgba(34, 211, 238, 0.14);
+  background: rgba(var(--tone-rgb), 0.14);
   color: #fff;
 }
 
@@ -3698,9 +3796,9 @@ html[data-theme="dark"] .cr-attend-pill {
   color: var(--text);
 }
 html[data-theme="dark"] .cr-attend-pill.is-present {
-  background: rgba(45, 212, 191, 0.18);
-  color: #5eead4;
-  border-color: rgba(45, 212, 191, 0.4);
+  background: rgba(52, 211, 153, 0.18);
+  color: #6ee7b7;
+  border-color: rgba(52, 211, 153, 0.4);
 }
 html[data-theme="dark"] .cr-attend-pill.is-absent {
   background: rgba(240, 113, 103, 0.18);
@@ -3722,16 +3820,16 @@ html[data-theme="dark"] .cr-attend-unseated {
   border-color: var(--border-neon);
 }
 html[data-theme="dark"] .cr-attend-unseated-item {
-  background: rgba(34, 211, 238, 0.12);
-  border-color: rgba(34, 211, 238, 0.3);
+  background: rgba(var(--tone-rgb), 0.12);
+  border-color: rgba(var(--tone-rgb), 0.3);
 }
 html[data-theme="dark"] .cr-attend-unseated-item.is-girl {
-  background: rgba(168, 85, 247, 0.16);
-  border-color: rgba(168, 85, 247, 0.35);
+  background: rgba(244, 114, 182, 0.16);
+  border-color: rgba(244, 114, 182, 0.35);
 }
 html[data-theme="dark"] .cr-attend-unseated-item.is-boy {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(96, 165, 250, 0.14);
+  border-color: rgba(96, 165, 250, 0.35);
 }
 html[data-theme="dark"] .cr-attend-badge.is-unmarked {
   background: #3a3f55;

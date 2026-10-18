@@ -2,15 +2,19 @@
  * Light / dark theme toggle.
  * Preference key: lwfss-theme = "dark" | "light"
  * Applied on <html data-theme="dark">; early apply is in index.html <head>.
- * Light chrome hue comes from <html data-tone> (holiday|normal|bf).
+ * Chrome hue (light + dark) comes from <html data-tone> (holiday|normal|bf).
  */
 (function () {
   var KEY = "lwfss-theme";
-  var META_DARK = "#12141f";
   var META_BY_TONE = {
     holiday: "#9b1e18",
     normal: "#0d3f7a",
     bf: "#0d5238"
+  };
+  var META_DARK_BY_TONE = {
+    holiday: "#161010",
+    normal: "#0e1420",
+    bf: "#0e1614"
   };
 
   function read() {
@@ -32,10 +36,15 @@
     return META_BY_TONE[tone] || META_BY_TONE.normal;
   }
 
+  function darkToneMeta() {
+    var tone = document.documentElement.getAttribute("data-tone") || "normal";
+    return META_DARK_BY_TONE[tone] || META_DARK_BY_TONE.normal;
+  }
+
   function syncMeta() {
     var meta = document.querySelector('meta[name="theme-color"]');
     if (!meta) return;
-    meta.setAttribute("content", read() === "dark" ? META_DARK : toneMeta());
+    meta.setAttribute("content", read() === "dark" ? darkToneMeta() : toneMeta());
   }
 
   function apply(theme) {
