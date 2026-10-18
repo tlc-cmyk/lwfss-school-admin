@@ -2,11 +2,16 @@
  * Light / dark theme toggle.
  * Preference key: lwfss-theme = "dark" | "light"
  * Applied on <html data-theme="dark">; early apply is in index.html <head>.
+ * Light chrome hue comes from <html data-tone> (holiday|normal|bf).
  */
 (function () {
   var KEY = "lwfss-theme";
-  var META_LIGHT = "#1a3a6c";
   var META_DARK = "#12141f";
+  var META_BY_TONE = {
+    holiday: "#9b1e18",
+    normal: "#0d3f7a",
+    bf: "#0d5238"
+  };
 
   function read() {
     try {
@@ -20,6 +25,17 @@
     try {
       localStorage.setItem(KEY, theme);
     } catch (e) {}
+  }
+
+  function toneMeta() {
+    var tone = document.documentElement.getAttribute("data-tone") || "normal";
+    return META_BY_TONE[tone] || META_BY_TONE.normal;
+  }
+
+  function syncMeta() {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) return;
+    meta.setAttribute("content", read() === "dark" ? META_DARK : toneMeta());
   }
 
   function apply(theme) {
@@ -37,10 +53,7 @@
       btn.title = dark ? "切換淺色模式" : "切換深色模式";
     }
 
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) {
-      meta.setAttribute("content", theme === "dark" ? META_DARK : META_LIGHT);
-    }
+    syncMeta();
   }
 
   function set(theme) {
@@ -67,5 +80,11 @@
     bind();
   }
 
-  window.LwfssTheme = { get: read, set: set, toggle: toggle, apply: apply };
+  window.LwfssTheme = {
+    get: read,
+    set: set,
+    toggle: toggle,
+    apply: apply,
+    syncMeta: syncMeta
+  };
 })();

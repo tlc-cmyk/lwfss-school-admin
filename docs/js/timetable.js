@@ -58,10 +58,18 @@
   }
 
   function setDayTheme(day) {
-    if (day === 5 || day === 10) {
-      document.documentElement.setAttribute("data-day-theme", "bf");
+    var root = document.documentElement;
+    var tone = (day === 5 || day === 10) ? "bf" : "normal";
+    root.setAttribute("data-tone", tone);
+    if (tone === "bf") {
+      root.setAttribute("data-day-theme", "bf");
     } else {
-      document.documentElement.removeAttribute("data-day-theme");
+      root.removeAttribute("data-day-theme");
+    }
+    var top = document.getElementById("home-top");
+    if (top) top.setAttribute("data-tone", tone);
+    if (window.LwfssTheme && typeof window.LwfssTheme.syncMeta === "function") {
+      window.LwfssTheme.syncMeta();
     }
   }
 

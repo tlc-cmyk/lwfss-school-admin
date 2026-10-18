@@ -32,16 +32,39 @@
     ["c3", 90, 170, 200, 50, 35, 1.0]
   ];
 
+  /**
+   * Choice (light): retint #095 mesh to the active data-tone family
+   * (holiday red / normal blue / bf green) so current-lesson cards stay
+   * in the same calm hue as chrome. Motion timings unchanged.
+   * Dark keeps the neon cyan/orange kit as-is.
+   */
   var PALETTES = {
-    light: {
-      base: "#FFF1EB",
-      c0: "#FF5A2C",
-      c1: "#FFB08F",
-      c2: "#3B64E8",
-      c3: "#9DB6FB",
-      /* Dark scrim so card text can stay light/readable over peach + blobs */
-      scrim: "rgba(12, 28, 56, 0.38)"
+    light_normal: {
+      base: "#E8F0FE",
+      c0: "#1A6BB5",
+      c1: "#7BA8D9",
+      c2: "#0D3F7A",
+      c3: "#B8D0EC",
+      scrim: "rgba(8, 28, 56, 0.36)"
     },
+    light_holiday: {
+      base: "#FDF2F1",
+      c0: "#D6453D",
+      c1: "#E8A09A",
+      c2: "#9B1E18",
+      c3: "#F0C4BE",
+      scrim: "rgba(56, 16, 12, 0.36)"
+    },
+    light_bf: {
+      base: "#E8F5EF",
+      c0: "#157A52",
+      c1: "#7BC4A4",
+      c2: "#0D5238",
+      c3: "#B8E0C8",
+      scrim: "rgba(8, 40, 28, 0.36)"
+    },
+    /* legacy alias */
+    light: null,
     dark: {
       base: "#081428",
       c0: "#FF6A3A",
@@ -51,6 +74,7 @@
       scrim: "rgba(0, 0, 0, 0.28)"
     }
   };
+  PALETTES.light = PALETTES.light_normal;
 
   /** @type {Map<Element, {canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, cssW: number, cssH: number, ro: ResizeObserver|null}>} */
   var instances = new Map();
@@ -73,8 +97,16 @@
     return document.documentElement.getAttribute("data-theme") === "dark";
   }
 
+  function activeTone() {
+    var t = document.documentElement.getAttribute("data-tone");
+    if (t === "holiday" || t === "bf" || t === "normal") return t;
+    return "normal";
+  }
+
   function palette() {
-    return isDark() ? PALETTES.dark : PALETTES.light;
+    if (isDark()) return PALETTES.dark;
+    var key = "light_" + activeTone();
+    return PALETTES[key] || PALETTES.light_normal;
   }
 
   /**
@@ -318,7 +350,7 @@
       });
       themeMo.observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ["data-theme"]
+        attributeFilter: ["data-theme", "data-tone"]
       });
     }
 

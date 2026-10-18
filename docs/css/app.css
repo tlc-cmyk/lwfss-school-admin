@@ -1,30 +1,115 @@
+/* ==========================================================================
+   Light mode tone system (data-tone on <html>)
+   -------------------------------------------------------------------------
+   holiday = red family · normal = blue family · bf = green family
+   One hue per tone; neutrals (--text/--bg/--card/--muted/--border) stay gray.
+   Colored tokens drive chrome only (primary, accents, borders, focus, thumbs).
+   Dark mode (霓虹) ignores these light tone overrides unless noted.
+   ========================================================================== */
 :root {
+  /* Neutrals — shared across tones */
   --bg: #f0f4f8;
   --card: #ffffff;
-  --primary: #1a3a6c;
-  --primary-dark: #0d2848;
-  --primary-soft: #e8f0fe;
-  --accent: #2d8a6e;
-  --free: #e8f0fe;
-  --free-border: #90b4e8;
-  --lesson: #fff8e7;
-  --lesson-border: #e6c86a;
   --text: #1a2332;
   --muted: #5a6a7a;
   --border: #d0d8e0;
-  --danger: #c0392b;
+  --danger: #c0392b; /* semantic danger / error — always red */
   --radius: 12px;
-  --shadow: 0 2px 12px rgba(26, 77, 140, 0.08);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Default tone = normal (blue) until JS sets data-tone */
+  --primary: #1a5a9c;
+  --primary-dark: #0d2848;
+  --primary-soft: #e8f0fe;
+  --accent: #2a6bb5; /* same blue family (was green — muted for calm chrome) */
+  --tone-fill: #1a6bb5;
+  --tone-deep: #0d3f7a;
+  --tone-border: #90b4e8;
+  --tone-soft: #e8f0fe;
+  --tone-rgb: 26, 90, 156;
+  --focus-ring: rgba(26, 90, 156, 0.18);
+  --seg-thumb: #1a5a9c;
+  --current-accent: #1a5a9c;
+  --typewriter-caret: #1a5a9c;
+  --free: #e8f0fe;
+  --free-border: #90b4e8;
+  --lesson: #f5f8fc; /* soft blue-gray — no gold clash */
+  --lesson-border: #c5d4e8;
+  --shadow: 0 2px 12px rgba(26, 90, 156, 0.08);
+  --home-top-grad: linear-gradient(135deg, #1a6bb5 0%, #0d3f7a 100%);
+  --home-top-shadow: 0 3px 12px rgba(13, 63, 122, 0.28);
 }
-html[data-day-theme="bf"] {
+
+/* —— Light tones: holiday red / normal blue / bf green —— */
+html[data-tone="holiday"]:not([data-theme="dark"]) {
+  --bg: #f7f2f1;
+  --primary: #c0392b;
+  --primary-dark: #6b1212;
+  --primary-soft: #fdf2f1;
+  --accent: #d6453d;
+  --tone-fill: #d6453d;
+  --tone-deep: #9b1e18;
+  --tone-border: #e5a39a;
+  --tone-soft: #fce8e6;
+  --tone-rgb: 192, 57, 43;
+  --focus-ring: rgba(192, 57, 43, 0.18);
+  --seg-thumb: #c0392b;
+  --current-accent: #c0392b;
+  --typewriter-caret: #c0392b;
+  --free: #fdf2f1;
+  --free-border: #e5a39a;
+  --lesson: #faf6f5;
+  --lesson-border: #e8c4be;
+  --shadow: 0 2px 12px rgba(192, 57, 43, 0.09);
+  --home-top-grad: linear-gradient(135deg, #d6453d 0%, #9b1e18 100%);
+  --home-top-shadow: 0 3px 12px rgba(155, 30, 24, 0.30);
+}
+html[data-tone="normal"]:not([data-theme="dark"]) {
+  --bg: #f0f4f8;
+  --primary: #1a5a9c;
+  --primary-dark: #0d2848;
+  --primary-soft: #e8f0fe;
+  --accent: #2a6bb5;
+  --tone-fill: #1a6bb5;
+  --tone-deep: #0d3f7a;
+  --tone-border: #90b4e8;
+  --tone-soft: #e8f0fe;
+  --tone-rgb: 26, 90, 156;
+  --focus-ring: rgba(26, 90, 156, 0.18);
+  --seg-thumb: #1a5a9c;
+  --current-accent: #1a5a9c;
+  --typewriter-caret: #1a5a9c;
+  --free: #e8f0fe;
+  --free-border: #90b4e8;
+  --lesson: #f5f8fc;
+  --lesson-border: #c5d4e8;
+  --shadow: 0 2px 12px rgba(26, 90, 156, 0.08);
+  --home-top-grad: linear-gradient(135deg, #1a6bb5 0%, #0d3f7a 100%);
+  --home-top-shadow: 0 3px 12px rgba(13, 63, 122, 0.28);
+}
+html[data-tone="bf"]:not([data-theme="dark"]),
+html[data-day-theme="bf"]:not([data-theme="dark"]) {
   --bg: #eef7f3;
   --primary: #157a52;
   --primary-dark: #0d5238;
   --primary-soft: #e0f2ea;
+  --accent: #1f8f5f;
+  --tone-fill: #157a52;
+  --tone-deep: #0d5238;
+  --tone-border: #7bc4a4;
+  --tone-soft: #e0f2ea;
+  --tone-rgb: 21, 122, 82;
+  --focus-ring: rgba(21, 122, 82, 0.18);
+  --seg-thumb: #157a52;
+  --current-accent: #157a52;
+  --typewriter-caret: #157a52;
   --free: #e0f2ea;
   --free-border: #7bc4a4;
+  --lesson: #f2f8f5;
+  --lesson-border: #b5d9c8;
   --shadow: 0 2px 12px rgba(21, 122, 82, 0.10);
+  --home-top-grad: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
+  --home-top-shadow: 0 3px 12px rgba(13, 82, 56, 0.28);
 }
 
 /* —— Dark mode (data-theme on <html>) — neon cyan → violet on deep navy —— */
@@ -60,7 +145,18 @@ html[data-theme="dark"] {
   --glow-violet: 0 0 14px rgba(139, 92, 246, 0.30);
   --glass: rgba(26, 28, 46, 0.72);
   --border-neon: rgba(100, 200, 255, 0.24);
+  /* Chrome tokens used by shared (light+dark) rules — keep neon, not light blue */
+  --tone-rgb: 34, 211, 238;
+  --tone-border: rgba(100, 180, 255, 0.28);
+  --tone-soft: rgba(34, 211, 238, 0.12);
+  --focus-ring: rgba(34, 211, 238, 0.18);
+  --seg-thumb: #22d3ee;
+  --current-accent: #f07167;
+  --typewriter-caret: #FF6B5C;
+  --home-top-grad: linear-gradient(135deg, #1a6bb5 0%, #0d3f7a 100%);
+  --home-top-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
 }
+html[data-theme="dark"][data-tone="bf"],
 html[data-theme="dark"][data-day-theme="bf"] {
   /* Keep BF green recognizable inside the neon dark world */
   --bg: #0e1614;
@@ -70,6 +166,12 @@ html[data-theme="dark"][data-day-theme="bf"] {
   --free: #142820;
   --free-border: rgba(45, 212, 191, 0.35);
   --shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(45, 212, 191, 0.08);
+  --tone-rgb: 45, 212, 191;
+  --tone-border: rgba(45, 212, 191, 0.35);
+  --tone-soft: rgba(45, 212, 191, 0.14);
+  --focus-ring: rgba(45, 212, 191, 0.20);
+  --seg-thumb: #2dd4bf;
+  --home-top-grad: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
@@ -174,7 +276,7 @@ a:hover { text-decoration: underline; }
   gap: 8px;
   min-height: 120px;
 }
-.module-card.live { border-color: #90b4e8; }
+.module-card.live { border-color: var(--tone-border); }
 .module-card.soon { opacity: 0.72; }
 .module-card .icon { font-size: 1.6rem; }
 .module-card h3 { font-size: 1rem; }
@@ -187,7 +289,7 @@ a:hover { text-decoration: underline; }
   border-radius: 999px;
   align-self: flex-start;
 }
-.badge.live { background: #e8f5f0; color: #157a52; }
+.badge.live { background: var(--primary-soft); color: var(--primary); }
 .badge.soon { background: #f0f0f0; color: #888; }
 .btn {
   display: inline-block;
@@ -235,7 +337,7 @@ a:hover { text-decoration: underline; }
 }
 .search-row input:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(26, 77, 140, 0.15);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .suggest {
   margin-top: 8px;
@@ -252,7 +354,7 @@ a:hover { text-decoration: underline; }
   font-size: 0.78rem;
   cursor: pointer;
 }
-.chip:hover { background: #d4e4fc; }
+.chip:hover { background: var(--tone-soft, var(--primary-soft)); }
 
 .teacher-meta {
   display: flex;
@@ -294,10 +396,18 @@ a:hover { text-decoration: underline; }
   font-weight: 600;
   cursor: pointer;
 }
+html:not([data-theme="dark"]) .day-tab.bf {
+  border-color: var(--tone-border);
+  color: var(--primary-dark);
+}
 .day-tab.bf { border-color: #7bc4a4; }
 .day-tab.active {
   background: var(--primary);
   color: #fff;
+  border-color: var(--primary);
+}
+html:not([data-theme="dark"]) .day-tab.bf.active {
+  background: var(--primary);
   border-color: var(--primary);
 }
 .day-tab.bf.active {
@@ -486,8 +596,8 @@ body:has(#gate:not(.hidden)) .gate-hr {
   font-size: 0.8rem;
   color: var(--muted);
   text-align: left;
-  background: #fff8e7;
-  border: 1px solid var(--lesson-border);
+  background: var(--primary-soft);
+  border: 1px solid var(--tone-border);
   border-radius: 8px;
   padding: 10px 12px;
   margin-top: 8px;
@@ -597,8 +707,8 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 }
 
 .today-banner {
-  background: linear-gradient(135deg, #e8f0fe 0%, #fff8e7 100%);
-  border-color: #90b4e8;
+  background: linear-gradient(135deg, var(--primary-soft) 0%, var(--tone-soft) 100%);
+  border-color: var(--tone-border);
   margin-bottom: 14px;
   padding: 14px 16px;
 }
@@ -612,7 +722,7 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   line-height: 1.4;
 }
 .today-banner-main .today-day {
-  color: #157a52;
+  color: var(--primary);
   font-size: 1.15rem;
 }
 .today-banner-sub { margin-top: 4px; font-size: 0.82rem; }
@@ -649,8 +759,8 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   margin-bottom: 8px;
 }
 .deadline-item.today {
-  border-color: #157a52;
-  background: #eef7f3;
+  border-color: var(--primary);
+  background: var(--primary-soft);
 }
 .deadline-item.past { opacity: 0.62; }
 .deadline-date {
@@ -686,16 +796,17 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   padding: 14px 14px 28px;
 }
 
-/* Sticky top card — compact 2-row; tone by cycle type (holiday/normal/bf) */
+/* Sticky top card — compact 2-row; light tones from html[data-tone] vars.
+   Keep element data-tone for dark-mode neon overrides below. */
 .home-top {
   color: #fff;
   border-radius: 14px;
   padding: 8px 10px 8px;
   margin-bottom: 8px;
-  /* default = normal blue until JS sets data-tone */
-  background: linear-gradient(135deg, #1a6bb5 0%, #0d3f7a 100%);
-  box-shadow: 0 3px 12px rgba(13, 63, 122, 0.28);
+  background: var(--home-top-grad);
+  box-shadow: var(--home-top-shadow);
 }
+/* Fallback when vars not yet set (SSR / first paint) */
 .home-top[data-tone="holiday"] {
   background: linear-gradient(135deg, #d6453d 0%, #9b1e18 100%);
   box-shadow: 0 3px 12px rgba(155, 30, 24, 0.30);
@@ -707,6 +818,11 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
 .home-top[data-tone="bf"] {
   background: linear-gradient(135deg, #157a52 0%, #0d5238 100%);
   box-shadow: 0 3px 12px rgba(13, 82, 56, 0.28);
+}
+html:not([data-theme="dark"]) .home-top,
+html:not([data-theme="dark"]) .home-top[data-tone] {
+  background: var(--home-top-grad);
+  box-shadow: var(--home-top-shadow);
 }
 .home-top-signed-sr {
   position: absolute;
@@ -1022,8 +1138,8 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   margin-left: 1px;
   vertical-align: -0.12em;
   border-radius: 1.25px;
-  background: #FF6B5C; /* Motion Prompt #006 C.coral */
-  box-shadow: 0 0 4px rgba(255, 107, 92, 0.45);
+  background: var(--typewriter-caret, var(--primary));
+  box-shadow: 0 0 4px rgba(var(--tone-rgb, 26, 90, 156), 0.40);
   pointer-events: none;
 }
 
@@ -1227,7 +1343,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   min-width: 0;
 }
 .home-memo-row.is-active {
-  border-color: #90b4e8;
+  border-color: var(--tone-border);
   background: var(--primary-soft);
 }
 .home-memo-row-main {
@@ -1292,7 +1408,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   background: var(--bg);
   padding-top: 2px;
   margin-bottom: 4px;
-  box-shadow: 0 10px 14px -12px rgba(26, 58, 108, 0.28);
+  box-shadow: 0 10px 14px -12px rgba(var(--tone-rgb, 26, 58, 108), 0.28);
   pointer-events: auto;
 }
 
@@ -1335,7 +1451,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   touch-action: manipulation;
   -webkit-user-select: none;
   user-select: none;
-  box-shadow: 0 1px 2px rgba(26, 58, 108, 0.04);
+  box-shadow: 0 1px 2px rgba(var(--tone-rgb, 26, 58, 108), 0.06);
   pointer-events: auto;
 }
 .home-func-tab:hover { background: var(--primary-soft); }
@@ -1343,7 +1459,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
-  box-shadow: 0 2px 6px rgba(26, 58, 108, 0.18);
+  box-shadow: 0 2px 6px rgba(var(--tone-rgb, 26, 58, 108), 0.22);
 }
 .home-func-tab:focus-visible {
   outline: 2px solid var(--primary);
@@ -1438,7 +1554,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   cursor: pointer;
   color: var(--text);
   font-family: inherit;
-  box-shadow: 0 1px 2px rgba(26, 58, 108, 0.04);
+  box-shadow: 0 1px 2px rgba(var(--tone-rgb, 26, 58, 108), 0.06);
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
@@ -1461,6 +1577,16 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   box-shadow: 0 0 0 1px var(--danger);
 }
 
+/* Light: BF day markers follow active tone (no stray green on blue/red days) */
+html:not([data-theme="dark"]) .tt-day-chip.is-bf {
+  border-color: var(--tone-border);
+  color: var(--primary-dark);
+}
+html:not([data-theme="dark"]) .tt-day-chip.is-bf.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
 .tt-day-chip.is-bf {
   border-color: #2a9d6a;
   color: #1a6b48;
@@ -1548,8 +1674,8 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   height: calc(100% - 8px);
   width: 0;
   border-radius: 8px;
-  background: #1f5ae8; /* C.blue */
-  box-shadow: 0 2px 6px rgba(20, 24, 40, 0.2); /* blur 6, oy 2, a .2 */
+  background: var(--seg-thumb, var(--primary));
+  box-shadow: 0 2px 6px rgba(var(--tone-rgb, 20, 24, 40), 0.22);
   /* easeInOutCubic ≈ cubic-bezier(0.65, 0, 0.35, 1); duration 0.25s */
   transition: transform 0.25s cubic-bezier(0.65, 0, 0.35, 1),
               width 0.25s cubic-bezier(0.65, 0, 0.35, 1);
@@ -1746,32 +1872,45 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
 .tt-period.lesson.tt-subj-h5 { --subj-bg: #eef8ff; --subj-border: #9ac8e0; --subj-left: #d4ebf7; --subj-accent: #3a8ab0; }
 .tt-period.lesson.tt-subj-h6 { --subj-bg: #f8f0e8; --subj-border: #d0b89a; --subj-left: #efe4d4; --subj-accent: #8a6a3a; }
 .tt-period.lesson.tt-subj-h7 { --subj-bg: #f0eef8; --subj-border: #b8b0d0; --subj-left: #e4e0ef; --subj-accent: #5a4a8a; }
+
+/* Light mode: mute subject rainbow → one soft tone family (calm chrome).
+   Dark mode keeps the saturated subject pastels above. */
+html:not([data-theme="dark"]) .tt-period.lesson[class*="tt-subj-"] {
+  --subj-bg: #ffffff;
+  --subj-border: var(--tone-border);
+  --subj-left: var(--primary-soft);
+  --subj-accent: var(--primary);
+}
+html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
+  background: var(--subj-accent, var(--primary));
+}
 .tt-period.is-past { opacity: 0.48; filter: grayscale(0.15); }
-/* is-current must beat .tt-period.lesson.tt-subj-* (3 classes) */
+/* is-current must beat .tt-period.lesson.tt-subj-* (3 classes).
+   Light mode: tint toward active tone (--current-accent). Dark keeps red-ish neon via dark overrides. */
 .tt-period.lesson.is-current,
 .tt-period.free.is-current,
 .tt-period.is-current {
-  --subj-bg: #fff5f3;
-  --subj-border: #c0392b;
-  --subj-left: rgba(192, 57, 43, 0.10);
-  --subj-accent: #c0392b;
-  border-color: #c0392b;
-  background: linear-gradient(135deg, #fff5f3 0%, #ffe8e4 100%);
-  box-shadow: 0 0 0 2px rgba(192, 57, 43, 0.22), 0 4px 14px rgba(192, 57, 43, 0.12);
+  --subj-bg: var(--primary-soft);
+  --subj-border: var(--current-accent, var(--primary));
+  --subj-left: rgba(var(--tone-rgb, 192, 57, 43), 0.10);
+  --subj-accent: var(--current-accent, var(--primary));
+  border-color: var(--current-accent, var(--primary));
+  background: linear-gradient(135deg, var(--primary-soft) 0%, var(--tone-soft) 100%);
+  box-shadow: 0 0 0 2px rgba(var(--tone-rgb, 192, 57, 43), 0.22), 0 4px 14px rgba(var(--tone-rgb, 192, 57, 43), 0.12);
 }
 .tt-period.free.is-current {
-  background: linear-gradient(135deg, #fff8f6 0%, #ffece8 100%);
+  background: linear-gradient(135deg, var(--primary-soft) 0%, var(--tone-soft) 100%);
 }
 .tt-period.lesson.is-current .tt-period-left,
 .tt-period.free.is-current .tt-period-left,
 .tt-period.is-current .tt-period-left {
-  background: rgba(192, 57, 43, 0.10);
-  border-right-color: rgba(192, 57, 43, 0.28);
+  background: rgba(var(--tone-rgb, 192, 57, 43), 0.10);
+  border-right-color: rgba(var(--tone-rgb, 192, 57, 43), 0.28);
 }
 .tt-period.lesson.is-current .tt-pnum,
 .tt-period.free.is-current .tt-pnum,
 .tt-period.is-current .tt-pnum {
-  background: #c0392b;
+  background: var(--current-accent, var(--primary));
 }
 .tt-period-countdown {
   display: inline-flex;
@@ -1785,8 +1924,8 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   letter-spacing: 0.01em;
   white-space: nowrap;
   color: #fff;
-  background: #c0392b;
-  box-shadow: 0 1px 3px rgba(192, 57, 43, 0.35);
+  background: var(--current-accent, var(--primary));
+  box-shadow: 0 1px 3px rgba(var(--tone-rgb, 192, 57, 43), 0.35);
 }
 
 /* Motion Prompt #095 animated mesh — current lesson card(s) only
@@ -1835,9 +1974,9 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
 /* Break rows: beat general .tt-period.is-current / .is-past */
 .tt-period.break.is-current {
   min-height: 0;
-  border-color: #c0392b;
-  background: linear-gradient(135deg, #fff8f0 0%, #ffe8dc 100%);
-  box-shadow: 0 0 0 1.5px rgba(192, 57, 43, 0.2);
+  border-color: var(--current-accent, var(--primary));
+  background: linear-gradient(135deg, var(--primary-soft) 0%, var(--tone-soft) 100%);
+  box-shadow: 0 0 0 1.5px rgba(var(--tone-rgb, 192, 57, 43), 0.2);
 }
 .tt-period.break.is-current .tt-period-left {
   padding: 2px 10px;
@@ -1847,7 +1986,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   align-items: center;
 }
 .tt-period.break.is-current .tt-pnum {
-  background: #c0392b;
+  background: var(--current-accent, var(--primary));
 }
 .tt-period.break.is-past {
   opacity: 0.42;
@@ -1861,8 +2000,8 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   gap: 4px;
   padding: 10px 12px;
   min-width: 118px;
-  background: rgba(232, 240, 254, 0.55);
-  border-right: 1px solid rgba(144, 180, 232, 0.4);
+  background: var(--primary-soft);
+  border-right: 1px solid var(--tone-border);
 }
 .tt-pnum {
   display: inline-flex;
@@ -2019,7 +2158,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
 .home-teacher-select:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(26, 58, 108, 0.15);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
 
@@ -2097,6 +2236,10 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   padding: 6px 2px;
   font-size: 0.82rem;
 }
+html:not([data-theme="dark"]) #meet-day-grid.mp-seg .chip.is-bf:not(.active),
+html:not([data-theme="dark"]) .meet-day-seg.mp-seg .chip.is-bf:not(.active) {
+  color: var(--primary-dark);
+}
 #meet-day-grid.mp-seg .chip.is-bf:not(.active),
 .meet-day-seg.mp-seg .chip.is-bf:not(.active) {
   color: #1a6b48;
@@ -2136,7 +2279,7 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
 .meet-search:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(26, 58, 108, 0.15);
+  box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .meet-selected {
   display: flex;
@@ -2580,7 +2723,7 @@ html[data-app-role="staff"] .tt-student-block { display: none !important; }
   border: 1.5px solid var(--border);
   border-radius: 14px;
   padding: 10px;
-  box-shadow: 0 1px 3px rgba(26, 58, 108, 0.06);
+  box-shadow: 0 1px 3px rgba(var(--tone-rgb, 26, 58, 108), 0.06);
 }
 .seat-board-label {
   text-align: center;
@@ -2673,7 +2816,7 @@ html[data-app-role="staff"] .tt-student-block { display: none !important; }
 
 .seat-cell.is-selected {
   border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(26, 58, 108, 0.2);
+  box-shadow: 0 0 0 2px var(--focus-ring);
 }
 .seat-cell.is-dragging {
   opacity: 0.45;

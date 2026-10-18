@@ -508,16 +508,30 @@
     el.className = "home-next-lesson" + (done ? " is-done" : "");
   }
 
-  /** Sticky bar background tone: holiday=red, normal=blue, bf=green. */
+  /** Sticky + app chrome tone: holiday=red, normal=blue, bf=green (light mode). */
   function topToneForDay(day) {
     if (!day) return "holiday";
     return scheduleIdForDay(day) === "bf" ? "bf" : "normal";
   }
 
   function applyHomeTopTone(day) {
+    var tone = topToneForDay(day);
     var top = $("home-top");
-    if (!top) return;
-    top.setAttribute("data-tone", topToneForDay(day));
+    if (top) top.setAttribute("data-tone", tone);
+    /* Propagate to <html> so light-mode CSS vars tint whole app chrome. */
+    var root = document.documentElement;
+    if (root.getAttribute("data-tone") !== tone) {
+      root.setAttribute("data-tone", tone);
+    }
+    /* Keep legacy data-day-theme in sync for older BF selectors. */
+    if (tone === "bf") {
+      root.setAttribute("data-day-theme", "bf");
+    } else {
+      root.removeAttribute("data-day-theme");
+    }
+    if (window.LwfssTheme && typeof window.LwfssTheme.syncMeta === "function") {
+      window.LwfssTheme.syncMeta();
+    }
   }
 
   function renderHomeBar(session) {
