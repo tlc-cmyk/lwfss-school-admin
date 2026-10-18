@@ -82,6 +82,39 @@
     return "";
   }
 
+  /** 分組／合班：學生來自多班，座位需顯示班別學號 */
+  function isMixedClassScope() {
+    return !!(state.scope && (state.scope.kind === "group" || state.scope.kind === "split"));
+  }
+
+  /**
+   * Seat cell top line: 班別學號 for 分組/合班 (e.g. 3A12), else class_no only.
+   * Resolves class_code from roster when missing on the seat snapshot.
+   */
+  function seatClassNoLabel(seat) {
+    if (!seat) return "";
+    var stu = seat.student_id != null ? findStudent(seat.student_id) : null;
+    var classCode = (stu && stu.class_code) || seat.class_code || "";
+    var classNo = "";
+    if (stu && stu.class_no != null && stu.class_no !== "") classNo = String(stu.class_no);
+    else if (seat.class_no != null && seat.class_no !== "") classNo = String(seat.class_no);
+    if (isMixedClassScope() && classCode) {
+      return String(classCode) + classNo;
+    }
+    return classNo;
+  }
+
+  /** Prefer live roster 中文全名, then seat snapshot. */
+  function seatChineseName(seat) {
+    if (!seat) return "";
+    var stu = seat.student_id != null ? findStudent(seat.student_id) : null;
+    if (stu) {
+      var zh = (stu.chinese_name || stu.name_zh || "").trim();
+      if (zh) return zh;
+    }
+    return (seat.name_zh || "").trim() || (seat.name_en || "").trim() || "";
+  }
+
   function normalizeSex(sex) {
     var s = String(sex == null ? "" : sex).trim().toUpperCase();
     if (s === "F" || s === "女" || s === "FEMALE" || s === "GIRL") return "F";
@@ -541,6 +574,7 @@
         r: s.r,
         c: s.c,
         student_id: s.student_id || null,
+        class_code: s.class_code || "",
         class_no: s.class_no || null,
         name_zh: s.name_zh || "",
         name_en: s.name_en || "",
@@ -561,6 +595,7 @@
         r: s.r,
         c: s.c,
         student_id: s.student_id,
+        class_code: s.class_code || "",
         class_no: s.class_no,
         name_zh: s.name_zh || "",
         name_en: s.name_en || "",
@@ -747,8 +782,9 @@
         if (selected) cls += " is-selected";
         var label = "";
         if (seat && seat.student_id) {
-          label = '<span class="seat-cell-no">' + escapeHtml(seat.class_no || "") + "</span>" +
-            '<span class="seat-cell-name">' + escapeHtml(seat.name_zh || seat.name_en || "") + "</span>";
+          // 分組／合班: 班別學號 + 中文全名 (e.g. 3A12 / 陳大文); 普通班別 unchanged
+          label = '<span class="seat-cell-no">' + escapeHtml(seatClassNoLabel(seat)) + "</span>" +
+            '<span class="seat-cell-name">' + escapeHtml(seatChineseName(seat)) + "</span>";
         } else {
           label = '<span class="seat-cell-empty">空</span>';
         }
@@ -802,6 +838,7 @@
       r: r,
       c: c,
       student_id: stu.id,
+      class_code: stu.class_code || "",
       class_no: stu.class_no,
       name_zh: stu.chinese_name || "",
       name_en: stu.english_name || "",
@@ -818,6 +855,7 @@
       r: r,
       c: c,
       student_id: seat.student_id,
+      class_code: seat.class_code || "",
       class_no: seat.class_no,
       name_zh: seat.name_zh || "",
       name_en: seat.name_en || "",
@@ -1083,9 +1121,11 @@
         var sexN = "";
         if (seat && seat.student_id && state.rosterIdSet[String(seat.student_id)]) {
           sexN = normalizeSex(seat.sex) || sexFromRosterId(seat.student_id);
-          inner = '<div class="no">' + escapeHtml(seat.class_no || "") + "</div>" +
-            '<div class="zh">' + escapeHtml(seat.name_zh || "") + "</div>" +
-            (seat.name_en ? '<div class="en">' + escapeHtml(seat.name_en) + "</div>" : "");
+          inner = '<div class="no">' + escapeHtml(seatClassNoLabel(seat)) + "</div>" +
+            '<div class="zh">' + escapeHtml(seatChineseName(seat)) + "</div>" +
+            (!isMixedClassScope() && seat.name_en
+              ? '<div class="en">' + escapeHtml(seat.name_en) + "</div>"
+              : "");
         }
         var tdCls = seat && seat.student_id ? "filled" : "empty";
         if (sexN === "F") tdCls += " girl";
