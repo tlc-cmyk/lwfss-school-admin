@@ -1621,6 +1621,9 @@
     row.setAttribute("data-break", slot.key || "");
     var label = breakSlotLabel(slot);
     var timeStr = formatPeriodTime(slot.start, slot.end);
+    var energyHtml = (isCurrent && slot.start && slot.end)
+      ? energyBarHtml(slot.start, slot.end)
+      : "";
     row.innerHTML =
       '<div class="tt-period-left">' +
         '<span class="tt-pnum">' + escapeHtml(label) + "</span>" +
@@ -1629,7 +1632,8 @@
       "</div>" +
       '<div class="tt-period-body">' +
         '<div class="subj break-label">' + escapeHtml(label) + "</div>" +
-      "</div>";
+      "</div>" +
+      energyHtml;
     if (isCurrent) row.setAttribute("aria-current", "true");
     return row;
   }

@@ -2098,13 +2098,13 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
   box-shadow: 0 1px 3px rgba(var(--tone-rgb, 192, 57, 43), 0.35);
 }
 
-/* Energy / timeline bar — remaining time on current lesson (and free) cards */
+/* Energy / timeline bar — remaining time on current lesson, free, and break cards */
 .tt-period-energy {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 5px;
+  height: 9px;
   z-index: 2;
   pointer-events: none;
   overflow: hidden;
@@ -2114,7 +2114,7 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
   display: block;
   height: 100%;
   width: 100%;
-  border-radius: 0 3px 0 0;
+  border-radius: 0 4px 0 0;
   background: linear-gradient(
     90deg,
     var(--current-accent, var(--primary)) 0%,
@@ -2122,6 +2122,10 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
   );
   box-shadow: 0 0 8px rgba(var(--tone-rgb, 192, 57, 43), 0.45);
   transition: width 0.8s linear;
+}
+/* Break cards (beige/grey): slightly stronger track so the strip reads on soft gold */
+.tt-period.break.is-current .tt-period-energy {
+  background: rgba(var(--tone-rgb, 192, 57, 43), 0.22);
 }
 /* On #095 mesh: brighter white/cyan strip above canvas, below text */
 .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-energy {
@@ -2134,11 +2138,15 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
 html[data-theme="dark"] .tt-period-energy {
   background: rgba(255, 255, 255, 0.12);
 }
+html[data-theme="dark"] .tt-period.break.is-current .tt-period-energy {
+  background: rgba(255, 255, 255, 0.16);
+}
 html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-energy {
   background: rgba(255, 255, 255, 0.14);
 }
 html[data-theme="dark"] .tt-period.lesson.is-current:not(.has-lesson-now-gradient) .tt-period-energy-fill,
-html[data-theme="dark"] .tt-period.free.is-current .tt-period-energy-fill {
+html[data-theme="dark"] .tt-period.free.is-current .tt-period-energy-fill,
+html[data-theme="dark"] .tt-period.break.is-current .tt-period-energy-fill {
   box-shadow: 0 0 10px rgba(125, 211, 252, 0.35);
 }
 
@@ -2224,6 +2232,7 @@ html:not([data-tone="holiday"]) .tt-holiday-particles {
 
 /* Break rows: beat general .tt-period.is-current / .is-past */
 .tt-period.break.is-current {
+  position: relative;
   border-color: var(--current-accent, var(--primary));
   background: linear-gradient(135deg, var(--primary-soft) 0%, var(--tone-soft) 100%);
   box-shadow: 0 0 0 1.5px rgba(var(--tone-rgb, 192, 57, 43), 0.2);
