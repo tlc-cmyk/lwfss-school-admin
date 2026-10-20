@@ -1604,6 +1604,17 @@
     return String(start) + "–" + String(end);
   }
 
+  /** Left rail: P/break badge + optional countdown on one row; time range below. */
+  function periodLeftHtml(pnumInner, timeHtml, cdHtml) {
+    return '<div class="tt-period-left">' +
+      '<div class="tt-period-head">' +
+        '<span class="tt-pnum">' + pnumInner + "</span>" +
+        (cdHtml || "") +
+      "</div>" +
+      (timeHtml || "") +
+    "</div>";
+  }
+
   function makeBreakRow(slot, live, curSlot, nowMins) {
     var extra = "";
     var isCurrent = false;
@@ -1624,12 +1635,12 @@
     var energyHtml = (isCurrent && slot.start && slot.end)
       ? energyBarHtml(slot.start, slot.end)
       : "";
+    var timeHtmlBr = timeStr
+      ? '<span class="tt-period-time">' + escapeHtml(timeStr) + "</span>"
+      : "";
+    var cdHtmlBr = isCurrent ? breakCountdownHtml(slot.end) : "";
     row.innerHTML =
-      '<div class="tt-period-left">' +
-        '<span class="tt-pnum">' + escapeHtml(label) + "</span>" +
-        (timeStr ? '<span class="tt-period-time">' + escapeHtml(timeStr) + "</span>" : "") +
-        (isCurrent ? breakCountdownHtml(slot.end) : "") +
-      "</div>" +
+      periodLeftHtml(escapeHtml(label), timeHtmlBr, cdHtmlBr) +
       '<div class="tt-period-body">' +
         '<div class="subj break-label">' + escapeHtml(label) + "</div>" +
       "</div>" +
@@ -1741,11 +1752,7 @@
           if (tags.length) metaHtml = '<div class="tt-meta">' + tags.join("") + "</div>";
         }
         row.innerHTML =
-          '<div class="tt-period-left">' +
-            '<span class="tt-pnum">P' + p + "</span>" +
-            timeHtml +
-            cdHtml +
-          "</div>" +
+          periodLeftHtml("P" + p, timeHtml, cdHtml) +
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             metaHtml +
@@ -1755,11 +1762,7 @@
       } else {
         row.className = ("tt-period free" + extra).trim();
         row.innerHTML =
-          '<div class="tt-period-left">' +
-            '<span class="tt-pnum">P' + p + "</span>" +
-            timeHtml +
-            cdHtml +
-          "</div>" +
+          periodLeftHtml("P" + p, timeHtml, cdHtml) +
           '<div class="tt-period-body">' +
             '<div class="subj free-label">空堂</div>' +
           "</div>" +
@@ -2520,11 +2523,7 @@
         var freeRow = document.createElement("div");
         freeRow.className = ("tt-period free" + extra).trim();
         freeRow.innerHTML =
-          '<div class="tt-period-left">' +
-            '<span class="tt-pnum">P' + p + "</span>" +
-            timeHtml +
-            cdHtml +
-          "</div>" +
+          periodLeftHtml("P" + p, timeHtml, cdHtml) +
           '<div class="tt-period-body">' +
             '<div class="subj free-label">空堂</div>' +
           "</div>" +
@@ -2626,11 +2625,7 @@
           ? '<div class="tt-meta">' + metaTags.join("") + "</div>"
           : "";
         row.innerHTML =
-          '<div class="tt-period-left">' +
-            '<span class="tt-pnum">P' + p + "</span>" +
-            (gi === 0 ? timeHtml : "") +
-            (gi === 0 ? cdHtml : "") +
-          "</div>" +
+          periodLeftHtml("P" + p, gi === 0 ? timeHtml : "", gi === 0 ? cdHtml : "") +
           '<div class="tt-period-body">' +
             '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             metaHtml +

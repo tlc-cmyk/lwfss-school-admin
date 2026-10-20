@@ -1994,7 +1994,7 @@ html:not([data-theme="dark"]) .tt-day-chip.is-bf.active {
 }
 .tt-period.break .tt-period-countdown,
 .tt-period.break .tt-break-cd {
-  margin-top: 2px;
+  margin-top: 0;
   margin-left: 0;
   padding: 1px 6px;
   font-size: 0.62rem;
@@ -2085,14 +2085,16 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
 .tt-period-countdown {
   display: inline-flex;
   align-items: center;
-  margin-top: 2px;
-  padding: 2px 8px;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 1px 6px;
   border-radius: 999px;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.01em;
   white-space: nowrap;
+  line-height: 1.35;
   color: #fff;
   background: var(--current-accent, var(--primary));
   box-shadow: 0 1px 3px rgba(var(--tone-rgb, 192, 57, 43), 0.35);
@@ -2292,33 +2294,75 @@ html:not([data-tone="holiday"]) .tt-holiday-particles {
   opacity: 0.42;
   filter: grayscale(0.2);
 }
-/* Fixed left rail (~96px) so vertical divider aligns across all row types */
+/* Fixed left rail: P badge + countdown on one row; time below.
+   Slightly wider than 96px so 「剩 N 分」 fits beside P on phones. */
 .tt-period-left {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
   gap: 3px;
-  padding: 8px 10px;
+  padding: 8px 8px;
   box-sizing: border-box;
-  width: 96px;
-  min-width: 96px;
-  max-width: 96px;
-  flex: 0 0 96px;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  flex: 0 0 120px;
   background: var(--primary-soft);
   border-right: 1px solid var(--tone-border);
+}
+.tt-period-head {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
 }
 .tt-pnum {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2rem;
-  padding: 2px 8px;
+  flex: 0 0 auto;
+  min-width: 1.75rem;
+  padding: 2px 7px;
   border-radius: 999px;
   background: #9aafc8;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
+}
+
+/* Narrow: keep P + countdown one line; slightly tighter left rail */
+@media (max-width: 400px) {
+  #home-periods .tt-period-left,
+  #home-cr-periods .tt-period-left {
+    width: 108px;
+    min-width: 108px;
+    max-width: 108px;
+    flex: 0 0 108px;
+    padding: 6px 6px;
+    gap: 2px;
+  }
+  #home-periods .tt-period-head,
+  #home-cr-periods .tt-period-head {
+    gap: 3px;
+  }
+  #home-periods .tt-pnum,
+  #home-cr-periods .tt-pnum {
+    min-width: 1.55rem;
+    padding: 1px 6px;
+    font-size: 0.68rem;
+  }
+  #home-periods .tt-period-countdown,
+  #home-cr-periods .tt-period-countdown {
+    padding: 1px 5px;
+    font-size: 0.56rem;
+  }
+  #home-periods .tt-period-time,
+  #home-cr-periods .tt-period-time {
+    font-size: 0.62rem;
+  }
 }
 .tt-period-time {
   font-size: 0.68rem;
