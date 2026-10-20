@@ -12,11 +12,14 @@
 
   var MATCHA = 0x7cb342;
   var MATCHA_DARK = 0x558b2f;
-  var STIFFNESS = 48;
-  var DAMPING = 0.88;
-  var GRAB_RADIUS = 0.55;
-  var GRAB_STRENGTH = 0.55;
-  var IDLE_AMP = 0.012;
+  // Snappy jelly: stiff springs, firm damping, wide poke (tuned for phone 60fps)
+  var STIFFNESS = 130;
+  var DAMPING = 0.76;
+  var GRAB_RADIUS = 0.9;
+  var GRAB_STRENGTH = 1.05;
+  var GRAB_FOLLOW = 0.82;
+  var HIT_LERP = 0.62;
+  var IDLE_AMP = 0.01;
   var IDLE_AMP_REDUCED = 0.002;
 
   var THREE = null;
@@ -98,7 +101,7 @@
     });
   }
 
-  /** Shape a sphere into Soft Goods–style cat jelly rest pose. */
+  /** Shape a sphere into Soft Goods–style cat jelly rest pose (ears kept). */
   function shapeCatBlob(attr) {
     var i;
     var x;
@@ -107,40 +110,47 @@
     var side;
     var earX;
     var earY;
+    var earBaseY;
     var t;
     var dx;
+    var dz;
     var proximity;
+    var baseBlend;
+    var tipPull;
     var count = attr.count;
-    var len;
     for (i = 0; i < count; i++) {
       x = attr.getX(i);
       y = attr.getY(i);
       z = attr.getZ(i);
 
       // Slightly taller body, softer cheeks
-      y *= 1.12;
-      x *= 1.02;
-      z *= 0.94;
+      y *= 1.1;
+      x *= 1.04;
+      z *= 0.92;
 
-      // Two ear lobes: pull upper verts toward tips (±earX, earY)
-      if (y > 0.15) {
+      // Integrated ear lobes: wide base blend into head, tapered tips
+      if (y > 0.08) {
         side = x >= 0 ? 1 : -1;
-        earX = side * 0.55;
-        earY = 1.28;
-        t = Math.max(0, (y - 0.15) / 1.0);
+        earX = side * 0.48;
+        earY = 1.22;
+        earBaseY = 0.42;
+        t = Math.max(0, (y - 0.08) / 1.05);
         t = t * t * (3 - 2 * t); // smoothstep
-        dx = x - earX * 0.7;
-        proximity = Math.exp(-(dx * dx) * 7.5 - (z * z) * 1.2) * t;
-        x += (earX - x) * proximity * 0.78;
-        y += (earY - y) * proximity * 0.72;
-        z *= 1 - proximity * 0.45;
-        // Round the ear tip a bit by shrinking radius near tip
-        if (proximity > 0.35) {
-          len = Math.sqrt(x * x + y * y + z * z) || 1;
-          var tipPull = (proximity - 0.35) * 0.35;
-          x = x * (1 - tipPull) + (earX * 0.92) * tipPull;
+        dx = x - earX * 0.55;
+        dz = z;
+        // Wider lateral falloff so ears merge into crown instead of looking stuck-on
+        proximity = Math.exp(-(dx * dx) * 4.2 - (dz * dz) * 2.4) * t;
+        // Pull toward a flared base then tip
+        baseBlend = proximity * (0.55 + 0.35 * Math.max(0, (y - earBaseY) / 0.7));
+        x += (earX - x) * baseBlend * 0.72;
+        y += (earY - y) * proximity * 0.68;
+        z *= 1 - proximity * 0.38;
+        // Soft tip taper (not a hard spike)
+        if (proximity > 0.28) {
+          tipPull = Math.min(0.55, (proximity - 0.28) * 0.55);
+          x = x * (1 - tipPull) + earX * 0.88 * tipPull;
           y = y * (1 - tipPull) + earY * tipPull;
-          z = z * (1 - tipPull);
+          z = z * (1 - tipPull * 0.85);
         }
       }
 
@@ -183,7 +193,8 @@
   }
 
   function createJellyGeometry() {
-    var geo = new THREE.SphereGeometry(1, 40, 28);
+    // Fewer segments keeps phone drag at ~60fps; still enough for ear silhouette
+    var geo = new THREE.SphereGeometry(1, 28, 20);
     shapeCatBlob(geo.attributes.position);
     geo.computeVertexNormals();
     return geo;
@@ -206,13 +217,14 @@
       canvas: canvas,
       antialias: true,
       alpha: true,
-      powerPreference: "low-power"
+      powerPreference: "high-performance"
     });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    // Cap DPR for mobile fill-rate; still sharp enough on retina
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.setSize(w, h, false);
     renderer.outputColorSpace = THREE_ns.SRGBColorSpace;
     renderer.toneMapping = THREE_ns.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.12;
 
     scene = new THREE_ns.Scene();
 
@@ -220,17 +232,20 @@
     camera.position.set(0, 0.35, 3.85);
     camera.lookAt(0, 0.15, 0);
 
-    var hemi = new THREE_ns.HemisphereLight(0xffffff, 0xb0c4a0, 0.85);
+    var hemi = new THREE_ns.HemisphereLight(0xffffff, 0xa8c090, 0.75);
     scene.add(hemi);
-    var key = new THREE_ns.DirectionalLight(0xffffff, 1.35);
-    key.position.set(2.4, 3.2, 2.8);
+    var key = new THREE_ns.DirectionalLight(0xffffff, 1.55);
+    key.position.set(2.4, 3.4, 2.6);
     scene.add(key);
-    var fill = new THREE_ns.DirectionalLight(0xd4f0c0, 0.45);
-    fill.position.set(-2.2, 0.6, 1.2);
+    var fill = new THREE_ns.DirectionalLight(0xd8f5c4, 0.55);
+    fill.position.set(-2.4, 0.8, 1.4);
     scene.add(fill);
-    var rim = new THREE_ns.PointLight(0xffffff, 0.55, 12);
-    rim.position.set(-1.5, 2.2, -2.5);
+    var rim = new THREE_ns.PointLight(0xffffff, 0.75, 14);
+    rim.position.set(-1.4, 2.4, -2.3);
     scene.add(rim);
+    var gloss = new THREE_ns.PointLight(0xe8ffd0, 0.4, 8);
+    gloss.position.set(0.6, 1.8, 2.2);
+    scene.add(gloss);
 
     var geo = createJellyGeometry();
     var posAttr = geo.attributes.position;
@@ -246,19 +261,19 @@
 
     var mat = new THREE_ns.MeshPhysicalMaterial({
       color: MATCHA,
-      roughness: 0.18,
+      roughness: 0.12,
       metalness: 0.0,
       clearcoat: 1.0,
-      clearcoatRoughness: 0.12,
-      transmission: 0.22,
-      thickness: 0.85,
-      ior: 1.4,
-      specularIntensity: 1.0,
-      sheen: 0.35,
+      clearcoatRoughness: 0.06,
+      transmission: 0.28,
+      thickness: 0.95,
+      ior: 1.42,
+      specularIntensity: 1.15,
+      sheen: 0.42,
       sheenColor: new THREE_ns.Color(MATCHA_DARK),
-      sheenRoughness: 0.4,
+      sheenRoughness: 0.32,
       transparent: true,
-      opacity: 0.96
+      opacity: 0.97
     });
 
     jellyMesh = new THREE_ns.Mesh(geo, mat);
@@ -271,7 +286,7 @@
       roughness: 0.35,
       metalness: 0.1
     });
-    var eyeGeo = new THREE_ns.SphereGeometry(0.07, 16, 12);
+    var eyeGeo = new THREE_ns.SphereGeometry(0.07, 12, 10);
     eyeRestL = new THREE_ns.Vector3(-0.26, 0.22, 0.92);
     eyeRestR = new THREE_ns.Vector3(0.26, 0.22, 0.92);
     eyeL = new THREE_ns.Mesh(eyeGeo, eyeMat);
@@ -281,7 +296,7 @@
     eyeL.position.copy(eyeRestL);
     eyeR.position.copy(eyeRestR);
 
-    var shadowGeo = new THREE_ns.CircleGeometry(0.95, 48);
+    var shadowGeo = new THREE_ns.CircleGeometry(0.95, 32);
     var shadowMat = new THREE_ns.MeshBasicMaterial({
       color: MATCHA_DARK,
       transparent: true,
@@ -390,9 +405,14 @@
     var dz;
     var d2;
     var w;
+    var follow;
     var rx;
     var ry;
     var rz;
+    var tx;
+    var ty;
+    var tz;
+    // Same-frame deformation: verts jump toward grab offset immediately
     for (i = 0; i < count; i++) {
       rx = restPositions[i * 3];
       ry = restPositions[i * 3 + 1];
@@ -403,20 +423,23 @@
       d2 = dx * dx + dy * dy + dz * dz;
       if (d2 > r2) continue;
       w = 1 - Math.sqrt(d2) / GRAB_RADIUS;
-      w = w * w;
-      velocities[i * 3] += pullX * w * GRAB_STRENGTH * 18 * dt;
-      velocities[i * 3 + 1] += pullY * w * GRAB_STRENGTH * 18 * dt;
-      velocities[i * 3 + 2] += pullZ * w * GRAB_STRENGTH * 18 * dt;
-      // Soft follow toward grab offset so press feels sticky
-      pos.setXYZ(
-        i,
-        pos.getX(i) + pullX * w * GRAB_STRENGTH * 0.35,
-        pos.getY(i) + pullY * w * GRAB_STRENGTH * 0.35,
-        pos.getZ(i) + pullZ * w * GRAB_STRENGTH * 0.35
-      );
+      w = w * w * (3 - 2 * w); // smooth falloff, strong near poke
+      follow = w * GRAB_FOLLOW * GRAB_STRENGTH;
+      tx = rx + pullX * follow;
+      ty = ry + pullY * follow;
+      tz = rz + pullZ * follow;
+      pos.setXYZ(i, tx, ty, tz);
+      // Kill residual velocity under the poke so it does not fight the finger
+      velocities[i * 3] *= 1 - w * 0.85;
+      velocities[i * 3 + 1] *= 1 - w * 0.85;
+      velocities[i * 3 + 2] *= 1 - w * 0.85;
+      // Light impulse for release wobble
+      velocities[i * 3] += pullX * w * GRAB_STRENGTH * 10 * dt;
+      velocities[i * 3 + 1] += pullY * w * GRAB_STRENGTH * 10 * dt;
+      velocities[i * 3 + 2] += pullZ * w * GRAB_STRENGTH * 10 * dt;
     }
-    // Move grab origin with soft follow so continuous drag stays attached
-    pointer.hitLocal.lerp(pointer.grabLocal, 0.18);
+    // Keep grab origin glued to finger (was 0.18 — felt laggy)
+    pointer.hitLocal.lerp(pointer.grabLocal, HIT_LERP);
   }
 
   function integrate(dt, t) {
@@ -458,22 +481,7 @@
       );
     }
     pos.needsUpdate = true;
-    jellyMesh.geometry.computeVertexNormals();
 
-    if (eyeL && eyeR && eyeRestL && eyeRestR) {
-      var dL = avgDispNear(eyeRestL, 0.35);
-      var dR = avgDispNear(eyeRestR, 0.35);
-      eyeL.position.set(
-        eyeRestL.x + dL.x,
-        eyeRestL.y + dL.y,
-        eyeRestL.z + dL.z
-      );
-      eyeR.position.set(
-        eyeRestR.x + dR.x,
-        eyeRestR.y + dR.y,
-        eyeRestR.z + dR.z
-      );
-    }
   }
 
   function resizeToHost() {
@@ -482,8 +490,34 @@
     var h = Math.max(host.clientHeight || 260, 200);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
     renderer.setSize(w, h, false);
+  }
+
+  function updateEyes() {
+    if (!eyeL || !eyeR || !eyeRestL || !eyeRestR) return;
+    var dL = avgDispNear(eyeRestL, 0.35);
+    var dR = avgDispNear(eyeRestR, 0.35);
+    eyeL.position.set(
+      eyeRestL.x + dL.x,
+      eyeRestL.y + dL.y,
+      eyeRestL.z + dL.z
+    );
+    eyeR.position.set(
+      eyeRestR.x + dR.x,
+      eyeRestR.y + dR.y,
+      eyeRestR.z + dR.z
+    );
+  }
+
+  var _normalFrame = 0;
+
+  function updateNormals() {
+    if (!jellyMesh) return;
+    // Every frame while dragging (deformation changed); alternate when idle
+    if (pointer.active || (_normalFrame++ % 2 === 0)) {
+      jellyMesh.geometry.computeVertexNormals();
+    }
   }
 
   function frame() {
@@ -494,8 +528,11 @@
     }
     var dt = clock ? clock.getDelta() : 0.016;
     var t = clock ? clock.elapsedTime : 0;
-    applyGrab(dt);
+    // Springs first, then grab overrides so verts track the finger this frame
     integrate(dt, t);
+    applyGrab(dt);
+    updateEyes();
+    updateNormals();
     renderer.render(scene, camera);
     rafId = requestAnimationFrame(frame);
   }
