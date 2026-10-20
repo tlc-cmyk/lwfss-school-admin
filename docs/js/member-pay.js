@@ -12,9 +12,9 @@
 
   var MATCHA = 0x7cb342;
   var MATCHA_DARK = 0x558b2f;
-  // Snappy jelly: stiff springs, firm damping, wide poke (tuned for phone 60fps)
-  var STIFFNESS = 130;
-  var DAMPING = 0.76;
+  // Round blob jelly: very strong rebound (high stiffness, low damping overshoot), snappy drag
+  var STIFFNESS = 280;
+  var DAMPING = 0.66;
   var GRAB_RADIUS = 0.9;
   var GRAB_STRENGTH = 1.05;
   var GRAB_FOLLOW = 0.82;
@@ -37,12 +37,8 @@
   var scene = null;
   var camera = null;
   var jellyMesh = null;
-  var eyeL = null;
-  var eyeR = null;
   var restPositions = null;
   var velocities = null;
-  var eyeRestL = null;
-  var eyeRestR = null;
 
   var pointer = {
     active: false,
@@ -101,58 +97,22 @@
     });
   }
 
-  /** Shape a sphere into Soft Goods–style cat jelly rest pose (ears kept). */
-  function shapeCatBlob(attr) {
+  /** Shape a sphere into a round glossy jelly blob (no ears / face). */
+  function shapeRoundBlob(attr) {
     var i;
     var x;
     var y;
     var z;
-    var side;
-    var earX;
-    var earY;
-    var earBaseY;
-    var t;
-    var dx;
-    var dz;
-    var proximity;
-    var baseBlend;
-    var tipPull;
     var count = attr.count;
     for (i = 0; i < count; i++) {
       x = attr.getX(i);
       y = attr.getY(i);
       z = attr.getZ(i);
 
-      // Slightly taller body, softer cheeks
-      y *= 1.1;
-      x *= 1.04;
-      z *= 0.92;
-
-      // Integrated ear lobes: wide base blend into head, tapered tips
-      if (y > 0.08) {
-        side = x >= 0 ? 1 : -1;
-        earX = side * 0.48;
-        earY = 1.22;
-        earBaseY = 0.42;
-        t = Math.max(0, (y - 0.08) / 1.05);
-        t = t * t * (3 - 2 * t); // smoothstep
-        dx = x - earX * 0.55;
-        dz = z;
-        // Wider lateral falloff so ears merge into crown instead of looking stuck-on
-        proximity = Math.exp(-(dx * dx) * 4.2 - (dz * dz) * 2.4) * t;
-        // Pull toward a flared base then tip
-        baseBlend = proximity * (0.55 + 0.35 * Math.max(0, (y - earBaseY) / 0.7));
-        x += (earX - x) * baseBlend * 0.72;
-        y += (earY - y) * proximity * 0.68;
-        z *= 1 - proximity * 0.38;
-        // Soft tip taper (not a hard spike)
-        if (proximity > 0.28) {
-          tipPull = Math.min(0.55, (proximity - 0.28) * 0.55);
-          x = x * (1 - tipPull) + earX * 0.88 * tipPull;
-          y = y * (1 - tipPull) + earY * tipPull;
-          z = z * (1 - tipPull * 0.85);
-        }
-      }
+      // Soft oval blob — slightly taller, gentle cheek
+      y *= 1.06;
+      x *= 1.03;
+      z *= 0.96;
 
       // Sit flatter on the ground
       if (y < -0.4) {
@@ -165,37 +125,10 @@
     }
   }
 
-  function avgDispNear(target, radius) {
-    if (!restPositions || !jellyMesh) return new THREE.Vector3();
-    var pos = jellyMesh.geometry.attributes.position;
-    var r2 = radius * radius;
-    var sx = 0;
-    var sy = 0;
-    var sz = 0;
-    var n = 0;
-    var i;
-    var dx;
-    var dy;
-    var dz;
-    var count = restPositions.length / 3;
-    for (i = 0; i < count; i++) {
-      dx = restPositions[i * 3] - target.x;
-      dy = restPositions[i * 3 + 1] - target.y;
-      dz = restPositions[i * 3 + 2] - target.z;
-      if (dx * dx + dy * dy + dz * dz > r2) continue;
-      sx += pos.getX(i) - restPositions[i * 3];
-      sy += pos.getY(i) - restPositions[i * 3 + 1];
-      sz += pos.getZ(i) - restPositions[i * 3 + 2];
-      n++;
-    }
-    if (!n) return new THREE.Vector3();
-    return new THREE.Vector3(sx / n, sy / n, sz / n);
-  }
-
   function createJellyGeometry() {
-    // Fewer segments keeps phone drag at ~60fps; still enough for ear silhouette
+    // Fewer segments keeps phone drag at ~60fps
     var geo = new THREE.SphereGeometry(1, 28, 20);
-    shapeCatBlob(geo.attributes.position);
+    shapeRoundBlob(geo.attributes.position);
     geo.computeVertexNormals();
     return geo;
   }
@@ -280,21 +213,6 @@
     jellyMesh.position.y = -0.12;
     jellyMesh.scale.set(1.05, 1.05, 1.05);
     scene.add(jellyMesh);
-
-    var eyeMat = new THREE_ns.MeshStandardMaterial({
-      color: 0x111111,
-      roughness: 0.35,
-      metalness: 0.1
-    });
-    var eyeGeo = new THREE_ns.SphereGeometry(0.07, 12, 10);
-    eyeRestL = new THREE_ns.Vector3(-0.26, 0.22, 0.92);
-    eyeRestR = new THREE_ns.Vector3(0.26, 0.22, 0.92);
-    eyeL = new THREE_ns.Mesh(eyeGeo, eyeMat);
-    eyeR = new THREE_ns.Mesh(eyeGeo.clone(), eyeMat);
-    jellyMesh.add(eyeL);
-    jellyMesh.add(eyeR);
-    eyeL.position.copy(eyeRestL);
-    eyeR.position.copy(eyeRestR);
 
     var shadowGeo = new THREE_ns.CircleGeometry(0.95, 32);
     var shadowMat = new THREE_ns.MeshBasicMaterial({
@@ -433,10 +351,10 @@
       velocities[i * 3] *= 1 - w * 0.85;
       velocities[i * 3 + 1] *= 1 - w * 0.85;
       velocities[i * 3 + 2] *= 1 - w * 0.85;
-      // Light impulse for release wobble
-      velocities[i * 3] += pullX * w * GRAB_STRENGTH * 10 * dt;
-      velocities[i * 3 + 1] += pullY * w * GRAB_STRENGTH * 10 * dt;
-      velocities[i * 3 + 2] += pullZ * w * GRAB_STRENGTH * 10 * dt;
+      // Store poke energy so release overshoots hard
+      velocities[i * 3] += pullX * w * GRAB_STRENGTH * 18 * dt;
+      velocities[i * 3 + 1] += pullY * w * GRAB_STRENGTH * 18 * dt;
+      velocities[i * 3 + 2] += pullZ * w * GRAB_STRENGTH * 18 * dt;
     }
     // Keep grab origin glued to finger (was 0.18 — felt laggy)
     pointer.hitLocal.lerp(pointer.grabLocal, HIT_LERP);
@@ -494,22 +412,6 @@
     renderer.setSize(w, h, false);
   }
 
-  function updateEyes() {
-    if (!eyeL || !eyeR || !eyeRestL || !eyeRestR) return;
-    var dL = avgDispNear(eyeRestL, 0.35);
-    var dR = avgDispNear(eyeRestR, 0.35);
-    eyeL.position.set(
-      eyeRestL.x + dL.x,
-      eyeRestL.y + dL.y,
-      eyeRestL.z + dL.z
-    );
-    eyeR.position.set(
-      eyeRestR.x + dR.x,
-      eyeRestR.y + dR.y,
-      eyeRestR.z + dR.z
-    );
-  }
-
   var _normalFrame = 0;
 
   function updateNormals() {
@@ -531,7 +433,6 @@
     // Springs first, then grab overrides so verts track the finger this frame
     integrate(dt, t);
     applyGrab(dt);
-    updateEyes();
     updateNormals();
     renderer.render(scene, camera);
     rafId = requestAnimationFrame(frame);
@@ -567,16 +468,9 @@
       if (jellyMesh.geometry) jellyMesh.geometry.dispose();
       if (jellyMesh.material) jellyMesh.material.dispose();
     }
-    if (eyeL) {
-      if (eyeL.geometry) eyeL.geometry.dispose();
-      if (eyeL.material) eyeL.material.dispose();
-    }
-    if (eyeR) {
-      if (eyeR.geometry) eyeR.geometry.dispose();
-    }
     if (scene) {
       scene.traverse(function (obj) {
-        if (obj.isMesh && obj !== jellyMesh && obj !== eyeL && obj !== eyeR) {
+        if (obj.isMesh && obj !== jellyMesh) {
           if (obj.geometry) obj.geometry.dispose();
           if (obj.material) obj.material.dispose();
         }
@@ -596,12 +490,8 @@
     scene = null;
     camera = null;
     jellyMesh = null;
-    eyeL = null;
-    eyeR = null;
     restPositions = null;
     velocities = null;
-    eyeRestL = null;
-    eyeRestR = null;
     clock = null;
     disposed = true;
   }
