@@ -1225,6 +1225,34 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   color: #0f3460;
 }
 
+/* Next-lesson countdown chip beside name (time only) */
+.home-next-lesson {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 9.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+.home-next-lesson.is-done {
+  opacity: 0.78;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+.home-next-lesson[hidden] {
+  display: none !important;
+}
+
 /* Today's notes — up to two distinct rows beside actions (no type icons) */
 .home-top-notes {
   display: flex;
@@ -1302,7 +1330,8 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   .home-bar-clock { font-size: 0.88rem; }
   .home-bar-day { font-size: 0.8rem; }
   .home-bar-live { padding: 0 6px; font-size: 0.64rem; }
-  .home-bar-who { max-width: 36%; font-size: 0.7rem; }
+  .home-bar-who { max-width: 28%; font-size: 0.7rem; }
+  .home-next-lesson { max-width: 7.5rem; font-size: 0.64rem; padding: 1px 5px; }
 }
 
 

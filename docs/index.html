@@ -33,7 +33,7 @@
       <!-- Sticky chrome: top info + function bar always stay; only bottom panel swaps -->
       <div class="home-sticky">
         <section id="home-top" class="home-top" data-tone="normal" aria-label="今日概況" aria-live="polite">
-          <!-- Row 1: date · time · Day/status · name -->
+          <!-- Row 1: date · time · Day/status · name · next-lesson -->
           <div class="home-top-row home-top-row-main">
             <div class="home-bar-when">
               <label class="home-bar-date-hit" for="home-date-input" title="選擇日期">
@@ -48,6 +48,7 @@
               <span id="home-status" class="home-status-chip" hidden></span>
             </div>
             <span id="home-who" class="home-bar-who"></span>
+            <span id="home-next-lesson" class="home-next-lesson" hidden aria-live="polite"></span>
           </div>
 
           <!-- Row 2: 今日事項 + 即時 / 登出 -->

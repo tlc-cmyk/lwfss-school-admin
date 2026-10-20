@@ -561,7 +561,8 @@
       }
     }
 
-    // Assembly / next-lesson removed from sticky top (keep-only compact bar).
+    // Sticky 「下堂」countdown (time only) beside name — element #home-next-lesson.
+    updateNextLessonCountdown();
     renderNotes(session);
     try {
       document.dispatchEvent(new CustomEvent("schooladmin:browse-date", {
@@ -1850,6 +1851,7 @@
       showSelectedTeacher();
       fillClassRoomSelects();
       showClassRoomView();
+      updateNextLessonCountdown();
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
     }).catch(function () {
@@ -1860,6 +1862,7 @@
         showSelectedTeacher();
         fillClassRoomSelects();
         showClassRoomView();
+        updateNextLessonCountdown();
       }
     });
   }
