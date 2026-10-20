@@ -2112,9 +2112,11 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
 }
 .tt-period-energy-fill {
   display: block;
+  position: relative;
   height: 100%;
   width: 100%;
   border-radius: 0 4px 0 0;
+  overflow: hidden;
   background: linear-gradient(
     90deg,
     var(--current-accent, var(--primary)) 0%,
@@ -2122,6 +2124,45 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
   );
   box-shadow: 0 0 8px rgba(var(--tone-rgb, 192, 57, 43), 0.45);
   transition: width 0.8s linear;
+  /* Soft brightness pulse; shimmer band is on ::after */
+  animation: tt-energy-pulse 2.8s ease-in-out infinite;
+}
+/* Light-sweep shimmer overlay — works on lesson / free / break / #095 fills */
+.tt-period-energy-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 38%,
+    rgba(255, 255, 255, 0.15) 46%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0.15) 54%,
+    transparent 62%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-position: 100% 0;
+  animation: tt-energy-shimmer 2.4s ease-in-out infinite;
+}
+@keyframes tt-energy-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@keyframes tt-energy-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tt-period-energy-fill,
+  .tt-period-energy-fill::after {
+    animation: none;
+  }
+  .tt-period-energy-fill {
+    filter: none;
+  }
 }
 /* Break cards (beige/grey): slightly stronger track so the strip reads on soft gold */
 .tt-period.break.is-current .tt-period-energy {
