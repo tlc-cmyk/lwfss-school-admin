@@ -2873,7 +2873,7 @@ html[data-app-role="staff"] .home-func-tab[data-role-view="staff"] {
 }
 html[data-app-role="staff"] .tt-student-block { display: none !important; }
 
-/* —— 會員付費 panel (stub) + #022 light sweep —— */
+/* —— 會員付費 panel (stub) + interactive jelly + #022 sheen —— */
 .home-panel-member-pay .home-member-pay-card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -2882,26 +2882,43 @@ html[data-app-role="staff"] .tt-student-block { display: none !important; }
   box-shadow: var(--shadow);
   text-align: center;
 }
-.member-pay-hero {
+.member-pay-hero,
+.member-pay-jelly {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 0 auto 10px;
+  margin: 0 auto 8px;
   width: 100%;
-  max-width: 539px;
-  min-height: 140px;
-  aspect-ratio: 539 / 208;
+  max-width: 100%;
+  min-height: 240px;
+  height: min(42vw, 320px);
   overflow: hidden;
   border-radius: 16px;
-  background: linear-gradient(160deg, #0b1228 0%, #152044 100%);
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 62%, rgba(124, 179, 66, 0.12), transparent 70%),
+    linear-gradient(180deg, #f7faf5 0%, #eef3ea 100%);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
+.member-pay-jelly-canvas,
 .member-pay-hero canvas {
   display: block;
   width: 100%;
-  height: auto;
-  max-width: 539px;
-  /* Keep intrinsic 539×208 ratio; do not collapse to 0. */
-  min-height: 120px;
+  height: 100%;
+  min-height: 240px;
+  touch-action: none;
+  cursor: grab;
+}
+.member-pay-jelly-canvas:active,
+.member-pay-hero canvas:active {
+  cursor: grabbing;
+}
+.member-pay-jelly-caption {
+  margin: 0 0 10px;
+  font-size: 0.82rem;
+  color: var(--muted, #667);
+  letter-spacing: 0.02em;
 }
 .member-pay-title {
   position: relative;
@@ -3366,9 +3383,15 @@ html[data-theme="dark"] .member-pay-placeholder,
 html[data-theme="dark"] .member-pay-title {
   color: #fff;
 }
-html[data-theme="dark"] .member-pay-hero {
-  background: linear-gradient(160deg, var(--bg) 0%, var(--surface-2) 55%, var(--card) 100%);
+html[data-theme="dark"] .member-pay-hero,
+html[data-theme="dark"] .member-pay-jelly {
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 62%, rgba(124, 179, 66, 0.18), transparent 70%),
+    linear-gradient(160deg, var(--bg) 0%, var(--surface-2) 55%, var(--card) 100%);
   box-shadow: inset 0 0 0 1px rgba(var(--tone-rgb), 0.18), 0 0 24px rgba(var(--tone-rgb), 0.08);
+}
+html[data-theme="dark"] .member-pay-jelly-caption {
+  color: var(--muted, #9aa);
 }
 html[data-theme="dark"] .member-pay-sheen.is-light-sweep::after {
   background: linear-gradient(

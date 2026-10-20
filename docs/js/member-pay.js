@@ -1,234 +1,89 @@
 /**
- * 會員付費 panel — Motion Prompt #022 Light sweep accent.
- * // Motion Prompt #022 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#022
- *
- * Ports kit helpers #022 needs (pure u-based draw). Content localized for
- * LWFSS school-admin; timings/easing unchanged from upstream.
- * Plays one sweep (+ sparkle) when the panel opens (after layout/paint),
- * then freezes on the finished badge. Also restarts a CSS sheen on the
- * tab + panel title so the effect stays obvious on dark mode. Stub only
- * — no payment backend.
+ * 會員付費 panel — interactive 3D glossy jelly + #022 CSS sheen on tab/title.
+ * Three.js loaded lazily via ESM CDN when the panel first opens.
+ * Soft vertex springs: press-drag-release wobble (touch + mouse).
+ * Stub only — no payment backend.
  */
 (function () {
   "use strict";
 
-  // Motion Prompt #022 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#022
+  var THREE_CDN =
+    "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js";
 
-  var CW = 539;
-  var CH = 208;
-  var CYC = 4.7;
+  var MATCHA = 0x7cb342;
+  var MATCHA_DARK = 0x558b2f;
+  var STIFFNESS = 48;
+  var DAMPING = 0.88;
+  var GRAB_RADIUS = 0.55;
+  var GRAB_STRENGTH = 0.55;
+  var IDLE_AMP = 0.012;
+  var IDLE_AMP_REDUCED = 0.002;
 
-  var C = {
-    navy: "#0F1A3D",
-    yel: "#FFC83D"
-  };
-
-  var DISP = '"Avenir Next", "Helvetica Neue", system-ui, sans-serif';
-  var TC =
-    '"PingFang HK", "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Hiragino Sans GB", sans-serif';
-
-  var clamp = function (x, a, b) {
-    if (a === undefined) a = 0;
-    if (b === undefined) b = 1;
-    return Math.min(b, Math.max(a, x));
-  };
-  var lerp = function (a, b, x) {
-    return a + (b - a) * x;
-  };
-  var P = function (t, a, b) {
-    return clamp((t - a) / (b - a));
-  };
-  // Quadratic ease-in-out (kit eIOs)
-  var eIOs = function (x) {
-    return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
-  };
-  var mod = function (a, n) {
-    return ((a % n) + n) % n;
-  };
-
-  function rr(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    if (typeof ctx.roundRect === "function") {
-      ctx.roundRect(x, y, w, h, r);
-      return;
-    }
-    var rr2 = Math.min(r, w / 2, h / 2);
-    ctx.moveTo(x + rr2, y);
-    ctx.arcTo(x + w, y, x + w, y + h, rr2);
-    ctx.arcTo(x + w, y + h, x, y + h, rr2);
-    ctx.arcTo(x, y + h, x, y, rr2);
-    ctx.arcTo(x, y, x + w, y, rr2);
-    ctx.closePath();
-  }
-
-  function txt(ctx, s, x, y, font, col, align, base, ls) {
-    if (align === undefined) align = "left";
-    if (base === undefined) base = "alphabetic";
-    if (ls === undefined) ls = "0px";
-    ctx.font = font;
-    ctx.fillStyle = col;
-    ctx.textAlign = align;
-    ctx.textBaseline = base;
-    ctx.letterSpacing = ls;
-    ctx.fillText(s, x, y);
-    ctx.letterSpacing = "0px";
-  }
-
-  function star(k, x, y, R, rot, inner, n) {
-    if (rot === undefined) rot = 0;
-    if (inner === undefined) inner = 0.5;
-    if (n === undefined) n = 5;
-    k.beginPath();
-    for (var i = 0; i < n * 2; i++) {
-      var r = i % 2 ? R * inner : R;
-      var a = rot - Math.PI / 2 + (i * Math.PI) / n;
-      var px = x + Math.cos(a) * r;
-      var py = y + Math.sin(a) * r;
-      if (i) k.lineTo(px, py);
-      else k.moveTo(px, py);
-    }
-    k.closePath();
-  }
-
-  // Transparent stage — badge sits on the panel card (no navy fill).
-  // @element 22 — Light sweep (content localized; timings/easing exact)
-  function drawLightSweep(k, w, h, u) {
-    var T = CYC / 2;
-    var lu = mod(u, T);
-    var p = eIOs(P(lu, 0.45, 1.5));
-    var BW = 400;
-    var BH = 112;
-    var X = w / 2 - BW / 2;
-    var Y = h / 2 - BH / 2;
-
-    k.fillStyle = "rgba(0,0,0,.3)";
-    rr(k, X + 3, Y + 9, BW, BH, 28);
-    k.fill();
-
-    var g = k.createLinearGradient(X, Y, X + BW, Y + BH);
-    g.addColorStop(0, "#2B62E0");
-    g.addColorStop(1, "#4E8BFF");
-    k.fillStyle = g;
-    rr(k, X, Y, BW, BH, 28);
-    k.fill();
-
-    // Accent star (kept from upstream layout)
-    k.fillStyle = C.yel;
-    star(k, X + 56, Y + BH / 2, 26, 0, 0.5);
-    k.lineJoin = "round";
-    k.strokeStyle = C.yel;
-    k.lineWidth = 4;
-    k.stroke();
-    k.fill();
-
-    // Localized title
-    txt(
-      k,
-      "會員付費",
-      X + 100,
-      Y + BH / 2 + 2,
-      "800 40px " + TC,
-      "#fff",
-      "left",
-      "middle",
-      "2px"
-    );
-
-    if (p > 0 && p < 1) {
-      k.save();
-      rr(k, X, Y, BW, BH, 28);
-      k.clip();
-      k.translate(lerp(X - 130, X + BW + 130, p), Y + BH / 2);
-      k.rotate(0.42);
-      var gr = k.createLinearGradient(-72, 0, 72, 0);
-      gr.addColorStop(0, "rgba(255,255,255,0)");
-      gr.addColorStop(0.35, "rgba(255,255,255,.55)");
-      gr.addColorStop(0.5, "rgba(255,255,255,.95)");
-      gr.addColorStop(0.65, "rgba(255,255,255,.55)");
-      gr.addColorStop(1, "rgba(255,255,255,0)");
-      k.fillStyle = gr;
-      k.fillRect(-72, -160, 144, 320);
-      k.fillStyle = "rgba(255,255,255,.85)";
-      k.fillRect(88, -160, 14, 320);
-      k.restore();
-    }
-
-    // Exit sparkle (1.38–1.98 s of half-cycle)
-    var tt = lu - 1.38;
-    if (tt > 0 && tt < 0.6) {
-      var q = tt / 0.6;
-      var sc = Math.sin(Math.PI * q) * (1 + 0.2 * (1 - q));
-      k.save();
-      k.translate(X + BW - 8, Y + 6);
-      k.rotate(q * 0.9);
-      k.fillStyle = "#fff";
-      star(k, 0, 0, 30 * sc, 0, 0.22, 4);
-      k.fill();
-      k.restore();
-    }
-  }
-
-  // After sweep + sparkle (~1.98 s); freeze mid half-cycle with clean badge.
-  var HOLD_U = 2.05;
+  var THREE = null;
+  var loadPromise = null;
 
   var rafId = 0;
-  var t0 = 0;
-  var canvas = null;
-  var ctx = null;
   var running = false;
+  var disposed = true;
+  var startToken = 0;
+  var reducedMotion = false;
+
+  var host = null;
+  var canvas = null;
+  var renderer = null;
+  var scene = null;
+  var camera = null;
+  var jellyMesh = null;
+  var eyeL = null;
+  var eyeR = null;
+  var restPositions = null;
+  var velocities = null;
+  var eyeRestL = null;
+  var eyeRestR = null;
+
+  var pointer = {
+    active: false,
+    id: null,
+    hitLocal: null,
+    grabLocal: null,
+    plane: null,
+    ndc: { x: 0, y: 0 }
+  };
+
+  var clock = null;
+  var resizeObs = null;
+  var mqReduced = null;
 
   function panelVisible() {
     var panel = document.getElementById("home-panel-member-pay");
-    return !!(panel && !panel.classList.contains("hidden") && !panel.hasAttribute("hidden"));
+    return !!(
+      panel &&
+      !panel.classList.contains("hidden") &&
+      !panel.hasAttribute("hidden")
+    );
   }
 
-  function ensureCanvas() {
-    var host = document.getElementById("member-pay-hero");
-    if (!host) return null;
-    canvas = host.querySelector("canvas");
-    if (!canvas) {
-      canvas = document.createElement("canvas");
-      canvas.setAttribute("aria-hidden", "true");
-      canvas.width = CW;
-      canvas.height = CH;
-      host.appendChild(canvas);
-    }
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    var pw = Math.round(CW * dpr);
-    var ph = Math.round(CH * dpr);
-    if (canvas.width !== pw || canvas.height !== ph) {
-      canvas.width = pw;
-      canvas.height = ph;
-    }
-    ctx = canvas.getContext("2d");
-    return canvas;
+  function prefersReducedMotion() {
+    return !!(
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
   }
 
-  function frame(now) {
-    if (!running) return;
-    if (!panelVisible()) {
-      stop();
-      return;
-    }
-    if (!ctx && !ensureCanvas()) return;
-    var elapsed = (now - t0) / 1000;
-    var done = elapsed >= HOLD_U;
-    var u = done ? HOLD_U : elapsed;
-    var dpr = canvas.width / CW;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, CW, CH);
-    ctx.save();
-    drawLightSweep(ctx, CW, CH, u);
-    ctx.restore();
-    if (done) {
-      running = false;
-      rafId = 0;
-      return;
-    }
-    rafId = requestAnimationFrame(frame);
+  function loadThree() {
+    if (THREE) return Promise.resolve(THREE);
+    if (loadPromise) return loadPromise;
+    loadPromise = import(THREE_CDN)
+      .then(function (mod) {
+        THREE = mod;
+        return THREE;
+      })
+      .catch(function (err) {
+        loadPromise = null;
+        throw err;
+      });
+    return loadPromise;
   }
-
-  var startToken = 0;
 
   function restartCssSheen() {
     var nodes = [
@@ -238,27 +93,421 @@
     nodes.forEach(function (el) {
       if (!el) return;
       el.classList.remove("is-light-sweep");
-      // Force reflow so re-adding the class restarts the CSS animation.
       void el.offsetWidth;
       el.classList.add("is-light-sweep");
     });
   }
 
-  function start() {
-    if (!panelVisible()) return;
-    if (!ensureCanvas()) return;
-    if (rafId) {
-      cancelAnimationFrame(rafId);
-      rafId = 0;
+  /** Shape a sphere into Soft Goods–style cat jelly rest pose. */
+  function shapeCatBlob(attr) {
+    var i;
+    var x;
+    var y;
+    var z;
+    var side;
+    var earX;
+    var earY;
+    var t;
+    var dx;
+    var proximity;
+    var count = attr.count;
+    var len;
+    for (i = 0; i < count; i++) {
+      x = attr.getX(i);
+      y = attr.getY(i);
+      z = attr.getZ(i);
+
+      // Slightly taller body, softer cheeks
+      y *= 1.12;
+      x *= 1.02;
+      z *= 0.94;
+
+      // Two ear lobes: pull upper verts toward tips (±earX, earY)
+      if (y > 0.15) {
+        side = x >= 0 ? 1 : -1;
+        earX = side * 0.55;
+        earY = 1.28;
+        t = Math.max(0, (y - 0.15) / 1.0);
+        t = t * t * (3 - 2 * t); // smoothstep
+        dx = x - earX * 0.7;
+        proximity = Math.exp(-(dx * dx) * 7.5 - (z * z) * 1.2) * t;
+        x += (earX - x) * proximity * 0.78;
+        y += (earY - y) * proximity * 0.72;
+        z *= 1 - proximity * 0.45;
+        // Round the ear tip a bit by shrinking radius near tip
+        if (proximity > 0.35) {
+          len = Math.sqrt(x * x + y * y + z * z) || 1;
+          var tipPull = (proximity - 0.35) * 0.35;
+          x = x * (1 - tipPull) + (earX * 0.92) * tipPull;
+          y = y * (1 - tipPull) + earY * tipPull;
+          z = z * (1 - tipPull);
+        }
+      }
+
+      // Sit flatter on the ground
+      if (y < -0.4) {
+        y = -0.4 + (y + 0.4) * 0.28;
+        x *= 1.06;
+        z *= 1.05;
+      }
+
+      attr.setXYZ(i, x, y, z);
     }
-    running = true;
-    t0 = performance.now();
-    // Paint an immediate frame so the badge is visible before the first rAF.
-    // frame() schedules the next rAF itself while running.
-    frame(t0);
   }
 
-  function stop() {
+  function avgDispNear(target, radius) {
+    if (!restPositions || !jellyMesh) return new THREE.Vector3();
+    var pos = jellyMesh.geometry.attributes.position;
+    var r2 = radius * radius;
+    var sx = 0;
+    var sy = 0;
+    var sz = 0;
+    var n = 0;
+    var i;
+    var dx;
+    var dy;
+    var dz;
+    var count = restPositions.length / 3;
+    for (i = 0; i < count; i++) {
+      dx = restPositions[i * 3] - target.x;
+      dy = restPositions[i * 3 + 1] - target.y;
+      dz = restPositions[i * 3 + 2] - target.z;
+      if (dx * dx + dy * dy + dz * dz > r2) continue;
+      sx += pos.getX(i) - restPositions[i * 3];
+      sy += pos.getY(i) - restPositions[i * 3 + 1];
+      sz += pos.getZ(i) - restPositions[i * 3 + 2];
+      n++;
+    }
+    if (!n) return new THREE.Vector3();
+    return new THREE.Vector3(sx / n, sy / n, sz / n);
+  }
+
+  function createJellyGeometry() {
+    var geo = new THREE.SphereGeometry(1, 40, 28);
+    shapeCatBlob(geo.attributes.position);
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  function createScene(THREE_ns, containerEl) {
+    var w = Math.max(containerEl.clientWidth || 320, 160);
+    var h = Math.max(containerEl.clientHeight || 260, 200);
+
+    canvas = document.createElement("canvas");
+    canvas.className = "member-pay-jelly-canvas";
+    canvas.setAttribute("aria-hidden", "true");
+    canvas.style.touchAction = "none";
+    canvas.style.display = "block";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    containerEl.appendChild(canvas);
+
+    renderer = new THREE_ns.WebGLRenderer({
+      canvas: canvas,
+      antialias: true,
+      alpha: true,
+      powerPreference: "low-power"
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+    renderer.outputColorSpace = THREE_ns.SRGBColorSpace;
+    renderer.toneMapping = THREE_ns.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+
+    scene = new THREE_ns.Scene();
+
+    camera = new THREE_ns.PerspectiveCamera(38, w / h, 0.1, 40);
+    camera.position.set(0, 0.35, 3.85);
+    camera.lookAt(0, 0.15, 0);
+
+    var hemi = new THREE_ns.HemisphereLight(0xffffff, 0xb0c4a0, 0.85);
+    scene.add(hemi);
+    var key = new THREE_ns.DirectionalLight(0xffffff, 1.35);
+    key.position.set(2.4, 3.2, 2.8);
+    scene.add(key);
+    var fill = new THREE_ns.DirectionalLight(0xd4f0c0, 0.45);
+    fill.position.set(-2.2, 0.6, 1.2);
+    scene.add(fill);
+    var rim = new THREE_ns.PointLight(0xffffff, 0.55, 12);
+    rim.position.set(-1.5, 2.2, -2.5);
+    scene.add(rim);
+
+    var geo = createJellyGeometry();
+    var posAttr = geo.attributes.position;
+    var count = posAttr.count;
+    restPositions = new Float32Array(count * 3);
+    velocities = new Float32Array(count * 3);
+    var i;
+    for (i = 0; i < count; i++) {
+      restPositions[i * 3] = posAttr.getX(i);
+      restPositions[i * 3 + 1] = posAttr.getY(i);
+      restPositions[i * 3 + 2] = posAttr.getZ(i);
+    }
+
+    var mat = new THREE_ns.MeshPhysicalMaterial({
+      color: MATCHA,
+      roughness: 0.18,
+      metalness: 0.0,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.12,
+      transmission: 0.22,
+      thickness: 0.85,
+      ior: 1.4,
+      specularIntensity: 1.0,
+      sheen: 0.35,
+      sheenColor: new THREE_ns.Color(MATCHA_DARK),
+      sheenRoughness: 0.4,
+      transparent: true,
+      opacity: 0.96
+    });
+
+    jellyMesh = new THREE_ns.Mesh(geo, mat);
+    jellyMesh.position.y = -0.12;
+    jellyMesh.scale.set(1.05, 1.05, 1.05);
+    scene.add(jellyMesh);
+
+    var eyeMat = new THREE_ns.MeshStandardMaterial({
+      color: 0x111111,
+      roughness: 0.35,
+      metalness: 0.1
+    });
+    var eyeGeo = new THREE_ns.SphereGeometry(0.07, 16, 12);
+    eyeRestL = new THREE_ns.Vector3(-0.26, 0.22, 0.92);
+    eyeRestR = new THREE_ns.Vector3(0.26, 0.22, 0.92);
+    eyeL = new THREE_ns.Mesh(eyeGeo, eyeMat);
+    eyeR = new THREE_ns.Mesh(eyeGeo.clone(), eyeMat);
+    jellyMesh.add(eyeL);
+    jellyMesh.add(eyeR);
+    eyeL.position.copy(eyeRestL);
+    eyeR.position.copy(eyeRestR);
+
+    var shadowGeo = new THREE_ns.CircleGeometry(0.95, 48);
+    var shadowMat = new THREE_ns.MeshBasicMaterial({
+      color: MATCHA_DARK,
+      transparent: true,
+      opacity: 0.18
+    });
+    var shadow = new THREE_ns.Mesh(shadowGeo, shadowMat);
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = -1.12;
+    scene.add(shadow);
+
+    clock = new THREE_ns.Clock();
+    pointer.plane = new THREE_ns.Plane(new THREE_ns.Vector3(0, 0, 1), 0);
+    disposed = false;
+  }
+
+  function bindPointer() {
+    if (!canvas) return;
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerUp);
+    canvas.addEventListener("lostpointercapture", onPointerUp);
+  }
+
+  function unbindPointer() {
+    if (!canvas) return;
+    canvas.removeEventListener("pointerdown", onPointerDown);
+    canvas.removeEventListener("pointermove", onPointerMove);
+    canvas.removeEventListener("pointerup", onPointerUp);
+    canvas.removeEventListener("pointercancel", onPointerUp);
+    canvas.removeEventListener("lostpointercapture", onPointerUp);
+  }
+
+  function setNdcFromEvent(e) {
+    var rect = canvas.getBoundingClientRect();
+    var rw = rect.width || 1;
+    var rh = rect.height || 1;
+    pointer.ndc.x = ((e.clientX - rect.left) / rw) * 2 - 1;
+    pointer.ndc.y = -((e.clientY - rect.top) / rh) * 2 + 1;
+  }
+
+  function onPointerDown(e) {
+    if (!jellyMesh || !camera || disposed) return;
+    e.preventDefault();
+    setNdcFromEvent(e);
+    var raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(pointer.ndc, camera);
+    var hits = raycaster.intersectObject(jellyMesh, false);
+    if (!hits.length) return;
+    pointer.active = true;
+    pointer.id = e.pointerId;
+    try {
+      canvas.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    pointer.hitLocal = jellyMesh.worldToLocal(hits[0].point.clone());
+    pointer.grabLocal = pointer.hitLocal.clone();
+    var worldNormal = hits[0].face
+      ? hits[0].face.normal
+          .clone()
+          .transformDirection(jellyMesh.matrixWorld)
+          .normalize()
+      : new THREE.Vector3(0, 0, 1);
+    pointer.plane.setFromNormalAndCoplanarPoint(worldNormal, hits[0].point);
+  }
+
+  function onPointerMove(e) {
+    if (!pointer.active || pointer.id !== e.pointerId) return;
+    e.preventDefault();
+    setNdcFromEvent(e);
+    var raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(pointer.ndc, camera);
+    var worldHit = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(pointer.plane, worldHit)) {
+      worldHit.copy(raycaster.ray.origin).add(
+        raycaster.ray.direction.clone().multiplyScalar(3.5)
+      );
+    }
+    pointer.grabLocal = jellyMesh.worldToLocal(worldHit.clone());
+  }
+
+  function onPointerUp(e) {
+    if (pointer.id != null && e.pointerId !== pointer.id) return;
+    pointer.active = false;
+    pointer.id = null;
+    pointer.hitLocal = null;
+    pointer.grabLocal = null;
+  }
+
+  function applyGrab(dt) {
+    if (!pointer.active || !pointer.hitLocal || !pointer.grabLocal) return;
+    var pos = jellyMesh.geometry.attributes.position;
+    var count = pos.count;
+    var hx = pointer.hitLocal.x;
+    var hy = pointer.hitLocal.y;
+    var hz = pointer.hitLocal.z;
+    var gx = pointer.grabLocal.x;
+    var gy = pointer.grabLocal.y;
+    var gz = pointer.grabLocal.z;
+    var pullX = gx - hx;
+    var pullY = gy - hy;
+    var pullZ = gz - hz;
+    var r2 = GRAB_RADIUS * GRAB_RADIUS;
+    var i;
+    var dx;
+    var dy;
+    var dz;
+    var d2;
+    var w;
+    var rx;
+    var ry;
+    var rz;
+    for (i = 0; i < count; i++) {
+      rx = restPositions[i * 3];
+      ry = restPositions[i * 3 + 1];
+      rz = restPositions[i * 3 + 2];
+      dx = rx - hx;
+      dy = ry - hy;
+      dz = rz - hz;
+      d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 > r2) continue;
+      w = 1 - Math.sqrt(d2) / GRAB_RADIUS;
+      w = w * w;
+      velocities[i * 3] += pullX * w * GRAB_STRENGTH * 18 * dt;
+      velocities[i * 3 + 1] += pullY * w * GRAB_STRENGTH * 18 * dt;
+      velocities[i * 3 + 2] += pullZ * w * GRAB_STRENGTH * 18 * dt;
+      // Soft follow toward grab offset so press feels sticky
+      pos.setXYZ(
+        i,
+        pos.getX(i) + pullX * w * GRAB_STRENGTH * 0.35,
+        pos.getY(i) + pullY * w * GRAB_STRENGTH * 0.35,
+        pos.getZ(i) + pullZ * w * GRAB_STRENGTH * 0.35
+      );
+    }
+    // Move grab origin with soft follow so continuous drag stays attached
+    pointer.hitLocal.lerp(pointer.grabLocal, 0.18);
+  }
+
+  function integrate(dt, t) {
+    var pos = jellyMesh.geometry.attributes.position;
+    var count = pos.count;
+    var amp = reducedMotion ? IDLE_AMP_REDUCED : IDLE_AMP;
+    var i;
+    var rx;
+    var ry;
+    var rz;
+    var cx;
+    var cy;
+    var cz;
+    var fx;
+    var fy;
+    var fz;
+    var idle;
+    var maxStep = Math.min(dt, 0.033);
+    for (i = 0; i < count; i++) {
+      rx = restPositions[i * 3];
+      ry = restPositions[i * 3 + 1];
+      rz = restPositions[i * 3 + 2];
+      idle =
+        Math.sin(t * 2.1 + ry * 4.5 + rx * 2.0) * amp * (0.6 + 0.4 * ry);
+      cx = pos.getX(i);
+      cy = pos.getY(i);
+      cz = pos.getZ(i);
+      fx = (rx - cx) * STIFFNESS;
+      fy = (ry + idle - cy) * STIFFNESS;
+      fz = (rz - cz) * STIFFNESS;
+      velocities[i * 3] = (velocities[i * 3] + fx * maxStep) * DAMPING;
+      velocities[i * 3 + 1] = (velocities[i * 3 + 1] + fy * maxStep) * DAMPING;
+      velocities[i * 3 + 2] = (velocities[i * 3 + 2] + fz * maxStep) * DAMPING;
+      pos.setXYZ(
+        i,
+        cx + velocities[i * 3] * maxStep,
+        cy + velocities[i * 3 + 1] * maxStep,
+        cz + velocities[i * 3 + 2] * maxStep
+      );
+    }
+    pos.needsUpdate = true;
+    jellyMesh.geometry.computeVertexNormals();
+
+    if (eyeL && eyeR && eyeRestL && eyeRestR) {
+      var dL = avgDispNear(eyeRestL, 0.35);
+      var dR = avgDispNear(eyeRestR, 0.35);
+      eyeL.position.set(
+        eyeRestL.x + dL.x,
+        eyeRestL.y + dL.y,
+        eyeRestL.z + dL.z
+      );
+      eyeR.position.set(
+        eyeRestR.x + dR.x,
+        eyeRestR.y + dR.y,
+        eyeRestR.z + dR.z
+      );
+    }
+  }
+
+  function resizeToHost() {
+    if (!host || !renderer || !camera || disposed) return;
+    var w = Math.max(host.clientWidth || 320, 160);
+    var h = Math.max(host.clientHeight || 260, 200);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+  }
+
+  function frame() {
+    if (!running || disposed) return;
+    if (!panelVisible()) {
+      hide();
+      return;
+    }
+    var dt = clock ? clock.getDelta() : 0.016;
+    var t = clock ? clock.elapsedTime : 0;
+    applyGrab(dt);
+    integrate(dt, t);
+    renderer.render(scene, camera);
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function startLoop() {
+    if (running || disposed) return;
+    running = true;
+    if (clock) clock.start();
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function stopLoop() {
     running = false;
     if (rafId) {
       cancelAnimationFrame(rafId);
@@ -266,22 +515,131 @@
     }
   }
 
+  function disposeScene() {
+    stopLoop();
+    unbindPointer();
+    pointer.active = false;
+    pointer.id = null;
+    if (resizeObs) {
+      try {
+        resizeObs.disconnect();
+      } catch (e) {}
+      resizeObs = null;
+    }
+    if (jellyMesh) {
+      if (jellyMesh.geometry) jellyMesh.geometry.dispose();
+      if (jellyMesh.material) jellyMesh.material.dispose();
+    }
+    if (eyeL) {
+      if (eyeL.geometry) eyeL.geometry.dispose();
+      if (eyeL.material) eyeL.material.dispose();
+    }
+    if (eyeR) {
+      if (eyeR.geometry) eyeR.geometry.dispose();
+    }
+    if (scene) {
+      scene.traverse(function (obj) {
+        if (obj.isMesh && obj !== jellyMesh && obj !== eyeL && obj !== eyeR) {
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) obj.material.dispose();
+        }
+      });
+    }
+    if (renderer) {
+      renderer.dispose();
+      try {
+        renderer.forceContextLoss();
+      } catch (e2) {}
+    }
+    if (canvas && canvas.parentNode) {
+      canvas.parentNode.removeChild(canvas);
+    }
+    canvas = null;
+    renderer = null;
+    scene = null;
+    camera = null;
+    jellyMesh = null;
+    eyeL = null;
+    eyeR = null;
+    restPositions = null;
+    velocities = null;
+    eyeRestL = null;
+    eyeRestR = null;
+    clock = null;
+    disposed = true;
+  }
+
+  function ensureHost() {
+    host = document.getElementById("member-pay-hero");
+    return host;
+  }
+
+  function mount() {
+    if (!ensureHost()) return Promise.resolve();
+    if (!disposed && renderer) {
+      resizeToHost();
+      startLoop();
+      return Promise.resolve();
+    }
+    return loadThree().then(function (T) {
+      if (!panelVisible() || !ensureHost()) return;
+      // Clear any leftover 2D canvas from older builds
+      while (host.firstChild) host.removeChild(host.firstChild);
+      createScene(T, host);
+      bindPointer();
+      resizeToHost();
+      if (typeof ResizeObserver === "function") {
+        resizeObs = new ResizeObserver(function () {
+          resizeToHost();
+        });
+        resizeObs.observe(host);
+      }
+      startLoop();
+    });
+  }
+
   function show() {
+    reducedMotion = prefersReducedMotion();
     restartCssSheen();
-    // Wait until after layout/paint so we never burn the sweep while
-    // the panel still has 0×0 metrics (display:none → shown).
     var token = ++startToken;
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         if (token !== startToken) return;
-        start();
+        if (!panelVisible()) return;
+        mount().catch(function (err) {
+          console.warn("[member-pay] jelly failed to start", err);
+        });
       });
     });
   }
 
+  function hide() {
+    startToken++;
+    stopLoop();
+    disposeScene();
+  }
+
+  function stop() {
+    hide();
+  }
+
+  function onReducedMotionChange() {
+    reducedMotion = prefersReducedMotion();
+  }
+
+  if (window.matchMedia) {
+    mqReduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mqReduced.addEventListener) {
+      mqReduced.addEventListener("change", onReducedMotionChange);
+    } else if (mqReduced.addListener) {
+      mqReduced.addListener(onReducedMotionChange);
+    }
+  }
+
   window.SchoolAdminMemberPay = {
     show: show,
-    start: start,
+    hide: hide,
+    start: show,
     stop: stop
   };
 })();

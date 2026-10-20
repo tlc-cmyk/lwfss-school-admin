@@ -2918,6 +2918,12 @@
       if (window.SchoolAdminMemberPay && typeof window.SchoolAdminMemberPay.show === "function") {
         window.SchoolAdminMemberPay.show();
       }
+    } else if (window.SchoolAdminMemberPay) {
+      if (typeof window.SchoolAdminMemberPay.hide === "function") {
+        window.SchoolAdminMemberPay.hide();
+      } else if (typeof window.SchoolAdminMemberPay.stop === "function") {
+        window.SchoolAdminMemberPay.stop();
+      }
     }
   }
 
