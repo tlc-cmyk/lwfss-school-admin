@@ -2059,6 +2059,7 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
 .tt-period.lesson.is-current,
 .tt-period.free.is-current,
 .tt-period.is-current {
+  position: relative;
   --subj-bg: var(--primary-soft);
   --subj-border: var(--current-accent, var(--primary));
   --subj-left: rgba(var(--tone-rgb, 192, 57, 43), 0.10);
@@ -2095,6 +2096,50 @@ html:not([data-theme="dark"]) .tt-period.lesson .tt-pnum {
   color: #fff;
   background: var(--current-accent, var(--primary));
   box-shadow: 0 1px 3px rgba(var(--tone-rgb, 192, 57, 43), 0.35);
+}
+
+/* Energy / timeline bar — remaining time on current lesson (and free) cards */
+.tt-period-energy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  background: rgba(var(--tone-rgb, 192, 57, 43), 0.16);
+}
+.tt-period-energy-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  border-radius: 0 3px 0 0;
+  background: linear-gradient(
+    90deg,
+    var(--current-accent, var(--primary)) 0%,
+    color-mix(in srgb, var(--current-accent, var(--primary)) 55%, #7dd3fc) 100%
+  );
+  box-shadow: 0 0 8px rgba(var(--tone-rgb, 192, 57, 43), 0.45);
+  transition: width 0.8s linear;
+}
+/* On #095 mesh: brighter white/cyan strip above canvas, below text */
+.tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-energy {
+  background: rgba(255, 255, 255, 0.18);
+}
+.tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-energy-fill {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95) 0%, rgba(125, 211, 252, 0.95) 100%);
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.7), 0 0 3px rgba(255, 255, 255, 0.85);
+}
+html[data-theme="dark"] .tt-period-energy {
+  background: rgba(255, 255, 255, 0.12);
+}
+html[data-theme="dark"] .tt-period.lesson.is-current.has-lesson-now-gradient .tt-period-energy {
+  background: rgba(255, 255, 255, 0.14);
+}
+html[data-theme="dark"] .tt-period.lesson.is-current:not(.has-lesson-now-gradient) .tt-period-energy-fill,
+html[data-theme="dark"] .tt-period.free.is-current .tt-period-energy-fill {
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.35);
 }
 
 /* Motion Prompt #095 animated mesh — current lesson card(s) only

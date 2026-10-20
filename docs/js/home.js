@@ -212,12 +212,43 @@
       "</span>";
   }
 
+  /** Remaining fraction of period as 0–100 (end − now) / (end − start). */
+  function energyRemainingPercent(hmStart, hmEnd) {
+    var startM = hmToMinutes(hmStart);
+    var endM = hmToMinutes(hmEnd);
+    if (startM == null || endM == null) return null;
+    var totalSec = (endM - startM) * 60;
+    if (totalSec <= 0) return 0;
+    var left = endM * 60 - nowHKTSeconds();
+    if (left <= 0) return 0;
+    if (left >= totalSec) return 100;
+    return (left / totalSec) * 100;
+  }
+
+  function energyBarHtml(hmStart, hmEnd) {
+    var pct = energyRemainingPercent(hmStart, hmEnd);
+    if (pct == null) return "";
+    return '<div class="tt-period-energy" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' +
+      Math.round(pct) + '" aria-label="課堂剩餘時間" data-start="' + escapeHtml(hmStart) +
+      '" data-end="' + escapeHtml(hmEnd) + '">' +
+      '<span class="tt-period-energy-fill" style="width:' + pct.toFixed(2) + '%"></span></div>';
+  }
+
   function updateLiveCountdowns() {
     var nodes = document.querySelectorAll("#home-periods .tt-period-countdown[data-end], #home-cr-periods .tt-period-countdown[data-end]");
-    if (!nodes.length) return;
     Array.prototype.forEach.call(nodes, function (el) {
       var left = secondsUntilEnd(el.getAttribute("data-end"));
       el.textContent = formatCountdown(left);
+    });
+    var bars = document.querySelectorAll(
+      "#home-periods .tt-period-energy[data-start][data-end], #home-cr-periods .tt-period-energy[data-start][data-end]"
+    );
+    Array.prototype.forEach.call(bars, function (el) {
+      var pct = energyRemainingPercent(el.getAttribute("data-start"), el.getAttribute("data-end"));
+      if (pct == null) return;
+      el.setAttribute("aria-valuenow", String(Math.round(pct)));
+      var fill = el.querySelector(".tt-period-energy-fill");
+      if (fill) fill.style.width = pct.toFixed(2) + "%";
     });
   }
 
@@ -1660,6 +1691,9 @@
         ? '<span class="tt-period-time">' + escapeHtml(formatPeriodTime(bell.start, bell.end)) + "</span>"
         : "";
       var cdHtml = (isCurrent && bell) ? countdownHtml(bell.end) : "";
+      var energyHtml = (isCurrent && bell && bell.start && bell.end)
+        ? energyBarHtml(bell.start, bell.end)
+        : "";
 
       if (cell) {
         busy++;
@@ -1712,7 +1746,8 @@
             '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             metaHtml +
             trailing +
-          "</div>";
+          "</div>" +
+          energyHtml;
       } else {
         row.className = ("tt-period free" + extra).trim();
         row.innerHTML =
@@ -1723,7 +1758,8 @@
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj free-label">空堂</div>' +
-          "</div>";
+          "</div>" +
+          energyHtml;
       }
       if (isCurrent) row.setAttribute("aria-current", "true");
       box.appendChild(row);
@@ -2471,6 +2507,9 @@
         ? '<span class="tt-period-time">' + escapeHtml(formatPeriodTime(bell.start, bell.end)) + "</span>"
         : "";
       var cdHtml = (isCurrent && bell) ? countdownHtml(bell.end) : "";
+      var energyHtml = (isCurrent && bell && bell.start && bell.end)
+        ? energyBarHtml(bell.start, bell.end)
+        : "";
       var groups = groupLessonsForPeriod(byPeriod[p] || []);
 
       if (!groups.length) {
@@ -2484,7 +2523,8 @@
           "</div>" +
           '<div class="tt-period-body">' +
             '<div class="subj free-label">空堂</div>' +
-          "</div>";
+          "</div>" +
+          energyHtml;
         if (isCurrent) freeRow.setAttribute("aria-current", "true");
         box.appendChild(freeRow);
         return;
@@ -2591,7 +2631,8 @@
             '<div class="subj">' + escapeHtml(titleText) + "</div>" +
             metaHtml +
             trailing +
-          "</div>";
+          "</div>" +
+          (gi === 0 ? energyHtml : "");
         if (isCurrent && gi === 0) row.setAttribute("aria-current", "true");
         box.appendChild(row);
       });
