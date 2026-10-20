@@ -287,7 +287,7 @@
       if (g.label) {
         parts += '<span class="tt-g-s">' + escapeHtml(g.label) + "</span>";
       }
-      if (g.code) {
+      if (g.code && !(preferCode && g.code === preferCode)) {
         parts += '<span class="tt-g-t">' + escapeHtml(g.code) + "</span>";
       }
       if (g.room) {
@@ -340,7 +340,8 @@
         // Teacher view: only this teacher's group/option (not peer chips).
         var merged = ownMergedSlots(collectMergedSlots(day, p, cell), teacher.code);
         var isElective = !!blockKey;
-        var useChips = merged.length > 1 || (isElective && merged.length > 0);
+        // Multi own slots: chip list. Single own elective: compact like MATH.
+        var useChips = merged.length > 1;
         var isSplit = useChips;
         row.className = "period lesson" + (isSplit ? " is-split" : "") +
           (isElective ? " is-elective" : "");
@@ -348,6 +349,7 @@
           ? electiveBlockTitle(blockKey)
           : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
+        var roomText = cell.room || (merged[0] && merged[0].room) || "";
         var trailing = "";
         if (useChips) {
           trailing = splitGroupsHtml(merged, teacher.code);
@@ -355,8 +357,15 @@
           if (cell.teacher && cell.teacher !== teacher.code) {
             detailText += (detailText ? " · " : "") + cell.teacher;
           }
-          if (cell.room) {
-            trailing = '<span class="room">' + escapeHtml(cell.room) + "</span>";
+          if (isElective) {
+            var optLabel = (merged[0] && merged[0].label) ||
+              electiveOptionLabel(cell.subjectShort, cell.subject);
+            if (optLabel) {
+              detailText = optLabel + (detailText ? " · " + detailText : "");
+            }
+          }
+          if (roomText) {
+            trailing = '<span class="room">' + escapeHtml(roomText) + "</span>";
           }
         }
         row.innerHTML =

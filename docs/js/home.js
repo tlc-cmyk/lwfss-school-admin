@@ -1721,9 +1721,9 @@
         // Teacher view: only this teacher's group/option (not peer chips).
         var merged = ownMergedSlots(collectMergedSlots(day, p, cell), teacher.code);
         var isElective = !!blockKey;
-        // Elective: keep one option chip (subject·room). Same-subject split with
-        // a single own slot: plain room (no peer teachers).
-        var useChips = merged.length > 1 || (isElective && merged.length > 0);
+        // Multi own slots (rare double option / true split): chip list.
+        // Single own elective: same compact tags as MATH (class + room; no TLC strip).
+        var useChips = merged.length > 1;
         var isSplit = useChips;
         var subjCls = subjectClass(cell.subjectShort, cell.subject);
         if (isElective) subjCls = "tt-subj-elective";
@@ -1734,6 +1734,7 @@
           ? electiveBlockTitle(blockKey)
           : (cell.subjectShort || cell.subject || "—");
         var detailText = cell.classShort || cell.class || "";
+        var roomText = cell.room || (merged[0] && merged[0].room) || "";
         var trailing = "";
         var metaHtml = "";
         if (useChips) {
@@ -1747,8 +1748,16 @@
             detailText += (detailText ? " · " : "") + cell.teacher;
           }
           var tags = [];
+          // Elective title is 「選修 Bx」 — keep subject short (ICT) as a tag.
+          if (isElective) {
+            var optLabel = (merged[0] && merged[0].label) ||
+              electiveOptionLabel(cell.subjectShort, cell.subject);
+            if (optLabel) {
+              tags.push('<span class="tt-tag detail">' + escapeHtml(optLabel) + "</span>");
+            }
+          }
           if (detailText) tags.push('<span class="tt-tag detail">' + escapeHtml(detailText) + "</span>");
-          if (cell.room) tags.push('<span class="tt-tag room">' + escapeHtml(cell.room) + "</span>");
+          if (roomText) tags.push('<span class="tt-tag room">' + escapeHtml(roomText) + "</span>");
           if (tags.length) metaHtml = '<div class="tt-meta">' + tags.join("") + "</div>";
         }
         row.innerHTML =
@@ -2148,7 +2157,8 @@
       if (g.label) {
         parts += '<span class="tt-g-s">' + escapeHtml(g.label) + "</span>";
       }
-      if (g.code) {
+      // Teacher TT passes preferCode: omit own code (redundant on own timetable).
+      if (g.code && !(preferCode && g.code === preferCode)) {
         parts += '<span class="tt-g-t">' + escapeHtml(g.code) + "</span>";
       }
       if (g.room) {
