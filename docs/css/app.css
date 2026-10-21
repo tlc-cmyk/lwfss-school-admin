@@ -2107,6 +2107,18 @@ html:not([data-theme="dark"]) .tt-day-chip.is-bf.active {
 .tt-period.lesson.tt-subj-ths   { --subj-bg: #e6f6f6; --subj-border: #8ec8c8; --subj-left: #cfeded; --subj-accent: #2a7a7a; }
 .tt-period.lesson.tt-subj-other { --subj-bg: #f0f3f7; --subj-border: #b0bcc8; --subj-left: #e0e6ee; --subj-accent: #5a6a7a; }
 .tt-period.lesson.tt-subj-elective { --subj-bg: #eef2f8; --subj-border: #9aacc4; --subj-left: #dce4f0; --subj-accent: #3d5a80; }
+
+/* Friday OLE / 課後活動 P8 */
+.tt-period.lesson.is-ole .tt-tag.detail {
+  background: rgba(42, 95, 207, 0.12);
+  color: #2a5fcf;
+}
+.tt-period.lesson.is-ole-off {
+  opacity: 0.92;
+}
+.tt-period.lesson.is-ole-off .subj {
+  font-weight: 600;
+}
 .tt-period.lesson.is-elective .tt-g { font-size: 0.7rem; }
 
 .tt-period.lesson.tt-subj-h0 { --subj-bg: #eaf4ff; --subj-border: #9abee0; --subj-left: #d4e8f7; --subj-accent: #3a7ab0; }

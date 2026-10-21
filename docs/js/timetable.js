@@ -12,6 +12,7 @@
     return window.TIMETABLE_DATA || null;
   }
 
+  // Friday OLE / 課後活動 P8 is calendar-date based — see docs/js/home.js (not cycle Day 1–10).
   function periodsForDay(day) {
     return day === 5 || day === 10 ? 8 : 7;
   }

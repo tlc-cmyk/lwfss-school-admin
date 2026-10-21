@@ -94,6 +94,8 @@
     deadlineItems: [],
     assemblyByDay: {},
     dutyRow: null,
+    oleFridays: null,
+    oleByTeacher: null,
     viewingCode: "",
     selectedDay: null,
     activePanel: "tt",
@@ -102,6 +104,8 @@
     crClass: "",
     crRoom: ""
   };
+
+  var OLE_P8_BELL = { start: "15:15", end: "16:45" };
 
   function $(id) { return document.getElementById(id); }
 
@@ -269,6 +273,14 @@
 
   function periodBell(d, p) {
     var sched = scheduleForDay(d);
+    if (p === 8) {
+      // Prefer schedule P8 (BF); else OLE after-school when club teacher has clubs today
+      if (sched && sched.periods && sched.periods["8"]) return sched.periods["8"];
+      if (teacherHasOleP8Today(loggedInTeacherCode()) ||
+          teacherHasOleP8Today(state.viewingCode)) {
+        return OLE_P8_BELL;
+      }
+    }
     if (!sched || !sched.periods) return null;
     return sched.periods[String(p)] || null;
   }
@@ -277,11 +289,60 @@
     return day === 5 || day === 10 ? 8 : 7;
   }
 
+  function oleFridayFor(iso) {
+    if (!iso || !state.oleFridays) return null;
+    return state.oleFridays[iso] || null;
+  }
+
+  function oleClubForTeacher(code) {
+    if (!code || !state.oleByTeacher) return null;
+    return state.oleByTeacher[String(code).toUpperCase()] || null;
+  }
+
+  /** P8 OLE row for a teacher on a calendar date (not cycle day). */
+  function oleP8Info(code, iso) {
+    var fri = oleFridayFor(iso);
+    if (!fri) return null;
+    var club = oleClubForTeacher(code);
+    if (!club) return null;
+    if (fri.kind === "clubs") {
+      return { kind: "clubs", club: club, title: "", bell: OLE_P8_BELL };
+    }
+    // special / off: show cancelled title so club teachers know OLE does not run
+    return {
+      kind: fri.kind,
+      club: club,
+      title: fri.title || (fri.kind === "off" ? "假期" : "課後活動暫停"),
+      bell: OLE_P8_BELL
+    };
+  }
+
+  function teacherHasOleP8Today(code) {
+    var info = oleP8Info(code, todayHK());
+    return !!(info && info.kind === "clubs");
+  }
+
   function findCurrentSlot(cycleDay) {
     var sched = scheduleForDay(cycleDay);
     if (!sched || !sched.slots || !sched.slots.length) return null;
     var mins = nowHKTParts().minutes;
-    var slots = sched.slots;
+    var slots = sched.slots.slice();
+    // Friday OLE P8 (15:15–16:45) for logged-in club teacher on real today
+    if (teacherHasOleP8Today(loggedInTeacherCode())) {
+      var hasP8 = false;
+      for (var si = 0; si < slots.length; si++) {
+        if (slots[si] && slots[si].period === 8) { hasP8 = true; break; }
+      }
+      if (!hasP8) {
+        slots.push({
+          key: "p8-ole",
+          label: "第8節（課後活動）",
+          start: OLE_P8_BELL.start,
+          end: OLE_P8_BELL.end,
+          period: 8
+        });
+      }
+    }
     var firstStart = hmToMinutes(slots[0].start);
     var lastEnd = hmToMinutes(slots[slots.length - 1].end);
     if (firstStart != null && mins < firstStart) {
@@ -496,6 +557,27 @@
         startSec: startM * 60,
         endSec: endM != null ? endM * 60 : startM * 60 + 1
       });
+    }
+    // Friday OLE P8 for this teacher on real today
+    if (teacherHasOleP8Today(code)) {
+      var has8 = false;
+      for (var li = 0; li < lessons.length; li++) {
+        if (lessons[li].period === 8) { has8 = true; break; }
+      }
+      if (!has8) {
+        var ob = OLE_P8_BELL;
+        var osm = hmToMinutes(ob.start);
+        var oem = hmToMinutes(ob.end);
+        if (osm != null) {
+          lessons.push({
+            period: 8,
+            start: ob.start,
+            end: ob.end,
+            startSec: osm * 60,
+            endSec: oem != null ? oem * 60 : osm * 60 + 1
+          });
+        }
+      }
     }
     if (!lessons.length) return { kind: "none" };
     var inCurrent = false;
@@ -1349,6 +1431,8 @@
       state.deadlineItems = [];
       state.assemblyByDay = {};
       state.dutyRow = null;
+      state.oleFridays = null;
+      state.oleByTeacher = null;
       if (!state.selectedDay) state.selectedDay = 1;
       renderHomeBar(session);
       buildDayGrid();
@@ -1387,12 +1471,24 @@
       .eq("duty_date", iso)
       .maybeSingle();
 
-    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP]).then(function (parts) {
+    var oleFriP = state.oleFridays
+      ? Promise.resolve({ data: null, _cached: true })
+      : client.from("ole_fridays").select("ole_date,kind,title,notes").order("ole_date");
+
+    var oleClubP = state.oleByTeacher
+      ? Promise.resolve({ data: null, _cached: true })
+      : client
+          .from("ole_club_teachers")
+          .select("club_id,teacher_code,ole_clubs(id,name,room,sort_order)");
+
+    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, oleFriP, oleClubP]).then(function (parts) {
       var browseRes = parts[0];
       var todayRes = parts[1];
       var calRes = parts[2];
       var assemblyRes = parts[3];
       var dutyRes = parts[4];
+      var oleFriRes = parts[5];
+      var oleClubRes = parts[6];
 
       if (assemblyRes && !assemblyRes._cached && !assemblyRes.error && assemblyRes.data) {
         var map = {};
@@ -1406,6 +1502,27 @@
         state.dutyRow = dutyRes.data;
       } else {
         state.dutyRow = null;
+      }
+
+      if (oleFriRes && !oleFriRes._cached && !oleFriRes.error && oleFriRes.data) {
+        var friMap = {};
+        oleFriRes.data.forEach(function (r) {
+          if (r && r.ole_date) friMap[r.ole_date] = r;
+        });
+        state.oleFridays = friMap;
+      }
+
+      if (oleClubRes && !oleClubRes._cached && !oleClubRes.error && oleClubRes.data) {
+        var byT = {};
+        oleClubRes.data.forEach(function (r) {
+          if (!r || !r.teacher_code) return;
+          var club = r.ole_clubs || null;
+          if (!club && r.club_id) {
+            club = { id: r.club_id, name: r.club_id, room: "" };
+          }
+          if (club) byT[String(r.teacher_code).toUpperCase()] = club;
+        });
+        state.oleByTeacher = byT;
       }
 
       if (browseRes && !browseRes.error && browseRes.data && browseRes.data.cycle_day) {
@@ -1716,13 +1833,21 @@
     var schedule = (teacher.schedule && teacher.schedule[String(day)]) || {};
     var maxp = periodsForDay(day);
     var busy = 0;
+    var browseIso = state.browseDate || todayHK();
+    var oleInfo = oleP8Info(teacher.code, browseIso);
+    // Keep OLE tied to the browsed Friday's own cycle day (not a manually picked other Day chip)
+    if (oleInfo && state.browseCycleDay && state.selectedDay &&
+        state.selectedDay !== state.browseCycleDay) {
+      oleInfo = null;
+    }
+    // OLE P8 is calendar-Friday; only show when browsing that Friday
     var live = browseIsToday() && day === state.todayCycleDay;
     var curSlot = live ? findCurrentSlot(day) : null;
     var curPeriod = (curSlot && curSlot.kind === "period") ? curSlot.period : null;
     var nowMins = nowHKTParts().minutes;
     var sched = scheduleForDay(day);
     var slots = (sched && sched.slots && sched.slots.length)
-      ? sched.slots
+      ? sched.slots.slice()
       : (function () {
           var syn = [];
           for (var i = 1; i <= maxp; i++) {
@@ -1730,6 +1855,23 @@
           }
           return syn;
         })();
+
+    if (oleInfo) {
+      var hasP8Slot = false;
+      for (var osi = 0; osi < slots.length; osi++) {
+        if (slots[osi] && slots[osi].period === 8) { hasP8Slot = true; break; }
+      }
+      if (!hasP8Slot) {
+        slots.push({
+          key: "p8-ole",
+          label: "第8節",
+          period: 8,
+          start: OLE_P8_BELL.start,
+          end: OLE_P8_BELL.end
+        });
+      }
+      if (maxp < 8) maxp = 8;
+    }
 
     slots.forEach(function (s) {
       if (isBreakSlot(s)) {
@@ -1740,6 +1882,9 @@
       var p = s.period;
       var cell = schedule[String(p)];
       var bell = periodBell(day, p) || (s.start && s.end ? { start: s.start, end: s.end } : null);
+      // OLE P8 overrides cycle P8 / fills missing P8 for club teachers
+      var oleHere = (p === 8 && oleInfo) ? oleInfo : null;
+      if (oleHere) bell = OLE_P8_BELL;
       var row = document.createElement("div");
       var extra = "";
       var isCurrent = false;
@@ -1759,6 +1904,41 @@
       var energyHtml = (isCurrent && bell && bell.start && bell.end)
         ? energyBarHtml(bell.start, bell.end)
         : "";
+
+      if (oleHere) {
+        busy++;
+        if (oleHere.kind === "clubs") {
+          row.className = ("tt-period lesson tt-subj-stem is-ole" + extra).trim();
+          row.setAttribute("data-subj", "ole");
+          row.innerHTML =
+            periodLeftHtml("P8", timeHtml, cdHtml) +
+            '<div class="tt-period-body">' +
+              '<div class="subj">' + escapeHtml(oleHere.club.name || "課後活動") + "</div>" +
+              '<div class="tt-meta">' +
+                '<span class="tt-tag detail">課後活動</span>' +
+                (oleHere.club.room
+                  ? '<span class="tt-tag room">' + escapeHtml(oleHere.club.room) + "</span>"
+                  : "") +
+              "</div>" +
+            "</div>" +
+            energyHtml;
+        } else {
+          row.className = ("tt-period lesson tt-subj-other is-ole is-ole-off" + extra).trim();
+          row.setAttribute("data-subj", "ole-off");
+          row.innerHTML =
+            periodLeftHtml("P8", timeHtml, cdHtml) +
+            '<div class="tt-period-body">' +
+              '<div class="subj">' + escapeHtml(oleHere.title || "課後活動暫停") + "</div>" +
+              '<div class="tt-meta">' +
+                '<span class="tt-tag detail">課後活動</span>' +
+              "</div>" +
+            "</div>" +
+            energyHtml;
+        }
+        if (isCurrent) row.setAttribute("aria-current", "true");
+        box.appendChild(row);
+        return;
+      }
 
       if (cell) {
         busy++;
