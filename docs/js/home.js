@@ -96,6 +96,8 @@
     dutyRow: null,
     oleFridays: null,
     oleByTeacher: null,
+    bukMeta: null,
+    bukByTeacher: null,
     viewingCode: "",
     selectedDay: null,
     activePanel: "tt",
@@ -106,6 +108,17 @@
   };
 
   var OLE_P8_BELL = { start: "15:15", end: "16:45" };
+  var BUK_P8_BELL = { start: "15:45", end: "16:45" };
+  var BUK_P8_BELL_FRI = { start: "15:15", end: "16:45" };
+  /** Cycle day 1–10 → 補課 slot_kind (from 2026–27 中六補課時間表). */
+  var BUK_DAY_SLOT = {
+    1: "x1", 2: "x1", 3: "x1", 4: "x1",
+    5: "eng",
+    6: "x2", 7: "x2",
+    8: "math",
+    9: "x2",
+    10: "chi"
+  };
 
   function $(id) { return document.getElementById(id); }
 
@@ -274,8 +287,13 @@
   function periodBell(d, p) {
     var sched = scheduleForDay(d);
     if (p === 8) {
-      // Prefer schedule P8 (BF); else OLE after-school when club teacher has clubs today
+      // Prefer schedule P8 (BF); else 補課 / OLE after-school
       if (sched && sched.periods && sched.periods["8"]) return sched.periods["8"];
+      var bukBell = bukBellForCycleDay(d);
+      if (teacherHasBukP8Today(loggedInTeacherCode()) ||
+          teacherHasBukP8Today(state.viewingCode)) {
+        return bukBell || BUK_P8_BELL;
+      }
       if (teacherHasOleP8Today(loggedInTeacherCode()) ||
           teacherHasOleP8Today(state.viewingCode)) {
         return OLE_P8_BELL;
@@ -322,23 +340,75 @@
     return !!(info && info.kind === "clubs");
   }
 
+  function bukSlotKindForDay(cycleDay) {
+    if (cycleDay == null) return null;
+    return BUK_DAY_SLOT[cycleDay] || BUK_DAY_SLOT[String(cycleDay)] || null;
+  }
+
+  function bukInDateRange(iso) {
+    if (!iso || !state.bukMeta) return false;
+    var a = state.bukMeta.start_date;
+    var b = state.bukMeta.end_date;
+    if (!a || !b) return false;
+    return iso >= a && iso <= b;
+  }
+
+  function bukBellForCycleDay(cycleDay) {
+    var kind = bukSlotKindForDay(cycleDay);
+    if (!kind) return null;
+    // Friday CHI/ENG (Day 5 / 10) → 15:15–16:45; else 15:45–16:45
+    if (kind === "chi" || kind === "eng") return BUK_P8_BELL_FRI;
+    return BUK_P8_BELL;
+  }
+
+  function bukAssignmentsForTeacher(code) {
+    if (!code || !state.bukByTeacher) return [];
+    return state.bukByTeacher[String(code).toUpperCase()] || [];
+  }
+
+  /** 補課 P8 for teacher on a calendar date + cycle day. */
+  function bukP8Info(code, iso, cycleDay) {
+    if (!code || !bukInDateRange(iso)) return null;
+    var kind = bukSlotKindForDay(cycleDay);
+    if (!kind) return null;
+    var list = bukAssignmentsForTeacher(code);
+    var hit = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] && list[i].slot_kind === kind) { hit = list[i]; break; }
+    }
+    if (!hit) return null;
+    return {
+      assignment: hit,
+      slotKind: kind,
+      bell: bukBellForCycleDay(cycleDay) || BUK_P8_BELL
+    };
+  }
+
+  function teacherHasBukP8Today(code) {
+    return !!bukP8Info(code, todayHK(), state.todayCycleDay);
+  }
+
   function findCurrentSlot(cycleDay) {
     var sched = scheduleForDay(cycleDay);
     if (!sched || !sched.slots || !sched.slots.length) return null;
     var mins = nowHKTParts().minutes;
     var slots = sched.slots.slice();
-    // Friday OLE P8 (15:15–16:45) for logged-in club teacher on real today
-    if (teacherHasOleP8Today(loggedInTeacherCode())) {
+    // After-school P8: 補課 and/or Friday OLE for logged-in teacher on real today
+    var loginCode = loggedInTeacherCode();
+    var bukToday = bukP8Info(loginCode, todayHK(), cycleDay);
+    var oleToday = teacherHasOleP8Today(loginCode);
+    if (bukToday || oleToday) {
       var hasP8 = false;
       for (var si = 0; si < slots.length; si++) {
         if (slots[si] && slots[si].period === 8) { hasP8 = true; break; }
       }
       if (!hasP8) {
+        var p8bell = bukToday ? bukToday.bell : OLE_P8_BELL;
         slots.push({
-          key: "p8-ole",
-          label: "第8節（課後活動）",
-          start: OLE_P8_BELL.start,
-          end: OLE_P8_BELL.end,
+          key: bukToday ? "p8-buk" : "p8-ole",
+          label: bukToday ? "第8節（補課）" : "第8節（課後活動）",
+          start: p8bell.start,
+          end: p8bell.end,
           period: 8
         });
       }
@@ -558,14 +628,16 @@
         endSec: endM != null ? endM * 60 : startM * 60 + 1
       });
     }
-    // Friday OLE P8 for this teacher on real today
-    if (teacherHasOleP8Today(code)) {
+    // After-school P8 (補課 / OLE) for this teacher on real today
+    var bukInfoNext = bukP8Info(code, todayHK(), day);
+    var oleTodayNext = teacherHasOleP8Today(code);
+    if (bukInfoNext || oleTodayNext) {
       var has8 = false;
       for (var li = 0; li < lessons.length; li++) {
         if (lessons[li].period === 8) { has8 = true; break; }
       }
       if (!has8) {
-        var ob = OLE_P8_BELL;
+        var ob = bukInfoNext ? bukInfoNext.bell : OLE_P8_BELL;
         var osm = hmToMinutes(ob.start);
         var oem = hmToMinutes(ob.end);
         if (osm != null) {
@@ -1433,6 +1505,8 @@
       state.dutyRow = null;
       state.oleFridays = null;
       state.oleByTeacher = null;
+      state.bukMeta = null;
+      state.bukByTeacher = null;
       if (!state.selectedDay) state.selectedDay = 1;
       renderHomeBar(session);
       buildDayGrid();
@@ -1481,7 +1555,17 @@
           .from("ole_club_teachers")
           .select("club_id,teacher_code,ole_clubs(id,name,room,sort_order)");
 
-    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, oleFriP, oleClubP]).then(function (parts) {
+    var bukMetaP = state.bukMeta
+      ? Promise.resolve({ data: null, _cached: true })
+      : client.from("s6_buk_meta").select("start_date,end_date,notes").eq("id", 1).maybeSingle();
+
+    var bukAsnP = state.bukByTeacher
+      ? Promise.resolve({ data: null, _cached: true })
+      : client
+          .from("s6_buk_assignments")
+          .select("teacher_code,subject,room,group_label,slot_kind");
+
+    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, oleFriP, oleClubP, bukMetaP, bukAsnP]).then(function (parts) {
       var browseRes = parts[0];
       var todayRes = parts[1];
       var calRes = parts[2];
@@ -1489,6 +1573,8 @@
       var dutyRes = parts[4];
       var oleFriRes = parts[5];
       var oleClubRes = parts[6];
+      var bukMetaRes = parts[7];
+      var bukAsnRes = parts[8];
 
       if (assemblyRes && !assemblyRes._cached && !assemblyRes.error && assemblyRes.data) {
         var map = {};
@@ -1523,6 +1609,21 @@
           if (club) byT[String(r.teacher_code).toUpperCase()] = club;
         });
         state.oleByTeacher = byT;
+      }
+
+      if (bukMetaRes && !bukMetaRes._cached && !bukMetaRes.error && bukMetaRes.data) {
+        state.bukMeta = bukMetaRes.data;
+      }
+
+      if (bukAsnRes && !bukAsnRes._cached && !bukAsnRes.error && bukAsnRes.data) {
+        var bukMap = {};
+        bukAsnRes.data.forEach(function (r) {
+          if (!r || !r.teacher_code) return;
+          var tc = String(r.teacher_code).toUpperCase();
+          if (!bukMap[tc]) bukMap[tc] = [];
+          bukMap[tc].push(r);
+        });
+        state.bukByTeacher = bukMap;
       }
 
       if (browseRes && !browseRes.error && browseRes.data && browseRes.data.cycle_day) {
@@ -1840,6 +1941,11 @@
         state.selectedDay !== state.browseCycleDay) {
       oleInfo = null;
     }
+    // 補課 P8: date in range + school day (browseCycleDay set) + assignment for selected cycle day
+    var bukInfo = null;
+    if (state.browseCycleDay) {
+      bukInfo = bukP8Info(teacher.code, browseIso, day);
+    }
     // OLE P8 is calendar-Friday; only show when browsing that Friday
     var live = browseIsToday() && day === state.todayCycleDay;
     var curSlot = live ? findCurrentSlot(day) : null;
@@ -1856,18 +1962,19 @@
           return syn;
         })();
 
-    if (oleInfo) {
+    if (bukInfo || oleInfo) {
       var hasP8Slot = false;
       for (var osi = 0; osi < slots.length; osi++) {
         if (slots[osi] && slots[osi].period === 8) { hasP8Slot = true; break; }
       }
       if (!hasP8Slot) {
+        var injectBell = bukInfo ? bukInfo.bell : OLE_P8_BELL;
         slots.push({
-          key: "p8-ole",
+          key: bukInfo ? "p8-buk" : "p8-ole",
           label: "第8節",
           period: 8,
-          start: OLE_P8_BELL.start,
-          end: OLE_P8_BELL.end
+          start: injectBell.start,
+          end: injectBell.end
         });
       }
       if (maxp < 8) maxp = 8;
@@ -1882,9 +1989,11 @@
       var p = s.period;
       var cell = schedule[String(p)];
       var bell = periodBell(day, p) || (s.start && s.end ? { start: s.start, end: s.end } : null);
-      // OLE P8 overrides cycle P8 / fills missing P8 for club teachers
+      // After-school P8: 補課 and/or OLE (補課 preferred when both)
+      var bukHere = (p === 8 && bukInfo) ? bukInfo : null;
       var oleHere = (p === 8 && oleInfo) ? oleInfo : null;
-      if (oleHere) bell = OLE_P8_BELL;
+      if (bukHere) bell = bukHere.bell;
+      else if (oleHere) bell = OLE_P8_BELL;
       var row = document.createElement("div");
       var extra = "";
       var isCurrent = false;
@@ -1904,6 +2013,47 @@
       var energyHtml = (isCurrent && bell && bell.start && bell.end)
         ? energyBarHtml(bell.start, bell.end)
         : "";
+
+      if (bukHere) {
+        busy++;
+        var asn = bukHere.assignment;
+        var bukSubj = (asn && asn.subject) ? String(asn.subject) : "補課";
+        var bukTitle = bukSubj + " 補課";
+        var bukSubjKey = bukSubj === "CHI" ? "CHIN" : bukSubj;
+        var bukCls = subjectClass(bukSubjKey, bukSubj);
+        var oleExtra = "";
+        if (oleHere && oleHere.kind === "clubs" && oleHere.club) {
+          oleExtra =
+            '<div class="subj buk-ole-extra">' + escapeHtml(oleHere.club.name || "課後活動") + "</div>" +
+            '<div class="tt-meta">' +
+              '<span class="tt-tag detail">課後活動</span>' +
+              (oleHere.club.room
+                ? '<span class="tt-tag room">' + escapeHtml(oleHere.club.room) + "</span>"
+                : "") +
+            "</div>";
+        }
+        row.className = ("tt-period lesson " + bukCls + " is-buk" + extra).trim();
+        row.setAttribute("data-subj", "buk");
+        row.innerHTML =
+          periodLeftHtml("P8", timeHtml, cdHtml) +
+          '<div class="tt-period-body">' +
+            '<div class="subj">' + escapeHtml(bukTitle) + "</div>" +
+            '<div class="tt-meta">' +
+              '<span class="tt-tag detail">補課</span>' +
+              (asn && asn.group_label
+                ? '<span class="tt-tag class">' + escapeHtml(asn.group_label) + "</span>"
+                : "") +
+              (asn && asn.room
+                ? '<span class="tt-tag room">' + escapeHtml(asn.room) + "</span>"
+                : "") +
+            "</div>" +
+            oleExtra +
+          "</div>" +
+          energyHtml;
+        if (isCurrent) row.setAttribute("aria-current", "true");
+        box.appendChild(row);
+        return;
+      }
 
       if (oleHere) {
         busy++;
