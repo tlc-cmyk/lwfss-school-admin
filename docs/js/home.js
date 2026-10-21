@@ -93,6 +93,7 @@
     calendarItems: [],
     deadlineItems: [],
     assemblyByDay: {},
+    dutyRow: null,
     viewingCode: "",
     selectedDay: null,
     activePanel: "tt",
@@ -595,6 +596,7 @@
     // Sticky 「下堂」countdown (time only) beside name — element #home-next-lesson.
     updateNextLessonCountdown();
     renderAssembly();
+    renderDuty(session);
     renderNotes(session);
     try {
       document.dispatchEvent(new CustomEvent("schooladmin:browse-date", {
@@ -620,6 +622,39 @@
       '<span class="home-assembly-label">早會：</span>' +
       '<span class="home-assembly-theme">' + escapeHtml(row.theme) + "</span>" +
       flagNote;
+    el.hidden = false;
+  }
+
+  function renderDuty(session) {
+    var el = $("home-duty");
+    if (!el) return;
+    var row = state.dutyRow;
+    if (!row || (!row.teacher1 && !row.teacher2)) {
+      el.innerHTML = "";
+      el.hidden = true;
+      return;
+    }
+    var me = "";
+    if (session && session.staff && session.staff.short_name) {
+      me = String(session.staff.short_name).trim().toUpperCase();
+    }
+    function codeSpan(code) {
+      var c = String(code || "").trim().toUpperCase();
+      if (!c) return "";
+      var cls = "home-duty-code" + (me && c === me ? " is-me" : "");
+      return '<span class="' + cls + '">' + escapeHtml(c) + "</span>";
+    }
+    var parts = [];
+    if (row.teacher1) parts.push(codeSpan(row.teacher1));
+    if (row.teacher2) parts.push(codeSpan(row.teacher2));
+    if (!parts.length) {
+      el.innerHTML = "";
+      el.hidden = true;
+      return;
+    }
+    el.innerHTML =
+      '<span class="home-duty-label">值日：</span>' +
+      '<span class="home-duty-teachers">' + parts.join(" · ") + "</span>";
     el.hidden = false;
   }
 
@@ -1313,6 +1348,7 @@
       state.calendarItems = [];
       state.deadlineItems = [];
       state.assemblyByDay = {};
+      state.dutyRow = null;
       if (!state.selectedDay) state.selectedDay = 1;
       renderHomeBar(session);
       buildDayGrid();
@@ -1345,11 +1381,18 @@
       ? Promise.resolve({ data: null, _cached: true })
       : client.from("assembly_by_day").select("day,theme,is_flag,is_3x").order("day");
 
-    Promise.all([cycleBrowse, cycleToday, calP, assemblyP]).then(function (parts) {
+    var dutyP = client
+      .from("duty_roster")
+      .select("duty_date,teacher1,teacher2")
+      .eq("duty_date", iso)
+      .maybeSingle();
+
+    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP]).then(function (parts) {
       var browseRes = parts[0];
       var todayRes = parts[1];
       var calRes = parts[2];
       var assemblyRes = parts[3];
+      var dutyRes = parts[4];
 
       if (assemblyRes && !assemblyRes._cached && !assemblyRes.error && assemblyRes.data) {
         var map = {};
@@ -1357,6 +1400,12 @@
           if (r && r.day) map[r.day] = r;
         });
         state.assemblyByDay = map;
+      }
+
+      if (dutyRes && !dutyRes.error && dutyRes.data) {
+        state.dutyRow = dutyRes.data;
+      } else {
+        state.dutyRow = null;
       }
 
       if (browseRes && !browseRes.error && browseRes.data && browseRes.data.cycle_day) {

@@ -1291,6 +1291,44 @@ html[data-theme="dark"] .home-assembly-flag {
   .home-assembly { font-size: 0.7rem; margin-top: 3px; }
 }
 
+/* Duty roster — compact line under assembly (tone bar text) */
+.home-duty {
+  margin-top: 2px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.95);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-duty[hidden] {
+  display: none !important;
+}
+.home-duty-label {
+  opacity: 0.9;
+  font-weight: 700;
+}
+.home-duty-teachers {
+  font-weight: 700;
+}
+.home-duty-code.is-me {
+  color: #ffe08a;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+html[data-theme="dark"] .home-duty {
+  color: rgba(255, 255, 255, 0.96);
+}
+html[data-theme="dark"] .home-duty-code.is-me {
+  color: #ffe08a;
+  text-shadow: 0 0 6px rgba(255, 224, 138, 0.35);
+}
+@media (max-width: 400px) {
+  .home-duty { font-size: 0.7rem; margin-top: 2px; }
+}
+
 /* Today's notes — up to two distinct rows beside actions (no type icons) */
 .home-top-notes {
   display: flex;
