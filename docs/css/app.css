@@ -1253,6 +1253,44 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   display: none !important;
 }
 
+/* Morning assembly — compact line under date/Day row (tone bar text) */
+.home-assembly {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.95);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-assembly[hidden] {
+  display: none !important;
+}
+.home-assembly-label {
+  opacity: 0.9;
+  font-weight: 700;
+}
+.home-assembly-theme {
+  font-weight: 700;
+}
+.home-assembly-flag {
+  font-weight: 700;
+  color: #ffe08a;
+  white-space: nowrap;
+}
+html[data-theme="dark"] .home-assembly {
+  color: rgba(255, 255, 255, 0.96);
+}
+html[data-theme="dark"] .home-assembly-flag {
+  color: #ffe08a;
+  text-shadow: 0 0 6px rgba(255, 224, 138, 0.35);
+}
+@media (max-width: 400px) {
+  .home-assembly { font-size: 0.7rem; margin-top: 3px; }
+}
+
 /* Today's notes — up to two distinct rows beside actions (no type icons) */
 .home-top-notes {
   display: flex;

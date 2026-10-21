@@ -594,6 +594,7 @@
 
     // Sticky 「下堂」countdown (time only) beside name — element #home-next-lesson.
     updateNextLessonCountdown();
+    renderAssembly();
     renderNotes(session);
     try {
       document.dispatchEvent(new CustomEvent("schooladmin:browse-date", {
