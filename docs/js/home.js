@@ -496,9 +496,52 @@
     return state.browseCycleDay;
   }
 
-  /** Sticky / panel label when browse date has no cycle day (holiday / non-school day). */
+  /**
+   * Classify browse date from calendar_events when there is no cycle day.
+   * Seed marks 統測／期考 as event_type=exam; real breaks as holiday.
+   * Holiday wins if both appear on the same date (e.g. 暑假開始 + 入學測驗).
+   * OLE ole_fridays special/off only cancel P8 — they must not drive holiday chrome.
+   */
+  function browseCalendarKind() {
+    var items = state.calendarItems || [];
+    var hasHoliday = false;
+    var examTitle = "";
+    var i, it, typ, title;
+    for (i = 0; i < items.length; i++) {
+      it = items[i];
+      if (!it) continue;
+      typ = String(it.type || "").toLowerCase();
+      title = String(it.title || "");
+      if (typ === "holiday") hasHoliday = true;
+      if (typ === "exam" || /統測/.test(title)) {
+        if (!examTitle) examTitle = title;
+      }
+    }
+    // OLE special 「…統測…」cancels clubs only — never treat as holiday chrome.
+    // kind=off with a real holiday title still defers to calendar holiday above.
+    if (!hasHoliday && !examTitle) {
+      var fri = oleFridayFor(state.browseDate || todayHK());
+      if (fri && fri.kind === "special" && /統測/.test(String(fri.title || ""))) {
+        examTitle = fri.title;
+      }
+    }
+    if (hasHoliday) return { kind: "holiday", title: "" };
+    if (examTitle) return { kind: "exam", title: examTitle };
+    return { kind: "off", title: "" };
+  }
+
+  /** Sticky / panel label when browse date has no cycle day. */
   function noCycleDayMessage() {
+    var info = browseCalendarKind();
+    if (info.kind === "exam") {
+      if (/統測/.test(info.title)) return "統測";
+      return info.title || "考試日";
+    }
     return "假期";
+  }
+
+  function isAssessmentBrowseDay() {
+    return !state.browseCycleDay && browseCalendarKind().kind === "exam";
   }
 
   function startClock() {
@@ -521,7 +564,7 @@
           }
         } else if (browseIsToday()) {
           statusEl.hidden = false;
-          statusEl.textContent = "無上課";
+          statusEl.textContent = isAssessmentBrowseDay() ? noCycleDayMessage() : "無上課";
           statusEl.className = "home-status-chip is-after";
         } else {
           statusEl.hidden = true;
@@ -695,10 +738,12 @@
     el.className = "home-next-lesson" + (done ? " is-done" : "");
   }
 
-  /** Sticky + app chrome tone: holiday=red, normal=blue, bf=green (light + dark). */
+  /** Sticky + app chrome tone: holiday=red, normal=blue, bf=green (light + dark).
+   * 統測／exam days without a cycle day stay normal (school/assessment), not holiday red. */
   function topToneForDay(day) {
-    if (!day) return "holiday";
-    return scheduleIdForDay(day) === "bf" ? "bf" : "normal";
+    if (day) return scheduleIdForDay(day) === "bf" ? "bf" : "normal";
+    if (browseCalendarKind().kind === "exam") return "normal";
+    return "holiday";
   }
 
   function applyHomeTopTone(day) {
@@ -742,7 +787,8 @@
         cycleEl.classList.toggle("is-bf", scheduleIdForDay(day) === "bf");
       } else {
         cycleEl.textContent = noCycleDayMessage();
-        cycleEl.classList.add("is-off");
+        // Assessment days are school days — do not use holiday "is-off" chrome.
+        cycleEl.classList.toggle("is-off", !isAssessmentBrowseDay());
         cycleEl.classList.remove("is-bf");
       }
     }
@@ -2179,9 +2225,15 @@
 
     if (!day) {
       if (msg) {
-        msg.textContent = (!state.browseCycleDay && !window.__userPickedDay)
-          ? noCycleDayMessage()
-          : "請選擇循環日";
+        if (!state.browseCycleDay && !window.__userPickedDay && isAssessmentBrowseDay()) {
+          var examInfo = browseCalendarKind();
+          msg.textContent = (examInfo.title || noCycleDayMessage()) +
+            "（考試／統測日，無循環日課表；可手動選 Day 查看一般課表）";
+        } else if (!state.browseCycleDay && !window.__userPickedDay) {
+          msg.textContent = noCycleDayMessage();
+        } else {
+          msg.textContent = "請選擇循環日";
+        }
         msg.classList.remove("hidden");
       }
       if (result) result.classList.add("hidden");
@@ -3059,9 +3111,15 @@
 
     if (!day) {
       if (msg) {
-        msg.textContent = (!state.browseCycleDay && !window.__userPickedDay)
-          ? noCycleDayMessage()
-          : "請選擇循環日";
+        if (!state.browseCycleDay && !window.__userPickedDay && isAssessmentBrowseDay()) {
+          var crExam = browseCalendarKind();
+          msg.textContent = (crExam.title || noCycleDayMessage()) +
+            "（考試／統測日，無循環日課表；可手動選 Day 查看）";
+        } else if (!state.browseCycleDay && !window.__userPickedDay) {
+          msg.textContent = noCycleDayMessage();
+        } else {
+          msg.textContent = "請選擇循環日";
+        }
         msg.classList.remove("hidden");
       }
       if (result) result.classList.add("hidden");
@@ -3190,8 +3248,13 @@
 
     var day = state.todayCycleDay;
     if (!day) {
-      metaEl.textContent = "今日無上課／假期，沒有可顯示的空堂。";
-      listEl.innerHTML = '<p class="home-free-empty">今日非循環日</p>';
+      if (isAssessmentBrowseDay() && browseIsToday()) {
+        metaEl.textContent = noCycleDayMessage() + "，沒有循環日課表／空堂可顯示。";
+        listEl.innerHTML = '<p class="home-free-empty">今日為考試／統測日（非循環日）</p>';
+      } else {
+        metaEl.textContent = "今日無上課／假期，沒有可顯示的空堂。";
+        listEl.innerHTML = '<p class="home-free-empty">今日非循環日</p>';
+      }
       return;
     }
 

@@ -57,7 +57,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
 1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘**（只顯示目前瀏覽日期嘅自己備忘，無編輯）。唔再堆疊校網 header、今日卡、事項卡三層。
-2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日（假期）唔顯示。
+2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日唔顯示。頂欄：無循環日時若 `calendar_events.event_type=exam`／標題含「統測」則顯示「統測」並用一般藍（非假期紅）；真正 `holiday`（公眾假期、聖誕、農曆新年、復活節、旅行翌日假期等）才用假期樣式。OLE `ole_fridays` special／off 只取消 P8，不驅動假期 chrome。
 3. **值日**：按瀏覽日期讀 `duty_roster`；頂欄顯示「值日：T1 · T2」；無當日值日則隱藏；登入短碼若為值日老師會輕微標示。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
 4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**座位表**／文件／會議／即時空堂／**備忘**／約開會／**會員付費**（stub）。切換只換下方面板。學生只見時間表＋備忘。

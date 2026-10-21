@@ -588,8 +588,8 @@
       main.innerHTML =
         "今日：<strong>" + iso + "</strong>" +
         (wd ? "（" + wd + "）" : "") +
-        " · <strong>今日無上課／假期</strong>";
-      if (sub) sub.textContent = note || "校曆未標示循環日（週末、假期、考試日或活動日）";
+        " · <strong>今日無循環日</strong>";
+      if (sub) sub.textContent = note || "校曆未標示循環日（週末、假期、統測／考試日或活動日；統測非假期）";
       if (banner) banner.classList.add("is-off");
       window.__todayCycleDay = null;
     }
