@@ -110,13 +110,14 @@
   var OLE_P8_BELL = { start: "15:15", end: "16:45" };
   var BUK_P8_BELL = { start: "15:45", end: "16:45" };
   var BUK_P8_BELL_FRI = { start: "15:15", end: "16:45" };
-  /** Cycle day 1–10 → 補課 slot_kind (from 2026–27 中六補課時間表). */
+  /** Cycle day 1–10 → 補課 slot_kind (from 2026–27 中六補課時間表).
+   *  User-confirmed: X1(B1)=Day1 only; X2=Day6 only.
+   *  Day2/3/4/7/9 have no 補課 slot (not mapped). */
   var BUK_DAY_SLOT = {
-    1: "x1", 2: "x1", 3: "x1", 4: "x1",
+    1: "x1",
     5: "eng",
-    6: "x2", 7: "x2",
+    6: "x2",
     8: "math",
-    9: "x2",
     10: "chi"
   };
 

@@ -1,6 +1,6 @@
 -- Seed 2026–2027 中六級補課時間表
 -- Period: 2026-09-04 … 2027-02-02
--- Cycle: Day1–4=X1, Day5=ENG, Day6/7/9=X2, Day8=MATH, Day10=CHI
+-- Cycle: Day1=X1, Day5=ENG, Day6=X2, Day8=MATH, Day10=CHI (Day2/3/4/7/9: no 補課)
 
 INSERT INTO public.s6_buk_meta (id, start_date, end_date, notes) VALUES
   (1, '2026-09-04', '2027-02-02', '2026-2027 中六級補課；一般 15:45–16:45；五 CHI/ENG 15:15–16:45')
