@@ -1329,7 +1329,7 @@ html[data-theme="dark"] .home-duty-code.is-me {
   .home-duty { font-size: 0.7rem; margin-top: 2px; }
 }
 
-/* Today's notes — up to two distinct rows beside actions (no type icons) */
+/* Today's notes — calendar + staff deadlines beside actions (no type icons) */
 .home-top-notes {
   display: flex;
   flex-direction: column;
@@ -1369,6 +1369,11 @@ html[data-theme="dark"] .home-duty-code.is-me {
   margin: 0;
   padding: 0;
   min-width: 0;
+  /* Cap height so sticky top bar stays usable when many rows (~6–8) */
+  max-height: 7.2em;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .home-note-item {
   display: block;

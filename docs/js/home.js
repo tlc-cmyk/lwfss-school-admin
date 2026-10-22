@@ -6,7 +6,8 @@
   var cloudStarted = false;
   var clockTimer = null;
   var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
-  var NOTES_DEADLINE_MAX = 2;
+  // Sticky top「今日事項」row cap (calendar + staff deadlines). Scroll kicks in via CSS.
+  var NOTES_MAX = 8;
   // Hide from homepage「今日事項」only (still listed on 全部文件遞交).
   var HOME_NOTES_HIDDEN_DEADLINE_TITLES = {
     "中、英文科老師完成修改中六學生申報聯招及個人概覽自述文章/學會活動計劃書/行政會議": true
@@ -977,28 +978,44 @@
 
     stopNotesTypewriter();
 
+    function collectTitles(source) {
+      var out = [];
+      var localSeen = {};
+      (source || []).forEach(function (it) {
+        var title = it && it.title ? String(it.title) : "";
+        if (!title || localSeen[title]) return;
+        localSeen[title] = true;
+        out.push(title);
+      });
+      return out;
+    }
+
+    var calendarTitles = collectTitles(state.calendarItems);
+    var deadlineTitles = [];
+    if (session && session.role === "staff") {
+      deadlineTitles = collectTitles(state.deadlineItems);
+    }
+
     var items = [];
     var seen = {};
 
-    // Prefer calendar_events, then staff_deadlines — up to two separate rows.
-    (state.calendarItems || []).forEach(function (it) {
-      if (!it || !it.title) return;
-      if (items.length >= NOTES_DEADLINE_MAX) return;
-      var title = String(it.title);
-      if (seen[title]) return;
+    function pushTitle(title) {
+      if (!title || seen[title] || items.length >= NOTES_MAX) return;
       seen[title] = true;
       items.push(title);
-    });
+    }
 
-    // Staff deadlines — fill remaining slots only
-    if (session && session.role === "staff") {
-      (state.deadlineItems || []).forEach(function (it) {
-        if (items.length >= NOTES_DEADLINE_MAX) return;
-        var title = (it && it.title) || "";
-        if (!title || seen[title]) return;
-        seen[title] = true;
-        items.push(title);
-      });
+    // Students: calendar only. Staff: calendar + that day's staff_deadlines
+    // (deadlines must not be squeezed out when calendar alone would fill the cap).
+    if (session && session.role === "staff" && deadlineTitles.length) {
+      var deadlineReserve = Math.min(deadlineTitles.length, NOTES_MAX - (calendarTitles.length ? 1 : 0));
+      var calendarCap = Math.min(calendarTitles.length, NOTES_MAX - deadlineReserve);
+      calendarTitles.slice(0, calendarCap).forEach(pushTitle);
+      deadlineTitles.forEach(pushTitle);
+      // Any leftover capacity after deadlines → more calendar rows
+      calendarTitles.slice(calendarCap).forEach(pushTitle);
+    } else {
+      calendarTitles.forEach(pushTitle);
     }
 
     if (!items.length) {
