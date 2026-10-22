@@ -2717,23 +2717,57 @@ html:not([data-theme="dark"]) .fr-day-seg.mp-seg .chip.is-bf:not(.active) {
 .fr-day-seg.mp-seg .chip.is-bf:not(.active) {
   color: #1a6b48;
 }
-.fr-period-seg.mp-seg {
+.fr-period-toggles {
   display: flex;
   width: 100%;
   max-width: 100%;
   margin-bottom: 14px;
   box-sizing: border-box;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0;
 }
-.fr-period-seg.mp-seg .chip {
-  min-width: 0;
-  flex: 1 1 0;
-  padding: 6px 4px;
-  font-size: 0.8rem;
+.fr-period-toggles .chip.fr-period-chip {
+  min-width: 2.6rem;
+  flex: 1 1 auto;
+  padding: 8px 10px;
+  font-size: 0.82rem;
   white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
+.fr-period-toggles .chip.fr-period-chip:hover {
+  border-color: var(--primary, #1a3a6c);
+}
+.fr-period-toggles .chip.fr-period-chip.active {
+  background: var(--primary, #1a3a6c);
+  color: #fff;
+  border-color: var(--primary, #1a3a6c);
+  box-shadow: 0 1px 3px rgba(26, 58, 108, 0.28);
+  font-weight: 700;
+}
+.fr-period-toggles .chip.fr-period-chip[data-fr-period="all"] {
+  flex: 0 0 auto;
+  min-width: 3.2rem;
+}
+.fr-note {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: var(--muted, #6b7280);
+}
+.fr-note-gap {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #92400e;
+}
+.fr-prompt .fr-empty { padding: 16px 8px; }
 .fr-results { display: flex; flex-direction: column; gap: 12px; }
 .fr-meta-row {
   display: flex;
@@ -3920,6 +3954,21 @@ html[data-theme="dark"] .meet-room-chip.is-special {
 }
 
 html[data-theme="dark"] .fr-period-count { color: #6ce9a6; }
+html[data-theme="dark"] .fr-period-toggles .chip.fr-period-chip {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+html[data-theme="dark"] .fr-period-toggles .chip.fr-period-chip.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.35);
+}
+html[data-theme="dark"] .fr-note-gap {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+}
 html[data-theme="dark"] .fr-block,
 html[data-theme="dark"] .fr-period-group {
   border-color: var(--border);

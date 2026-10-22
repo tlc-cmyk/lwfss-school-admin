@@ -2,13 +2,15 @@
   "use strict";
 
   /**
-   * 搵課室 — staff-only: which classrooms are free on a cycle Day (+ period).
+   * 搵課室 — staff-only: which classrooms are free on a cycle Day (+ periods).
+   * Multi-select periods → rooms free in every selected period (intersection).
    * Room universe derived from lessons (same approach as meet.js); no rooms master table.
    */
 
   var state = {
     day: 1,
-    period: "all", // "all" | 1..8
+    /** @type {number[]} sorted unique selected periods (1..8) */
+    periods: [],
     showOccupied: false,
     bound: false,
     defaultsApplied: false
@@ -114,8 +116,16 @@
     return /LAB|MMLC|COMPUTER|I\.?\s*T\.?\s*ROOM|STEM|MUSIC|VISUAL\s*ARTS|HOME\s*ECONOMICS|GEOGRAPHY|SCIENCE/.test(u);
   }
 
+  function sortOrdinary(a, b) { return parseInt(a, 10) - parseInt(b, 10); }
+  function sortSpecial(a, b) {
+    var la = isLabOrSpecial(a) ? 1 : 0;
+    var lb = isLabOrSpecial(b) ? 1 : 0;
+    if (la !== lb) return la - lb;
+    return a.localeCompare(b, "zh-HK");
+  }
+
   /**
-   * Indoor rooms for the day filter, split free vs occupied.
+   * Indoor rooms free / occupied for a single period.
    * Ordinary numeric classrooms first; skip playgrounds / empty strings.
    */
   function classifyRooms(day, period) {
@@ -140,17 +150,10 @@
       }
     });
 
-    function sortOrd(a, b) { return parseInt(a, 10) - parseInt(b, 10); }
-    function sortSpec(a, b) {
-      var la = isLabOrSpecial(a) ? 1 : 0;
-      var lb = isLabOrSpecial(b) ? 1 : 0;
-      if (la !== lb) return la - lb;
-      return a.localeCompare(b, "zh-HK");
-    }
-    freeOrdinary.sort(sortOrd);
-    occOrdinary.sort(sortOrd);
-    freeSpecial.sort(sortSpec);
-    occSpecial.sort(sortSpec);
+    freeOrdinary.sort(sortOrdinary);
+    occOrdinary.sort(sortOrdinary);
+    freeSpecial.sort(sortSpecial);
+    occSpecial.sort(sortSpecial);
 
     return {
       free: freeOrdinary.concat(freeSpecial),
@@ -161,6 +164,82 @@
       occupiedSpecial: occSpecial,
       totalIndoor: totalIndoor
     };
+  }
+
+  /**
+   * Rooms free in every selected period (intersection of free sets).
+   * A room occupied in any selected period is not continuous-free.
+   */
+  function classifyRoomsIntersection(day, periods) {
+    var all = allRoomsFromData();
+    var freeOrdinary = [];
+    var freeSpecial = [];
+    var totalIndoor = 0;
+    var busyByPeriod = periods.map(function (p) { return busyRoomsAt(day, p); });
+
+    all.forEach(function (r) {
+      if (isOutdoorRoom(r)) return;
+      totalIndoor++;
+      var busySomewhere = false;
+      for (var i = 0; i < busyByPeriod.length; i++) {
+        if (busyByPeriod[i][r]) {
+          busySomewhere = true;
+          break;
+        }
+      }
+      if (busySomewhere) return;
+      if (isOrdinaryClassroom(r)) freeOrdinary.push(r);
+      else freeSpecial.push(r);
+    });
+
+    freeOrdinary.sort(sortOrdinary);
+    freeSpecial.sort(sortSpecial);
+
+    return {
+      free: freeOrdinary.concat(freeSpecial),
+      freeOrdinary: freeOrdinary,
+      freeSpecial: freeSpecial,
+      totalIndoor: totalIndoor
+    };
+  }
+
+  function sortedUniquePeriods(arr) {
+    var seen = {};
+    var out = [];
+    (arr || []).forEach(function (p) {
+      var n = Number(p);
+      if (!(n >= 1) || seen[n]) return;
+      seen[n] = true;
+      out.push(n);
+    });
+    out.sort(function (a, b) { return a - b; });
+    return out;
+  }
+
+  function clampPeriodsToDay() {
+    var maxp = periodsForDay(state.day);
+    state.periods = state.periods.filter(function (p) { return p >= 1 && p <= maxp; });
+  }
+
+  function allPeriodsSelected() {
+    var maxp = periodsForDay(state.day);
+    if (state.periods.length !== maxp) return false;
+    for (var p = 1; p <= maxp; p++) {
+      if (state.periods.indexOf(p) < 0) return false;
+    }
+    return true;
+  }
+
+  function periodsAreContiguous(periods) {
+    if (!periods || periods.length < 2) return true;
+    for (var i = 1; i < periods.length; i++) {
+      if (periods[i] !== periods[i - 1] + 1) return false;
+    }
+    return true;
+  }
+
+  function formatPeriodList(periods) {
+    return periods.map(function (p) { return "P" + p; }).join("、");
   }
 
   function syncDayFromHome() {
@@ -181,27 +260,32 @@
     state.day = 1;
   }
 
-  function smartDefaultPeriod() {
+  /** Smart default: today's current period as a one-item selection; else all periods. */
+  function smartDefaultPeriods() {
     var today = null;
     if (window.SchoolAdminHome && typeof SchoolAdminHome.getTodayCycleDay === "function") {
       today = SchoolAdminHome.getTodayCycleDay();
     }
-    if (today == null || state.day !== today) return "all";
-    if (window.SchoolAdminHome && typeof SchoolAdminHome.getCurrentPeriod === "function") {
-      var p = SchoolAdminHome.getCurrentPeriod();
-      if (p != null && p >= 1) return p;
+    if (today != null && state.day === today) {
+      if (window.SchoolAdminHome && typeof SchoolAdminHome.getCurrentPeriod === "function") {
+        var p = SchoolAdminHome.getCurrentPeriod();
+        if (p != null && p >= 1) return [p];
+      }
     }
-    return "all";
+    var maxp = periodsForDay(state.day);
+    var all = [];
+    for (var i = 1; i <= maxp; i++) all.push(i);
+    return all;
   }
 
   function applySmartDefaultsOnce() {
     if (state.defaultsApplied) return;
     syncDayFromHome();
-    state.period = smartDefaultPeriod();
+    state.periods = smartDefaultPeriods();
     state.defaultsApplied = true;
   }
 
-  // Motion Prompt #060 — slide thumb under active chip
+  // Motion Prompt #060 — slide thumb under active chip (day picker only)
   function syncSegThumb(bar, activeSel, instant) {
     if (!bar || !bar.classList.contains("mp-seg")) return;
     var thumb = bar.querySelector(".mp-seg-thumb");
@@ -274,47 +358,42 @@
   function renderPeriodBar() {
     var bar = $("fr-period-bar");
     if (!bar) return;
+    clampPeriodsToDay();
     var maxp = periodsForDay(state.day);
-    if (state.period !== "all" && Number(state.period) > maxp) {
-      state.period = "all";
-    }
 
-    var needRebuild = bar.querySelectorAll("[data-fr-period]").length !== (maxp + 1);
-    if (needRebuild || !bar.querySelector(".mp-seg-thumb")) {
+    // Multi-toggle chips — no sliding thumb
+    var needRebuild = bar.querySelectorAll("[data-fr-period]").length !== (maxp + 1) ||
+      bar.classList.contains("mp-seg");
+    if (needRebuild) {
+      bar.className = "fr-period-toggles";
+      bar.setAttribute("role", "group");
+      bar.setAttribute("aria-label", "節次多選（可同時揀多節）");
       bar.innerHTML = "";
-      var thumb = document.createElement("span");
-      thumb.className = "mp-seg-thumb";
-      thumb.setAttribute("aria-hidden", "true");
-      bar.appendChild(thumb);
 
-      function addChip(val, label) {
+      function addChip(val, label, title) {
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "chip";
+        btn.className = "chip fr-period-chip";
         btn.setAttribute("data-fr-period", String(val));
         btn.textContent = label;
+        if (title) btn.title = title;
         bar.appendChild(btn);
       }
-      addChip("all", "全部");
-      for (var p = 1; p <= maxp; p++) addChip(String(p), "P" + p);
-      delete bar.dataset.segReady;
+      addChip("all", "全部", "全選／清除當日所有課節");
+      for (var p = 1; p <= maxp; p++) addChip(String(p), "P" + p, "切換第" + p + "節");
     }
 
+    var allOn = allPeriodsSelected();
     Array.prototype.forEach.call(bar.querySelectorAll("[data-fr-period]"), function (btn) {
       var v = btn.getAttribute("data-fr-period");
-      var on = String(state.period) === v;
+      var on;
+      if (v === "all") {
+        on = allOn;
+      } else {
+        on = state.periods.indexOf(parseInt(v, 10)) >= 0;
+      }
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
-    });
-
-    var instant = !bar.dataset.segReady;
-    syncSegThumb(bar, "[data-fr-period].active", instant);
-    requestAnimationFrame(function () {
-      syncSegThumb(bar, "[data-fr-period].active", !bar.dataset.segReady);
-      var thumb2 = bar.querySelector(".mp-seg-thumb");
-      if (thumb2 && parseFloat(thumb2.style.width) > 0) {
-        bar.dataset.segReady = "1";
-      }
     });
   }
 
@@ -328,6 +407,14 @@
   function chipsHtml(rooms, occupied) {
     if (!rooms.length) return '<span class="fr-rooms-none">無</span>';
     return rooms.map(function (r) { return roomChipHtml(r, occupied); }).join("");
+  }
+
+  function renderPromptPick() {
+    return (
+      '<div class="fr-block fr-prompt">' +
+        '<p class="fr-empty">請先揀至少一個課節（可同時揀多節搵連續空課室）</p>' +
+      "</div>"
+    );
   }
 
   function renderSinglePeriod(day, period) {
@@ -386,35 +473,41 @@
     return html.join("");
   }
 
-  function renderAllPeriods(day) {
-    var maxp = periodsForDay(day);
-    var html = [];
-    var bellLab = bellLabelForDay(day);
-    html.push(
-      '<p class="muted fr-meta">Day ' + day +
-      (bellLab ? " · " + escapeHtml(bellLab) : "") +
-      " · 各節空課室（普通課室優先）</p>"
-    );
+  function renderMultiPeriods(day, periods) {
+    var info = classifyRoomsIntersection(day, periods);
+    var freeN = info.free.length;
+    var label = formatPeriodList(periods);
+    var contiguous = periodsAreContiguous(periods);
+    var title = "連續空課室（已選 " + label + "）";
+    var countLine = freeN + " 間課室可連續使用";
 
-    for (var p = 1; p <= maxp; p++) {
-      var info = classifyRooms(day, p);
-      var bell = periodBell(day, p);
-      var timeStr = bell ? (bell.start + "–" + bell.end) : "";
-      html.push('<div class="fr-period-group">');
+    var html = [];
+    html.push('<div class="fr-meta-row">');
+    html.push('<p class="muted fr-meta" id="fr-meta-live">Day ' + day + " · " + escapeHtml(countLine) + "</p>");
+    html.push("</div>");
+
+    if (!contiguous) {
       html.push(
-        '<div class="fr-period-head">' +
-          '<span class="fr-period-label">第' + p + "節</span>" +
-          (timeStr ? '<span class="fr-period-time">' + escapeHtml(timeStr) + "</span>" : "") +
-          '<span class="fr-period-count">空 ' + info.free.length + "／" + info.totalIndoor + "</span>" +
-        "</div>"
+        '<p class="fr-note fr-note-gap" role="note">已選節次非連續（仍顯示各節皆空嘅課室，方便分段使用）</p>'
       );
-      if (info.free.length) {
-        html.push('<div class="fr-chip-row">' + chipsHtml(info.free, false) + "</div>");
-      } else {
-        html.push('<p class="fr-empty fr-empty-inline">本節無空課室</p>');
-      }
-      html.push("</div>");
     }
+
+    html.push('<div class="fr-block">');
+    html.push('<h3 class="fr-block-title">' + escapeHtml(title) +
+      ' <span class="fr-block-count">' + freeN + "</span></h3>");
+    if (info.freeOrdinary.length) {
+      html.push('<p class="fr-sub-label">普通課室</p>');
+      html.push('<div class="fr-chip-row">' + chipsHtml(info.freeOrdinary, false) + "</div>");
+    }
+    if (info.freeSpecial.length) {
+      html.push('<p class="fr-sub-label">特別室</p>');
+      html.push('<div class="fr-chip-row">' + chipsHtml(info.freeSpecial, false) + "</div>");
+    }
+    if (!freeN) {
+      html.push('<p class="fr-empty">已選課節沒有可連續使用嘅空課室</p>');
+    }
+    html.push("</div>");
+
     return html.join("");
   }
 
@@ -428,10 +521,15 @@
       return;
     }
 
-    if (state.period === "all") {
-      el.innerHTML = renderAllPeriods(state.day);
+    clampPeriodsToDay();
+    var periods = state.periods;
+
+    if (!periods.length) {
+      el.innerHTML = renderPromptPick();
+    } else if (periods.length === 1) {
+      el.innerHTML = renderSinglePeriod(state.day, periods[0]);
     } else {
-      el.innerHTML = renderSinglePeriod(state.day, Number(state.period));
+      el.innerHTML = renderMultiPeriods(state.day, periods);
     }
   }
 
@@ -439,6 +537,27 @@
     renderDayGrid();
     renderPeriodBar();
     renderResults();
+  }
+
+  function togglePeriod(p) {
+    var idx = state.periods.indexOf(p);
+    if (idx >= 0) {
+      state.periods.splice(idx, 1);
+    } else {
+      state.periods.push(p);
+      state.periods = sortedUniquePeriods(state.periods);
+    }
+  }
+
+  function selectAllPeriods() {
+    var maxp = periodsForDay(state.day);
+    var all = [];
+    for (var i = 1; i <= maxp; i++) all.push(i);
+    state.periods = all;
+  }
+
+  function clearPeriods() {
+    state.periods = [];
   }
 
   function bind() {
@@ -453,12 +572,16 @@
         var d = parseInt(btn.getAttribute("data-fr-day"), 10);
         if (!(d >= 1 && d <= 10) || d === state.day) return;
         state.day = d;
+        clampPeriodsToDay();
         // Re-smart period only when switching onto today's cycle day
         var today = window.SchoolAdminHome && SchoolAdminHome.getTodayCycleDay
           ? SchoolAdminHome.getTodayCycleDay() : null;
         if (today != null && d === today) {
-          var cur = smartDefaultPeriod();
-          if (cur !== "all") state.period = cur;
+          var cur = null;
+          if (window.SchoolAdminHome && typeof SchoolAdminHome.getCurrentPeriod === "function") {
+            cur = SchoolAdminHome.getCurrentPeriod();
+          }
+          if (cur != null && cur >= 1) state.periods = [cur];
         }
         renderAll();
       });
@@ -470,8 +593,12 @@
         var btn = e.target.closest("[data-fr-period]");
         if (!btn || !periodBar.contains(btn)) return;
         var v = btn.getAttribute("data-fr-period");
-        if (v === "all") state.period = "all";
-        else state.period = parseInt(v, 10);
+        if (v === "all") {
+          if (allPeriodsSelected()) clearPeriods();
+          else selectAllPeriods();
+        } else {
+          togglePeriod(parseInt(v, 10));
+        }
         renderAll();
       });
     }

@@ -303,15 +303,14 @@
         <section id="home-panel-find-room" class="home-panel home-panel-find-room hidden" role="tabpanel" aria-labelledby="home-tab-find-room" data-panel="find-room" hidden>
           <div class="home-find-room-card" data-role-view="staff">
             <h2 class="home-panel-title">搵課室</h2>
-            <p class="muted fr-hint">空課室＝該節 lessons 無人使用；優先顯示普通課室（如 301）。方便課室設備壞咗要調課室。</p>
+            <p class="muted fr-hint">可同時揀多個課節，搵連續空課室（每節都空先算）。優先顯示普通課室（如 301）。方便課室設備壞咗要調課室。</p>
 
             <!-- Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060 -->
             <div id="fr-day-grid" class="mp-seg meet-day-seg fr-day-seg" role="tablist" aria-label="循環日 D1–D10">
               <span class="mp-seg-thumb" aria-hidden="true"></span>
             </div>
 
-            <div id="fr-period-bar" class="mp-seg fr-period-seg" role="group" aria-label="節次篩選">
-              <span class="mp-seg-thumb" aria-hidden="true"></span>
+            <div id="fr-period-bar" class="fr-period-toggles" role="group" aria-label="節次多選（可同時揀多節）">
             </div>
 
             <div id="fr-results" class="fr-results" aria-live="polite"></div>
