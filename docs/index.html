@@ -91,6 +91,7 @@
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-classroom" id="home-tab-classroom" data-panel="classroom" data-role-view="staff">我的課堂</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs" data-role-view="staff">文件／會議</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free" data-role-view="staff">即時空堂</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-find-room" id="home-tab-find-room" data-panel="find-room" data-role-view="staff">搵課室</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-memo" id="home-tab-memo" data-panel="memo">備忘</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet" data-role-view="staff">約開會</button>
           <button type="button" class="home-func-tab member-pay-sheen" role="tab" aria-selected="false" aria-controls="home-panel-member-pay" id="home-tab-member-pay" data-panel="member-pay" data-role-view="staff">會員付費</button>
@@ -298,6 +299,29 @@
           </div>
         </section>
 
+
+        <section id="home-panel-find-room" class="home-panel home-panel-find-room hidden" role="tabpanel" aria-labelledby="home-tab-find-room" data-panel="find-room" hidden>
+          <div class="home-find-room-card" data-role-view="staff">
+            <h2 class="home-panel-title">搵課室</h2>
+            <p class="muted fr-hint">空課室＝該節 lessons 無人使用；優先顯示普通課室（如 301）。方便課室設備壞咗要調課室。</p>
+
+            <!-- Motion Prompt #060 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#060 -->
+            <div id="fr-day-grid" class="mp-seg meet-day-seg fr-day-seg" role="tablist" aria-label="循環日 D1–D10">
+              <span class="mp-seg-thumb" aria-hidden="true"></span>
+            </div>
+
+            <div id="fr-period-bar" class="mp-seg fr-period-seg" role="group" aria-label="節次篩選">
+              <span class="mp-seg-thumb" aria-hidden="true"></span>
+            </div>
+
+            <div id="fr-results" class="fr-results" aria-live="polite"></div>
+          </div>
+          <div class="staff-only-note home-find-room-student" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">僅供教職員</h2>
+            <p>搵課室只供教職員查閱。學生介面不會顯示此內容。</p>
+          </div>
+        </section>
+
         <section id="home-panel-memo" class="home-panel home-panel-memo hidden" role="tabpanel" aria-labelledby="home-tab-memo" data-panel="memo" hidden>
           <div class="home-memo-card">
             <h2 class="home-panel-title">個人備忘錄</h2>
@@ -396,6 +420,7 @@
   <script src="js/staff-deadlines.js"></script>
   <script src="js/personal-memo.js"></script>
   <script src="js/meet.js"></script>
+  <script src="js/find-room.js"></script>
   <script src="js/member-pay.js"></script>
 </body>
 </html>

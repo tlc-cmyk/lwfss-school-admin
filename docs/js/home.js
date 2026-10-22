@@ -1561,6 +1561,7 @@
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
+      if (state.activePanel === "find-room") refreshFindRoomPanel();
       return;
     }
 
@@ -1714,6 +1715,7 @@
         showClassRoomView();
         if (state.activePanel === "free") renderFreePanel();
         if (state.activePanel === "meet") refreshMeetPanel();
+      if (state.activePanel === "find-room") refreshFindRoomPanel();
         startClock();
       }
 
@@ -1752,6 +1754,7 @@
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
+      if (state.activePanel === "find-room") refreshFindRoomPanel();
     });
   }
 
@@ -2306,6 +2309,7 @@
       showClassRoomView();
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
+      if (state.activePanel === "find-room") refreshFindRoomPanel();
       return;
     }
     var client = getClient();
@@ -2339,6 +2343,7 @@
       updateNextLessonCountdown();
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
+      if (state.activePanel === "find-room") refreshFindRoomPanel();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
@@ -3358,6 +3363,11 @@
         window.SchoolAdminMeet.show();
       }
     }
+    if (panelId === "find-room") {
+      if (window.SchoolAdminFindRoom && typeof window.SchoolAdminFindRoom.show === "function") {
+        window.SchoolAdminFindRoom.show();
+      }
+    }
     if (panelId === "member-pay") {
       if (window.SchoolAdminMemberPay && typeof window.SchoolAdminMemberPay.show === "function") {
         window.SchoolAdminMemberPay.show();
@@ -3492,11 +3502,24 @@
     }
   }
 
+  function refreshFindRoomPanel() {
+    if (window.SchoolAdminFindRoom && typeof window.SchoolAdminFindRoom.refresh === "function") {
+      window.SchoolAdminFindRoom.refresh();
+    }
+  }
+
   window.SchoolAdminHome = {
     getBrowseDate: function () { return state.browseDate || todayHK(); },
     getTodayCycleDay: function () { return state.todayCycleDay; },
     getSelectedDay: function () { return state.selectedDay; },
     getTimetableData: function () { return getData(); },
+    getCurrentPeriod: function () {
+      var day = state.todayCycleDay;
+      if (!day) return null;
+      var slot = findCurrentSlot(day);
+      if (slot && slot.kind === "period" && slot.period != null) return slot.period;
+      return null;
+    },
     periodBell: periodBell,
     periodsForDay: periodsForDay,
     bellLabelForDay: bellLabelForDay,

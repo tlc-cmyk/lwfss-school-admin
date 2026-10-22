@@ -2679,6 +2679,148 @@ html:not([data-tone="holiday"]) .tt-holiday-particles {
 }
 .home-panel-free .home-free-student { margin-top: 0; }
 
+
+/* —— 搵課室：空課室查詢 —— */
+.home-panel-find-room .home-find-room-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px 18px;
+  box-shadow: var(--shadow);
+}
+.home-panel-find-room .home-panel-title { margin-bottom: 4px; }
+.fr-hint {
+  margin: 0 0 12px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+#fr-day-grid.mp-seg,
+.fr-day-seg.mp-seg {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 10px;
+  box-sizing: border-box;
+}
+#fr-day-grid.mp-seg .chip,
+.fr-day-seg.mp-seg .chip {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 6px 2px;
+  font-size: 0.82rem;
+}
+html:not([data-theme="dark"]) #fr-day-grid.mp-seg .chip.is-bf:not(.active),
+html:not([data-theme="dark"]) .fr-day-seg.mp-seg .chip.is-bf:not(.active) {
+  color: var(--primary-dark);
+}
+#fr-day-grid.mp-seg .chip.is-bf:not(.active),
+.fr-day-seg.mp-seg .chip.is-bf:not(.active) {
+  color: #1a6b48;
+}
+.fr-period-seg.mp-seg {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 14px;
+  box-sizing: border-box;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.fr-period-seg.mp-seg .chip {
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 6px 4px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.fr-results { display: flex; flex-direction: column; gap: 12px; }
+.fr-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.fr-meta { margin: 0; font-size: 0.88rem; flex: 1 1 auto; }
+.fr-toggle-occ { flex: 0 0 auto; font-size: 0.8rem; }
+.fr-block {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--card);
+}
+.fr-block-occ { opacity: 0.95; }
+.fr-block-title {
+  margin: 0 0 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.fr-block-count {
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+  font-size: 0.85rem;
+}
+.fr-sub-label {
+  margin: 6px 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted, #6b7280);
+}
+.fr-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.fr-room-chip.is-occupied {
+  opacity: 0.7;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+.fr-rooms-none,
+.fr-empty {
+  margin: 0;
+  padding: 8px 0;
+  font-size: 0.88rem;
+  color: var(--muted, #6b7280);
+  text-align: center;
+}
+.fr-empty-inline {
+  text-align: left;
+  padding: 2px 0 0;
+  font-size: 0.82rem;
+}
+.fr-period-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--card);
+}
+.fr-period-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin-bottom: 8px;
+}
+.fr-period-label {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.fr-period-time {
+  font-size: 0.8rem;
+  color: var(--muted, #6b7280);
+}
+.fr-period-count {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #027a48;
+}
+.home-panel-find-room .home-find-room-student { margin-top: 0; }
+
 /* —— 約開會：共同空堂 —— */
 .home-panel-meet .home-meet-card {
   background: var(--card);
@@ -3464,11 +3606,13 @@ html[data-theme="dark"] .home-docs-card,
 html[data-theme="dark"] .home-meet-card,
 html[data-theme="dark"] .home-memo-card,
 html[data-theme="dark"] .home-free-card,
+html[data-theme="dark"] .home-find-room-card,
 html[data-theme="dark"] .home-member-pay-card,
 html[data-theme="dark"] .home-panel-docs .home-docs-card,
 html[data-theme="dark"] .home-panel-meet .home-meet-card,
 html[data-theme="dark"] .home-panel-memo .home-memo-card,
 html[data-theme="dark"] .home-panel-free .home-free-card,
+html[data-theme="dark"] .home-panel-find-room .home-find-room-card,
 html[data-theme="dark"] .home-panel-member-pay .home-member-pay-card {
   background: var(--card);
   border: 1px solid var(--border-neon);
@@ -3773,6 +3917,16 @@ html[data-theme="dark"] .meet-room-chip.is-special {
   border-color: var(--border-neon);
   background: var(--surface-2);
   color: var(--muted);
+}
+
+html[data-theme="dark"] .fr-period-count { color: #6ce9a6; }
+html[data-theme="dark"] .fr-block,
+html[data-theme="dark"] .fr-period-group {
+  border-color: var(--border);
+  background: var(--card);
+}
+html[data-theme="dark"] .fr-room-chip.is-occupied {
+  opacity: 0.55;
 }
 html[data-theme="dark"] .meet-week-day.has-free {
   border-color: rgba(var(--tone-rgb), 0.4);
