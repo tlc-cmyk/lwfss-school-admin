@@ -4,7 +4,7 @@ Source: https://github.com/stackedlol/ascii-sharks
 License: MIT (see LICENSE)
 
 Vendored into LWFSS school-admin for the holiday timetable underlay.
-Local change: `OceanEngine` accepts optional `{ fishCount }` for the compact panel.
+Local changes: `OceanEngine` accepts `{ fishCount, background, inkMode, grid }` and exposes `setAppearance()` so the holiday panel can match site `--bg` (light ink on light themes).
 Rebuild bundle (dev machine):
 
 ```sh

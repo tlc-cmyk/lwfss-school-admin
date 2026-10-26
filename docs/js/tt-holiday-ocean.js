@@ -4,11 +4,13 @@
  *
  * Shows swimming ASCII sharks/fish under #home-panel-tt ONLY when the browsed
  * day is a holiday / off day (html[data-tone=holiday]). Hidden on normal / BF.
- * Replaces the former Motion Prompt #015 Particles underlay.
+ *
+ * Appearance: canvas clear colour follows CSS --bg; light themes use dark ink
+ * so glyphs stay readable without a black box. Layout fills leftover panel space.
  *
  * Lifecycle: start OceanEngine when holiday panel is visible; destroy when
  * switching to a school day, leaving the panel, or leaving the page.
- * OceanEngine already pauses via IntersectionObserver + prefers-reduced-motion.
+ * Theme/tone changes retint via setAppearance (no full restart).
  */
 (function () {
   "use strict";
@@ -17,20 +19,22 @@
   var PANEL_ID = "home-panel-tt";
   var CANVAS_CLASS = "tt-holiday-ocean-canvas";
 
-  /** Compact holiday panel: one hammerhead + a smaller classic companion. */
+  /** Holiday panel: hammerhead + classic companion (scales with canvas size). */
   var SHARKS = [
     { kind: "hammerhead", size: 1 },
-    { kind: "classic", size: 0.72 }
+    { kind: "classic", size: 0.72 },
+    { kind: "mako", size: 0.55 }
   ];
 
-  /** Cap fish schools so the small 539×208 panel stays light. */
-  var FISH_COUNT = 48;
+  /** Fish schools for the larger fill area — still capped for perf. */
+  var FISH_COUNT = 72;
 
   var hostEl = null;
   var canvas = null;
   var engine = null;
   var toneMo = null;
   var panelMo = null;
+  var hostRo = null;
 
   function activeTone() {
     var t = document.documentElement.getAttribute("data-tone");
@@ -40,6 +44,10 @@
 
   function isHolidayTone() {
     return activeTone() === "holiday";
+  }
+
+  function isDarkTheme() {
+    return document.documentElement.getAttribute("data-theme") === "dark";
   }
 
   function panelActive() {
@@ -56,6 +64,28 @@
     return isHolidayTone() && panelActive();
   }
 
+  /** Read site tokens so the ocean blends with the page (holiday light/dark). */
+  function readAppearance() {
+    var root = document.documentElement;
+    var cs = getComputedStyle(root);
+    var bg = (cs.getPropertyValue("--bg") || "").trim() || (isDarkTheme() ? "#161010" : "#f7f2f1");
+    var dark = isDarkTheme();
+    return {
+      background: bg,
+      inkMode: dark ? "dark" : "light",
+      grid: dark ? "rgba(255,255,255,0.055)" : "rgba(192,57,43,0.10)"
+    };
+  }
+
+  function applyAppearance() {
+    if (!engine || typeof engine.setAppearance !== "function") return;
+    try {
+      engine.setAppearance(readAppearance());
+    } catch (err) {
+      /* ignore */
+    }
+  }
+
   function ensureHost() {
     hostEl = document.getElementById(HOST_ID);
     return hostEl;
@@ -68,7 +98,6 @@
       canvas = document.createElement("canvas");
       canvas.className = CANVAS_CLASS;
       canvas.setAttribute("aria-hidden", "true");
-      /* Mono face helps ASCII glyphs; Geist Mono optional via CSS font stack. */
       canvas.style.fontFamily =
         '"Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
       hostEl.appendChild(canvas);
@@ -108,16 +137,24 @@
     if (!ensureCanvas()) return;
     showHost();
     /* Need non-zero layout box before OceanEngine.resize(). */
-    if (canvas.getBoundingClientRect().width < 1) {
+    var box = canvas.getBoundingClientRect();
+    if (box.width < 1 || box.height < 1) {
       requestAnimationFrame(function () {
         if (shouldShow()) startEngine();
       });
       return;
     }
-    if (engine) return;
+    if (engine) {
+      applyAppearance();
+      return;
+    }
     try {
+      var appearance = readAppearance();
       engine = new window.AsciiSharks.OceanEngine(canvas, SHARKS, {
-        fishCount: FISH_COUNT
+        fishCount: FISH_COUNT,
+        background: appearance.background,
+        inkMode: appearance.inkMode,
+        grid: appearance.grid
       });
     } catch (err) {
       console.warn("[tt-holiday-ocean] OceanEngine failed:", err);
@@ -142,7 +179,14 @@
     ensureCanvas();
 
     if (typeof MutationObserver === "function") {
-      toneMo = new MutationObserver(sync);
+      toneMo = new MutationObserver(function () {
+        if (!shouldShow()) {
+          stopAll();
+          return;
+        }
+        if (engine) applyAppearance();
+        else startEngine();
+      });
       toneMo.observe(document.documentElement, {
         attributes: true,
         attributeFilter: ["data-tone", "data-theme"]
@@ -164,8 +208,18 @@
       }
     }
 
+    /* Host size changes (flex fill / orientation) — OceanEngine watches canvas,
+       but ensuring canvas has layout height helps first paint. */
+    if (typeof ResizeObserver === "function" && ensureHost()) {
+      hostRo = new ResizeObserver(function () {
+        if (engine && shouldShow() && canvas) {
+          /* Engine ResizeObserver on canvas fires when CSS height changes. */
+        }
+      });
+      hostRo.observe(hostEl);
+    }
+
     document.addEventListener("visibilitychange", function () {
-      /* OceanEngine pauses itself when off-screen; re-sync on return. */
       if (document.visibilityState === "visible") sync();
     });
 
@@ -180,7 +234,8 @@
 
   window.LwfssTtHolidayOcean = {
     sync: sync,
-    stop: stopAll
+    stop: stopAll,
+    applyAppearance: applyAppearance
   };
 
   if (document.readyState === "loading") {

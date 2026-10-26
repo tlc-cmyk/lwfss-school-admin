@@ -23,12 +23,24 @@ export class OceanEngine {
   constructor(
     private canvas: HTMLCanvasElement,
     sharks?: SharkSpec[],
-    /** Lower fishCount for compact holiday panel (~40); omit for area default. */
-    options?: { fishCount?: number },
+    /** fishCount for compact panels; appearance matches site --bg / theme. */
+    options?: {
+      fishCount?: number;
+      background?: string;
+      inkMode?: "dark" | "light";
+      grid?: string;
+    },
   ) {
     this.world = new World(sharks, options?.fishCount);
     this.renderer = new AsciiRenderer(canvas);
     this.renderer.setFontFamily(getComputedStyle(canvas).fontFamily);
+    if (options?.background || options?.inkMode || options?.grid) {
+      this.renderer.setAppearance({
+        background: options.background,
+        inkMode: options.inkMode,
+        grid: options.grid,
+      });
+    }
     this.reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -63,6 +75,16 @@ export class OceanEngine {
     window.removeEventListener("pointerdown", this.onPointerDown);
     document.documentElement.removeEventListener("pointerleave", this.onPointerLeave);
     window.removeEventListener("blur", this.onPointerLeave);
+  }
+
+  /** Retint water + ink when the site theme / tone changes (no restart needed). */
+  setAppearance(opts: {
+    background?: string;
+    inkMode?: "dark" | "light";
+    grid?: string;
+  }) {
+    this.renderer.setAppearance(opts);
+    if (this.reducedMotion.matches) this.drawStill();
   }
 
   private resize() {

@@ -2347,21 +2347,30 @@ html[data-theme="dark"] .tt-period.break.is-current .tt-period-energy-fill {
 }
 
 /* ascii-sharks OceanEngine — under #home-panel-tt when holiday/off
-   https://github.com/stackedlol/ascii-sharks (MIT). Black ocean keeps ASCII
-   readable in both light and dark themes. */
+   https://github.com/stackedlol/ascii-sharks (MIT).
+   Fills leftover panel space; canvas clear colour follows --bg (JS setAppearance). */
+html[data-tone="holiday"] #home-panel-tt.home-tt {
+  display: flex;
+  flex-direction: column;
+  /* Use viewport under sticky chrome so the ocean can grow. */
+  min-height: calc(100dvh - 12rem);
+}
 .tt-holiday-ocean {
   display: none;
-  margin: 12px auto 4px;
+  position: relative;
+  margin: 8px 0 0;
   width: 100%;
-  max-width: 539px;
-  min-height: 140px;
-  aspect-ratio: 539 / 220;
+  max-width: none;
+  flex: 1 1 auto;
+  /* Tall fill under day/teacher chrome — use leftover viewport. */
+  min-height: clamp(240px, calc(100dvh - 15rem), 78vh);
+  height: clamp(240px, calc(100dvh - 15rem), 78vh);
   overflow: hidden;
-  /* Allow pointer splash; OceanEngine listens on window for move/down. */
   pointer-events: auto;
   border-radius: 12px;
-  background: #000;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  /* Transparent host — canvas paints --bg so edges blend with the page. */
+  background: transparent;
+  box-shadow: none;
 }
 .tt-holiday-ocean.is-active:not([hidden]),
 .tt-holiday-ocean:not([hidden]).is-active {
@@ -2371,13 +2380,14 @@ html[data-theme="dark"] .tt-period.break.is-current .tt-period-energy-fill {
   display: none !important;
 }
 .tt-holiday-ocean canvas.tt-holiday-ocean-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  max-width: 539px;
-  min-height: 140px;
   font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   cursor: crosshair;
+  background: transparent;
 }
 /* Only mount visually when html tone is holiday (JS also gates). */
 html:not([data-tone="holiday"]) .tt-holiday-ocean {

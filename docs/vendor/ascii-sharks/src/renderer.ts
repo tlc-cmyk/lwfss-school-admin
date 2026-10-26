@@ -247,10 +247,18 @@ function inTriangle(
   return !(neg && pos);
 }
 
-/** Visible dark-grey cell grid, snapped to device pixels. Shared with the sidebar backdrop. */
-export function paintGrid(g: CanvasRenderingContext2D, W: number, H: number, cw: number, ch: number, dpr: number) {
+/** Cell grid, snapped to device pixels. Optional stroke for light/dark site themes. */
+export function paintGrid(
+  g: CanvasRenderingContext2D,
+  W: number,
+  H: number,
+  cw: number,
+  ch: number,
+  dpr: number,
+  stroke = "rgba(255,255,255,0.055)",
+) {
   g.setTransform(1, 0, 0, 1, 0, 0);
-  g.strokeStyle = "rgba(255,255,255,0.055)";
+  g.strokeStyle = stroke;
   g.lineWidth = 1;
   g.beginPath();
   for (let c = 0; c <= Math.ceil(W / cw); c++) {
@@ -277,6 +285,15 @@ export class AsciiRenderer {
   private cols = 0;
   private rows = 0;
   private fontFamily = "ui-monospace, Menlo, monospace";
+  /** Site-matched clear colour (CSS --bg / --card). */
+  private bgColor = "#000000";
+  /** Grid line colour (light ink uses a soft dark stroke). */
+  private gridColor = "rgba(255,255,255,0.055)";
+  /**
+   * "dark" = original light glyphs on dark water.
+   * "light" = dark glyphs on a light page background (readable on --bg).
+   */
+  private inkMode: "dark" | "light" = "dark";
 
   private dotKind = new Uint8Array(0); // 0 none, 1 blue, 2 green, 3 red, 4 pale
   private dotPhase = new Float32Array(0);
@@ -344,6 +361,31 @@ export class AsciiRenderer {
     if (family) this.fontFamily = family;
   }
 
+  /**
+   * Match the host page: fill with site --bg and flip ink for light themes
+   * so ASCII sharks stay readable without a black box.
+   */
+  setAppearance(opts: {
+    background?: string;
+    grid?: string;
+    inkMode?: "dark" | "light";
+  }) {
+    if (opts.background) this.bgColor = opts.background;
+    if (opts.inkMode) {
+      this.inkMode = opts.inkMode;
+      if (opts.inkMode === "light") {
+        this.fishStyles = FISH_ALPHAS.map((a) => `rgba(45,55,75,${a})`);
+        this.gridColor = opts.grid || "rgba(0,0,0,0.06)";
+      } else {
+        this.fishStyles = FISH_ALPHAS.map((a) => `rgba(230,238,255,${a})`);
+        this.gridColor = opts.grid || "rgba(255,255,255,0.055)";
+      }
+    } else if (opts.grid) {
+      this.gridColor = opts.grid;
+    }
+    if (this.width > 0 && this.height > 0) this.paintBackground();
+  }
+
   resize(width: number, height: number, dpr: number) {
     const prevCols = this.cols;
     const prevRows = this.rows;
@@ -393,11 +435,11 @@ export class AsciiRenderer {
   private paintBackground() {
     const g = this.bg.getContext("2d");
     if (!g) return;
-    const { width: W, height: H, dpr, cw, ch } = this;
+    const { width: W, height: H, dpr, cw, ch, bgColor, gridColor } = this;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.fillStyle = "#000";
+    g.fillStyle = bgColor;
     g.fillRect(0, 0, W, H);
-    paintGrid(g, W, H, cw, ch, dpr);
+    paintGrid(g, W, H, cw, ch, dpr, gridColor);
   }
 
   render(world: World, dt: number) {
@@ -772,7 +814,8 @@ export class AsciiRenderer {
       if (flag === FLAG_EDGE) {
         // Soft, anti-aliased silhouette: no block, just a light glyph.
         const set = shade >= 0.5 ? EDGE_HEAVY : EDGE_LIGHT;
-        const g = (70 + shade * 80) * dim;
+        let g = (70 + shade * 80) * dim;
+        if (this.inkMode === "light") g = 255 - g * 0.55;
         ctx.fillStyle =
           roll < 0.07
             ? ACCENTS[key % ACCENTS.length]
@@ -801,16 +844,28 @@ export class AsciiRenderer {
         glyph = SKIN_RAMP[clamp(Math.floor((1 - shade) * 8.99) + jitter, 0, SKIN_RAMP.length - 1)];
       }
       level *= dim;
+      if (this.inkMode === "light") {
+        // Invert grey blocks so silhouettes read on a light page bg.
+        level = 255 - level * 0.72;
+      }
       // Tinted per species; the classic tint is a cool blue-grey, like a back seen through deep water.
       ctx.fillStyle = `rgb(${Math.min(255, Math.round(level * tr))},${Math.min(255, Math.round(level * tg))},${Math.min(255, Math.round(level * tb + 4))})`;
       ctx.fillRect(x + 1, y + 1, cw - 1, ch - 1);
 
       let color: string;
-      if (flag === FLAG_EYE) color = "#9aa0ad";
-      else if (flag === FLAG_MARK) color = `rgb(${Math.round(70 * tr)},${Math.round(70 * tg)},${Math.round(70 * tb)})`;
-      else if (roll < 0.09) color = ACCENTS[key % ACCENTS.length];
-      else if (roll < 0.13) color = "#ffffff";
-      else color = shade > 0.55 ? "#0e0f13" : "#1b1d24";
+      if (this.inkMode === "light") {
+        if (flag === FLAG_EYE) color = "#3a4050";
+        else if (flag === FLAG_MARK) color = `rgb(${Math.round(40 * tr)},${Math.round(40 * tg)},${Math.round(40 * tb)})`;
+        else if (roll < 0.09) color = ACCENTS[key % ACCENTS.length];
+        else if (roll < 0.13) color = "#1a2332";
+        else color = shade > 0.55 ? "#f7f8fa" : "#e8ecf2";
+      } else {
+        if (flag === FLAG_EYE) color = "#9aa0ad";
+        else if (flag === FLAG_MARK) color = `rgb(${Math.round(70 * tr)},${Math.round(70 * tg)},${Math.round(70 * tb)})`;
+        else if (roll < 0.09) color = ACCENTS[key % ACCENTS.length];
+        else if (roll < 0.13) color = "#ffffff";
+        else color = shade > 0.55 ? "#0e0f13" : "#1b1d24";
+      }
       ctx.fillStyle = color;
       ctx.fillText(glyph, x + cw / 2, y + ch / 2 + 1);
     }
