@@ -2346,40 +2346,44 @@ html[data-theme="dark"] .tt-period.break.is-current .tt-period-energy-fill {
   border-color: rgba(255, 255, 255, 0.28);
 }
 
-/* Motion Prompt #015 Particles — under #home-panel-tt when holiday/off
-   // Motion Prompt #015 · MIT License (c) 2026 Shohei Ohtaki · https://showheyohtaki.github.io/motion-prompt/#015 */
-.tt-holiday-particles {
+/* ascii-sharks OceanEngine — under #home-panel-tt when holiday/off
+   https://github.com/stackedlol/ascii-sharks (MIT). Black ocean keeps ASCII
+   readable in both light and dark themes. */
+.tt-holiday-ocean {
   display: none;
   margin: 12px auto 4px;
   width: 100%;
   max-width: 539px;
-  min-height: 120px;
-  aspect-ratio: 539 / 208;
+  min-height: 140px;
+  aspect-ratio: 539 / 220;
   overflow: hidden;
-  pointer-events: none;
+  /* Allow pointer splash; OceanEngine listens on window for move/down. */
+  pointer-events: auto;
   border-radius: 12px;
+  background: #000;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
-.tt-holiday-particles.is-active:not([hidden]),
-.tt-holiday-particles:not([hidden]).is-active {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+.tt-holiday-ocean.is-active:not([hidden]),
+.tt-holiday-ocean:not([hidden]).is-active {
+  display: block;
 }
-.tt-holiday-particles[hidden] {
+.tt-holiday-ocean[hidden] {
   display: none !important;
 }
-.tt-holiday-particles canvas.tt-holiday-particles-canvas {
+.tt-holiday-ocean canvas.tt-holiday-ocean-canvas {
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
   max-width: 539px;
-  min-height: 100px;
+  min-height: 140px;
+  font-family: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  cursor: crosshair;
 }
 /* Only mount visually when html tone is holiday (JS also gates). */
-html:not([data-tone="holiday"]) .tt-holiday-particles {
+html:not([data-tone="holiday"]) .tt-holiday-ocean {
   display: none !important;
 }
-/* prefers-reduced-motion: JS freezes on FREEZE_U (no CSS keyframes here). */
+/* prefers-reduced-motion: OceanEngine draws a still frame (no CSS keyframes). */
 
 /* Break rows: beat general .tt-period.is-current / .is-past */
 .tt-period.break.is-current {
