@@ -4438,6 +4438,14 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   --alm-teal: #2f6b63;
   --alm-border: #2f6b63;
   --alm-muted: #6a5e4e;
+  /* 撕曆字體：宋體正文／筆刷直幅／展示襯線大數字 */
+  --alm-font-song: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "Songti SC",
+    "STSong", "SimSun", "Noto Serif CJK TC", serif;
+  --alm-font-kai: "Ma Shan Zheng", "ZCOOL XiaoWei", "Kaiti TC", "STKaiti", "KaiTi",
+    "DFKai-SB", "BiauKai", cursive;
+  --alm-font-display: "Noto Serif TC", "Source Han Serif TC", "Songti TC", "STSong",
+    "Times New Roman", serif;
+  --alm-font-deco: "ZCOOL XiaoWei", "Noto Serif TC", "Songti TC", serif;
   position: relative;
   background:
     radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.55), transparent 55%),
@@ -4450,6 +4458,10 @@ html[data-theme="dark"] .cr-attend-unseated-head {
     0 1px 0 rgba(255, 255, 255, 0.6) inset,
     0 8px 24px rgba(42, 34, 24, 0.12);
   overflow: hidden;
+  font-family: var(--alm-font-song);
+  font-weight: 600;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 /* Tone accents: school holiday/BF/normal map onto red/teal ornaments */
 .almanac-sheet[data-tone="holiday"] {
@@ -4527,14 +4539,17 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   padding: 0 0.35rem;
 }
 .almanac-year-num {
+  font-family: var(--alm-font-display);
   font-size: 1.65rem;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--alm-teal);
   line-height: 1;
   letter-spacing: 0.04em;
 }
 .almanac-year-gan {
+  font-family: var(--alm-font-song);
   font-size: 0.78rem;
+  font-weight: 600;
   color: var(--alm-ink);
   margin-top: 0.15rem;
 }
@@ -4546,8 +4561,9 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 1.35rem;
-  font-weight: 800;
+  font-family: var(--alm-font-deco);
+  font-size: 1.45rem;
+  font-weight: 400;
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
   border: 2px solid rgba(255, 255, 255, 0.35);
 }
@@ -4561,12 +4577,15 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   text-align: right;
 }
 .almanac-month-zh {
+  font-family: var(--alm-font-display);
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 900;
   line-height: 1.1;
 }
 .almanac-month-en {
+  font-family: var(--alm-font-display);
   font-size: 0.68rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
   color: var(--alm-muted);
   margin-top: 0.1rem;
@@ -4585,9 +4604,11 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   text-orientation: mixed;
   background: #b8332d;
   color: #fff7ef;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-family: var(--alm-font-kai);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  line-height: 1.35;
   padding: 0.55rem 0.28rem;
   border-radius: 4px;
   max-height: 9.5rem;
@@ -4609,18 +4630,22 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   position: relative;
 }
 .almanac-day-num {
+  font-family: var(--alm-font-display);
   font-size: clamp(4.2rem, 18vw, 6.2rem);
   font-weight: 900;
   line-height: 0.9;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.02em;
+  font-variant-numeric: lining-nums;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 .almanac-weekday {
+  font-family: var(--alm-font-song);
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 900;
   margin-top: 0.1rem;
 }
 .almanac-weekday-en {
+  font-family: var(--alm-font-display);
   font-size: 0.7rem;
   letter-spacing: 0.18em;
   font-weight: 700;
@@ -4641,16 +4666,19 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   min-height: 3.2rem;
 }
 .almanac-box-k {
+  font-family: var(--alm-font-song);
   font-size: 0.95rem;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--alm-teal);
 }
 .almanac-box-v {
+  font-family: var(--alm-font-display);
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 900;
   margin-top: 0.1rem;
 }
 .almanac-box-v-sm {
+  font-family: var(--alm-font-song);
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--alm-ink);
@@ -4679,10 +4707,11 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   height: 1.7rem;
   border-radius: 4px;
   color: #fff;
-  font-weight: 900;
+  font-family: var(--alm-font-deco);
+  font-weight: 400;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: 1.15rem;
 }
 .almanac-col-list {
   list-style: none;
@@ -4690,9 +4719,11 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   padding: 0;
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  font-size: 0.78rem;
+  font-family: var(--alm-font-song);
+  font-size: 0.82rem;
+  font-weight: 600;
   line-height: 1.55;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   max-height: 11rem;
   overflow: hidden;
   color: var(--alm-ink);
@@ -4713,6 +4744,7 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   display: grid;
   grid-template-columns: 2.4rem 1fr;
   gap: 0.35rem;
+  font-family: var(--alm-font-song);
   font-size: 0.8rem;
   line-height: 1.35;
   padding-bottom: 0.25rem;
@@ -4723,7 +4755,8 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   padding-bottom: 0;
 }
 .almanac-fact-k {
-  font-weight: 800;
+  font-family: var(--alm-font-song);
+  font-weight: 900;
   color: var(--alm-teal);
 }
 .almanac-fact-v {
@@ -4738,6 +4771,7 @@ html[data-theme="dark"] .cr-attend-unseated-head {
 .almanac-fortune-row {
   display: flex;
   justify-content: space-between;
+  font-family: var(--alm-font-song);
   font-size: 0.78rem;
   font-weight: 700;
 }
@@ -4761,12 +4795,15 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   min-height: 3.6rem;
 }
 .almanac-hour-head {
-  font-weight: 800;
-  font-size: 0.78rem;
+  font-family: var(--alm-font-display);
+  font-weight: 900;
+  font-size: 0.85rem;
   color: var(--alm-teal);
 }
 .almanac-hour-sub {
+  font-family: var(--alm-font-song);
   font-size: 0.62rem;
+  font-weight: 600;
   line-height: 1.25;
   margin: 0.15rem 0;
   color: var(--alm-ink);
@@ -4778,8 +4815,9 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 50%;
-  font-size: 0.62rem;
-  font-weight: 800;
+  font-family: var(--alm-font-deco);
+  font-size: 0.68rem;
+  font-weight: 400;
   margin-top: 0.05rem;
 }
 .almanac-hour.is-ji .almanac-hour-luck {
@@ -4799,7 +4837,9 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   align-items: center;
   justify-content: space-between;
   gap: 0.4rem;
+  font-family: var(--alm-font-song);
   font-size: 0.68rem;
+  font-weight: 600;
   color: var(--alm-muted);
   padding-top: 0.2rem;
   border-top: 1px solid rgba(47, 107, 99, 0.2);
@@ -4809,6 +4849,7 @@ html[data-theme="dark"] .cr-attend-unseated-head {
   border: 1px solid var(--alm-teal);
   background: rgba(255, 255, 255, 0.55);
   color: var(--alm-teal);
+  font-family: var(--alm-font-song);
   font-size: 0.72rem;
   font-weight: 700;
   border-radius: 999px;
@@ -4849,7 +4890,7 @@ html[data-theme="dark"] .cr-attend-unseated-head {
     left: 0;
   }
   .almanac-banner {
-    font-size: 0.68rem;
+    font-size: 0.92rem;
     max-height: 8rem;
   }
   .almanac-hours {
