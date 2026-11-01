@@ -94,6 +94,7 @@
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-find-room" id="home-tab-find-room" data-panel="find-room" data-role-view="staff">搵課室</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-memo" id="home-tab-memo" data-panel="memo">備忘</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet" data-role-view="staff">約開會</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-almanac" id="home-tab-almanac" data-panel="almanac">日曆</button>
           <button type="button" class="home-func-tab member-pay-sheen" role="tab" aria-selected="false" aria-controls="home-panel-member-pay" id="home-tab-member-pay" data-panel="member-pay" data-role-view="staff">會員付費</button>
         </nav>
       </div>
@@ -386,6 +387,14 @@
           </div>
         </section>
 
+        <section id="home-panel-almanac" class="home-panel home-panel-almanac hidden" role="tabpanel" aria-labelledby="home-tab-almanac" data-panel="almanac" hidden>
+          <div class="almanac-wrap" aria-label="中國日曆">
+            <div id="almanac-root" class="almanac-sheet" aria-live="polite">
+              <p class="almanac-loading muted">載入日曆…</p>
+            </div>
+          </div>
+        </section>
+
         <section id="home-panel-member-pay" class="home-panel home-panel-member-pay hidden" role="tabpanel" aria-labelledby="home-tab-member-pay" data-panel="member-pay" hidden>
           <div class="home-member-pay-card" data-role-view="staff">
             <div id="member-pay-hero" class="member-pay-hero member-pay-jelly" role="img" aria-label="可拖動的果凍" aria-describedby="member-pay-jelly-caption">
@@ -421,6 +430,7 @@
   <script src="js/personal-memo.js"></script>
   <script src="js/meet.js"></script>
   <script src="js/find-room.js"></script>
+  <script src="js/chinese-calendar.js"></script>
   <script src="js/member-pay.js"></script>
 </body>
 </html>

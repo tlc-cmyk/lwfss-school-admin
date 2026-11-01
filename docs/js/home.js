@@ -1579,6 +1579,7 @@
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
+      if (state.activePanel === "almanac") refreshAlmanacPanel();
       return;
     }
 
@@ -1733,6 +1734,7 @@
         if (state.activePanel === "free") renderFreePanel();
         if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
+        if (state.activePanel === "almanac") refreshAlmanacPanel();
         startClock();
       }
 
@@ -1772,6 +1774,7 @@
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
+      if (state.activePanel === "almanac") refreshAlmanacPanel();
     });
   }
 
@@ -2327,6 +2330,7 @@
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
+      if (state.activePanel === "almanac") refreshAlmanacPanel();
       return;
     }
     var client = getClient();
@@ -2361,6 +2365,7 @@
       if (state.activePanel === "free") renderFreePanel();
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
+      if (state.activePanel === "almanac") refreshAlmanacPanel();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
@@ -3385,6 +3390,11 @@
         window.SchoolAdminFindRoom.show();
       }
     }
+    if (panelId === "almanac") {
+      if (window.SchoolAdminAlmanac && typeof window.SchoolAdminAlmanac.show === "function") {
+        window.SchoolAdminAlmanac.show();
+      }
+    }
     if (panelId === "member-pay") {
       if (window.SchoolAdminMemberPay && typeof window.SchoolAdminMemberPay.show === "function") {
         window.SchoolAdminMemberPay.show();
@@ -3525,10 +3535,61 @@
     }
   }
 
+  function refreshAlmanacPanel() {
+    if (window.SchoolAdminAlmanac && typeof window.SchoolAdminAlmanac.refresh === "function") {
+      window.SchoolAdminAlmanac.refresh();
+    }
+  }
+
   window.SchoolAdminHome = {
     getBrowseDate: function () { return state.browseDate || todayHK(); },
+    getBrowseCycleDay: function () { return state.browseCycleDay; },
     getTodayCycleDay: function () { return state.todayCycleDay; },
     getSelectedDay: function () { return state.selectedDay; },
+    getCycleNote: function () { return state.cycleNote || ""; },
+    getCalendarItems: function () { return (state.calendarItems || []).slice(); },
+    getDeadlineItems: function () { return (state.deadlineItems || []).slice(); },
+    getDuty: function () { return state.dutyRow ? {
+      duty_date: state.dutyRow.duty_date,
+      teacher1: state.dutyRow.teacher1,
+      teacher2: state.dutyRow.teacher2
+    } : null; },
+    getAssemblyForDay: function (day) {
+      if (!day || !state.assemblyByDay) return null;
+      return state.assemblyByDay[day] || state.assemblyByDay[String(day)] || null;
+    },
+    getBrowseCalendarKind: function () { return browseCalendarKind(); },
+    getNoCycleDayMessage: function () { return noCycleDayMessage(); },
+    getDayTone: function (day) { return topToneForDay(day == null ? effectiveCycleDay() : day); },
+    getViewingCode: function () { return state.viewingCode || ""; },
+    getBellSlots: function (day) {
+      var sched = scheduleForDay(day);
+      return (sched && sched.slots) ? sched.slots.slice() : [];
+    },
+    getTeacherDayLessons: function (code, day) {
+      var t = findTeacher(code);
+      if (!t || !day || !t.schedule) return [];
+      var dayMap = t.schedule[String(day)] || {};
+      var out = [];
+      Object.keys(dayMap).forEach(function (pk) {
+        var cell = dayMap[pk];
+        if (!cell) return;
+        var p = parseInt(pk, 10);
+        if (!p) return;
+        out.push({
+          period: p,
+          subject: cell.subject || "",
+          subjectShort: cell.subjectShort || "",
+          class: cell.class || "",
+          classShort: cell.classShort || "",
+          room: cell.room || ""
+        });
+      });
+      out.sort(function (a, b) { return a.period - b.period; });
+      return out;
+    },
+    getOleP8: function (code, iso) { return oleP8Info(code, iso); },
+    getBukP8: function (code, iso, cycleDay) { return bukP8Info(code, iso, cycleDay); },
     getTimetableData: function () { return getData(); },
     getCurrentPeriod: function () {
       var day = state.todayCycleDay;
@@ -3540,6 +3601,7 @@
     periodBell: periodBell,
     periodsForDay: periodsForDay,
     bellLabelForDay: bellLabelForDay,
+    scheduleIdForDay: scheduleIdForDay,
     todayHK: todayHK
   };
 
