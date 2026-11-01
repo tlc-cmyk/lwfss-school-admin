@@ -388,30 +388,51 @@
     var tone = ctx.tone;
     var term = ctx.term && ctx.term.current ? ctx.term.current.name : "";
 
-    if (tone === "holiday") {
-      left = term ? (term + "假日放鬆下") : "假日宜休息充電";
-      right = wd === 0 || wd === 6 ? "週末訓多陣都得" : "唔使趕鐘回校";
+    if (tone === "holiday" || (!day && ctx.calKind && ctx.calKind.kind === "holiday")) {
+      left = term ? (term + "休養生息") : "假日休養生息";
+      right = (wd === 0 || wd === 6) ? "週末慢活得閒" : "毋須趕鐘回校";
     } else if (!day && ctx.calKind && ctx.calKind.kind === "exam") {
-      left = "考試日跟場地時間";
-      right = "忌當平常循環日";
+      left = "試日依時到場";
+      right = "忌當循環日亂調";
     } else if (day) {
-      left = "Day " + day + (ctx.bellLabel ? (" · " + ctx.bellLabel.replace("上課時間", "")) : "");
+      left = "循環日第" + day + "日";
       if (ctx.assembly && ctx.assembly.theme) {
-        right = "早會：" + truncate(ctx.assembly.theme, 10);
+        right = "早會" + truncate(ctx.assembly.theme, 6);
       } else if (tone === "bf") {
-        right = "BF日記得第8節";
+        right = "BF日勿忘第八節";
       } else if (wd === 1) {
-        right = "星期一慢熱都要準時";
+        right = "月曜亦要準時";
       } else if (wd === 5) {
-        right = "星期五都要收好尾";
+        right = "金曜收好今日尾";
       } else {
-        right = "跟鐘聲走唔好趕";
+        right = "跟鐘聲勿匆忙";
       }
     } else {
       left = "今日無循環日";
-      right = "先睇校曆再安排";
+      right = "先查校曆安排";
     }
     return { left: left, right: right };
+  }
+
+  function coupletChars(text) {
+    return Array.from(String(text || "")).map(function (ch) {
+      if (ch === " ") return '<span class="almanac-couplet-gap" aria-hidden="true"></span>';
+      return '<span class="almanac-couplet-ch">' + escapeHtml(ch) + "</span>";
+    }).join("");
+  }
+
+  function cornerFlourish() {
+    return (
+      '<svg class="almanac-flourish-svg" viewBox="0 0 64 64" aria-hidden="true" focusable="false">' +
+        '<g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">' +
+          '<path d="M8 56 V22 Q8 8 22 8 H56"/>' +
+          '<path d="M16 56 V28 Q16 16 28 16 H56"/>' +
+          '<path d="M8 40 h12 M24 8 v12"/>' +
+          '<circle cx="20" cy="20" r="3" fill="currentColor" stroke="none"/>' +
+          '<path d="M28 12 l4-6 4 6 -4 3z" fill="currentColor" stroke="none" opacity="0.9"/>' +
+        "</g>" +
+      "</svg>"
+    );
   }
 
   function buildHourStrip(ctx) {
@@ -582,20 +603,6 @@
     };
   }
 
-  function renderYiCol(list, kind) {
-    var cls = kind === "yi" ? "almanac-yi" : "almanac-ji";
-    var mark = kind === "yi" ? "宜" : "忌";
-    var items = (list || []).map(function (t) {
-      return '<li>' + escapeHtml(t) + "</li>";
-    }).join("");
-    return (
-      '<div class="almanac-col ' + cls + '">' +
-        '<div class="almanac-col-badge" aria-hidden="true">' + mark + "</div>" +
-        '<ul class="almanac-col-list">' + items + "</ul>" +
-      "</div>"
-    );
-  }
-
   function render() {
     var root = $("almanac-root");
     if (!root) return;
@@ -622,112 +629,154 @@
     if (term.current && term.current.date === ctx.iso) {
       termNote = "今日交節";
     } else if (term.next) {
-      termNote = "下一個：" + term.next.name + "（" + term.next.date.slice(5).replace("-", "/") + "）";
+      termNote = "下一個 " + term.next.name + " " + term.next.date.slice(5).replace("-", "/");
     } else if (ctx.cycleDay) {
-      termNote = "循環日 Day " + ctx.cycleDay;
+      termNote = "Day " + ctx.cycleDay;
     } else {
       termNote = ctx.noCycleMsg || "按校曆";
     }
 
-    var lunarBox = "";
+    var lunarK = "農曆";
+    var lunarV = "—";
+    var lunarBadge = "";
     if (lunar) {
-      lunarBox =
-        '<div class="almanac-box almanac-box-lunar">' +
-          '<div class="almanac-box-k">農曆' + escapeHtml(lunar.monthName) + escapeHtml(lunar.bigSmall) + "</div>" +
-          '<div class="almanac-box-v">' + escapeHtml(lunar.dayName) + "</div>" +
-        "</div>";
+      lunarK = "農曆" + lunar.monthName;
+      lunarV = lunar.dayName;
+      lunarBadge = lunar.bigSmall;
     } else if (ctx.cycleDay) {
-      lunarBox =
-        '<div class="almanac-box almanac-box-lunar">' +
-          '<div class="almanac-box-k">循環日</div>' +
-          '<div class="almanac-box-v">Day ' + escapeHtml(String(ctx.cycleDay)) + "</div>" +
-        "</div>";
+      lunarK = "循環日";
+      lunarV = "Day " + ctx.cycleDay;
     } else {
-      lunarBox =
-        '<div class="almanac-box almanac-box-lunar">' +
-          '<div class="almanac-box-k">校曆</div>' +
-          '<div class="almanac-box-v">' + escapeHtml(ctx.noCycleMsg || "休課") + "</div>" +
-        "</div>";
+      lunarK = "校曆";
+      lunarV = ctx.noCycleMsg || "休課";
     }
 
-    var schoolBox =
-      '<div class="almanac-box almanac-box-term">' +
-        '<div class="almanac-box-k">' + escapeHtml(termTitle) + "</div>" +
-        '<div class="almanac-box-v almanac-box-v-sm">' + escapeHtml(termNote) + "</div>" +
-      "</div>";
+    var monthZh = (["", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"][ctx.m] || String(ctx.m)) + "月";
 
     var fortuneHtml = fortunes.map(function (f) {
-      return '<div class="almanac-fortune-row"><span>' + escapeHtml(f.label) +
-        '</span><span class="almanac-stars">' + escapeHtml(f.stars) + "</span></div>";
+      return '<tr><th scope="row">' + escapeHtml(f.label) + "</th><td class=\"almanac-stars\">" +
+        escapeHtml(f.stars) + "</td></tr>";
     }).join("");
 
-    var factsHtml = facts.map(function (r) {
-      return '<div class="almanac-fact"><span class="almanac-fact-k">' + escapeHtml(r.k) +
-        '</span><span class="almanac-fact-v">' + escapeHtml(r.v) + "</span></div>";
+    var factsHtml = facts.map(function (r, idx) {
+      var cls = idx === 0 ? " is-lead" : "";
+      return '<tr class="' + cls + '"><th scope="row">' + escapeHtml(r.k) +
+        "</th><td>" + escapeHtml(r.v) + "</td></tr>";
     }).join("");
 
-    var hourHtml = hours.map(function (hItem) {
+    var hourHead = hours.map(function (hItem) {
+      return "<th scope=\"col\">" + escapeHtml(hItem.head) + "</th>";
+    }).join("");
+    var hourSub = hours.map(function (hItem) {
+      return "<td title=\"" + escapeHtml(hItem.time || "") + "\">" + escapeHtml(hItem.sub) + "</td>";
+    }).join("");
+    var hourLuck = hours.map(function (hItem) {
       var luckCls = hItem.luck === "吉" ? "is-ji" : (hItem.luck === "閒" ? "is-xian" : "is-ping");
+      return '<td class="almanac-luck-cell"><span class="almanac-hour-luck ' + luckCls + '">' +
+        escapeHtml(hItem.luck) + "</span></td>";
+    }).join("");
+
+    function yiJiCol(list, kind) {
+      var mark = kind === "yi" ? "宜" : "忌";
+      var items = (list || []).map(function (t) {
+        return '<li><span class="almanac-vert">' + escapeHtml(t) + "</span></li>";
+      }).join("");
       return (
-        '<div class="almanac-hour ' + luckCls + '" title="' + escapeHtml(hItem.time || "") + '">' +
-          '<div class="almanac-hour-head">' + escapeHtml(hItem.head) + "</div>" +
-          '<div class="almanac-hour-sub">' + escapeHtml(hItem.sub) + "</div>" +
-          '<div class="almanac-hour-luck">' + escapeHtml(hItem.luck) + "</div>" +
+        '<div class="almanac-col almanac-' + kind + '">' +
+          '<div class="almanac-col-badge" aria-hidden="true">' + mark + "</div>" +
+          '<ul class="almanac-col-list">' + items + "</ul>" +
         "</div>"
       );
-    }).join("");
+    }
 
     var footerBits = [];
-    footerBits.push(ctx.tone === "holiday" ? "假期色調" : (ctx.tone === "bf" ? "BF 綠" : "上學藍"));
-    if (ctx.code) footerBits.push("課表：" + ctx.code);
-    footerBits.push("資料來自本系統 · 非傳統通勝占卜");
+    footerBits.push(ctx.tone === "holiday" ? "假期" : (ctx.tone === "bf" ? "BF日" : "上課日"));
+    if (ctx.code) footerBits.push(ctx.code);
+    footerBits.push("資料來自本系統");
 
     sheet.innerHTML =
-      '<div class="almanac-ornament almanac-ornament-tl" aria-hidden="true"></div>' +
-      '<div class="almanac-ornament almanac-ornament-tr" aria-hidden="true"></div>' +
-      '<header class="almanac-header">' +
-        '<div class="almanac-year">' +
-          '<div class="almanac-year-num">' + escapeHtml(String(ctx.y)) + "</div>" +
-          '<div class="almanac-year-gan">' + escapeHtml(gz.stem + gz.branch + "年 · " + gz.zodiac + "年") + "</div>" +
-        "</div>" +
-        '<div class="almanac-zodiac" aria-hidden="true"><span>' + escapeHtml(gz.zodiac) + "</span></div>" +
-        '<div class="almanac-month">' +
-          '<div class="almanac-month-zh">' + escapeHtml(String(ctx.m)) + "月</div>" +
-          '<div class="almanac-month-en">' + escapeHtml(MONTHS_EN[ctx.m - 1] || "") + "</div>" +
-        "</div>" +
-      "</header>" +
+      '<div class="almanac-frame">' +
+        '<div class="almanac-flourish almanac-flourish-tl" aria-hidden="true">' + cornerFlourish() + "</div>" +
+        '<div class="almanac-flourish almanac-flourish-tr" aria-hidden="true">' + cornerFlourish() + "</div>" +
+        '<div class="almanac-flourish almanac-flourish-bl" aria-hidden="true">' + cornerFlourish() + "</div>" +
+        '<div class="almanac-flourish almanac-flourish-br" aria-hidden="true">' + cornerFlourish() + "</div>" +
 
-      '<div class="almanac-hero">' +
-        '<div class="almanac-banner almanac-banner-left"><span>' + escapeHtml(banners.left) + "</span></div>" +
-        '<div class="almanac-day-block">' +
-          '<div class="almanac-day-num">' + escapeHtml(String(ctx.d)) + "</div>" +
-          '<div class="almanac-weekday">星期' + escapeHtml(WEEKDAYS_ZH[ctx.weekday]) + "</div>" +
-          '<div class="almanac-weekday-en">' + escapeHtml(WEEKDAYS_EN[ctx.weekday]) + "</div>" +
-        "</div>" +
-        '<div class="almanac-banner almanac-banner-right"><span>' + escapeHtml(banners.right) + "</span></div>" +
-      "</div>" +
+        '<header class="almanac-header">' +
+          '<div class="almanac-year">' +
+            '<div class="almanac-year-num">' + escapeHtml(String(ctx.y)) + "</div>" +
+            '<div class="almanac-year-gan">' + escapeHtml(gz.stem + gz.branch + "年 · " + gz.zodiac + "年") + "</div>" +
+          "</div>" +
+          '<div class="almanac-seal-wrap" aria-hidden="true">' +
+            '<span class="almanac-cloud almanac-cloud-l"></span>' +
+            '<div class="almanac-zodiac"><span>' + escapeHtml(gz.zodiac) + "</span></div>" +
+            '<span class="almanac-cloud almanac-cloud-r"></span>' +
+          "</div>" +
+          '<div class="almanac-month">' +
+            '<div class="almanac-month-row">' +
+              '<span class="almanac-month-zh">' + escapeHtml(monthZh) + "</span>" +
+              (lunarBadge
+                ? '<span class="almanac-month-badge">' + escapeHtml(lunarBadge) + "</span>"
+                : "") +
+            "</div>" +
+            '<div class="almanac-month-en">' + escapeHtml(MONTHS_EN[ctx.m - 1] || "") + "</div>" +
+          "</div>" +
+        "</header>" +
 
-      '<div class="almanac-mid-boxes">' + schoolBox + lunarBox + "</div>" +
+        '<section class="almanac-upper" aria-label="日期">' +
+          '<aside class="almanac-couplet almanac-couplet-left">' + coupletChars(banners.left) + "</aside>" +
+          '<div class="almanac-stage">' +
+            '<div class="almanac-stage-deco" aria-hidden="true">' +
+              '<span class="almanac-sun"></span><span class="almanac-moon"></span>' +
+            "</div>" +
+            '<div class="almanac-chip almanac-chip-term">' +
+              '<div class="almanac-chip-k">' + escapeHtml(termTitle) + "</div>" +
+              '<div class="almanac-chip-v">' + escapeHtml(termNote) + "</div>" +
+            "</div>" +
+            '<div class="almanac-day-block">' +
+              '<div class="almanac-day-num">' + escapeHtml(String(ctx.d)) + "</div>" +
+              '<div class="almanac-weekday">星期' + escapeHtml(WEEKDAYS_ZH[ctx.weekday]) + "</div>" +
+              '<div class="almanac-weekday-en">' + escapeHtml(WEEKDAYS_EN[ctx.weekday]) + "</div>" +
+            "</div>" +
+            '<div class="almanac-chip almanac-chip-lunar">' +
+              '<div class="almanac-chip-k">' + escapeHtml(lunarK) +
+                (lunarBadge ? '<span class="almanac-chip-badge">' + escapeHtml(lunarBadge) + "</span>" : "") +
+              "</div>" +
+              '<div class="almanac-chip-v">' + escapeHtml(lunarV) + "</div>" +
+            "</div>" +
+          "</div>" +
+          '<aside class="almanac-couplet almanac-couplet-right">' + coupletChars(banners.right) + "</aside>" +
+        "</section>" +
 
-      '<div class="almanac-body">' +
-        renderYiCol(yiJi.yi, "yi") +
-        '<div class="almanac-center">' +
-          '<div class="almanac-facts">' + factsHtml + "</div>" +
-          '<div class="almanac-fortune">' + fortuneHtml + "</div>" +
-        "</div>" +
-        renderYiCol(yiJi.ji, "ji") +
-      "</div>" +
+        '<section class="almanac-lower" aria-label="宜忌">' +
+          yiJiCol(yiJi.yi, "yi") +
+          '<div class="almanac-center">' +
+            '<table class="almanac-grid">' +
+              "<tbody>" + factsHtml + "</tbody>" +
+            "</table>" +
+            '<table class="almanac-grid almanac-grid-fortune">' +
+              '<thead><tr><th colspan="2">運勢</th></tr></thead>' +
+              "<tbody>" + fortuneHtml + "</tbody>" +
+            "</table>" +
+          "</div>" +
+          yiJiCol(yiJi.ji, "ji") +
+        "</section>" +
 
-      '<div class="almanac-hours" role="list">' + hourHtml + "</div>" +
+        '<table class="almanac-shichen" aria-label="時段">' +
+          "<thead><tr>" + hourHead + "</tr></thead>" +
+          "<tbody>" +
+            "<tr class=\"almanac-shichen-sub\">" + hourSub + "</tr>" +
+            "<tr class=\"almanac-shichen-luck\">" + hourLuck + "</tr>" +
+          "</tbody>" +
+        "</table>" +
 
-      '<footer class="almanac-footer">' +
-        '<span>' + escapeHtml(footerBits.join(" · ")) + "</span>" +
-        '<button type="button" class="almanac-pick-date" id="almanac-focus-date">改日期</button>' +
-      "</footer>";
+        '<footer class="almanac-footer">' +
+          "<span>" + escapeHtml(footerBits.join(" · ")) + "</span>" +
+          '<button type="button" class="almanac-pick-date" id="almanac-focus-date">改日期</button>' +
+        "</footer>" +
+      "</div>";
 
     var btn = $("almanac-focus-date");
-    if (btn && !btn.dataset.bound) {
-      btn.dataset.bound = "1";
+    if (btn) {
       btn.addEventListener("click", function () {
         var input = $("home-date-input");
         if (!input) return;
