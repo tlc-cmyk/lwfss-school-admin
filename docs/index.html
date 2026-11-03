@@ -280,7 +280,34 @@
             </div>
             <p class="muted home-docs-source">資料來源：校曆表「文件遞交清單及校務會議」欄 ·
               <a href="assets/%E6%A0%A1%E6%9B%86%E8%A1%A8-2026-2027.pdf" target="_blank" rel="noopener">下載 PDF</a>
+              · 儲存後會同步頂卡「今日事項」同日曆
             </p>
+
+            <div id="deadline-form" class="deadline-form" aria-label="文件期限表單" hidden>
+              <h3 id="deadline-form-mode" class="deadline-form-title">新增文件期限</h3>
+              <p class="muted deadline-form-hint">教職員可新增／編輯／刪除；欄位對應 <code>staff_deadlines</code>（到期日、顯示日期、標題、排序）。</p>
+              <div class="deadline-form-grid">
+                <label class="deadline-form-label" for="deadline-due-date">到期日
+                  <input type="date" id="deadline-due-date" class="deadline-form-input" aria-label="到期日" />
+                </label>
+                <button type="button" id="deadline-due-today" class="chip" title="填入今日">今日</button>
+                <label class="deadline-form-label" for="deadline-due-raw">顯示日期
+                  <input type="text" id="deadline-due-raw" class="deadline-form-input" maxlength="40" placeholder="例如 15/11 或 28-30/9" aria-label="顯示日期文字" />
+                </label>
+                <label class="deadline-form-label" for="deadline-sort-order">排序
+                  <input type="number" id="deadline-sort-order" class="deadline-form-input deadline-form-sort" min="0" step="1" aria-label="排序" />
+                </label>
+              </div>
+              <label class="deadline-form-label deadline-form-label-block" for="deadline-title">標題（文件遞交／校務會議）</label>
+              <textarea id="deadline-title" class="deadline-form-title-input" rows="3" maxlength="500" placeholder="例如：行政會議／繳交統測卷…"></textarea>
+              <div class="deadline-form-actions">
+                <button type="button" id="deadline-form-save" class="home-memo-btn home-memo-btn-save">儲存</button>
+                <button type="button" id="deadline-form-clear" class="home-memo-btn">清空／新增</button>
+                <button type="button" id="deadline-form-delete" class="home-memo-btn home-memo-btn-danger" hidden>刪除此項</button>
+                <span id="deadline-form-status" class="home-memo-status" aria-live="polite"></span>
+              </div>
+            </div>
+
             <div id="deadlines-err" class="err home-docs-err" aria-live="polite"></div>
             <div id="deadlines-list" class="deadlines-list" aria-live="polite"></div>
           </div>

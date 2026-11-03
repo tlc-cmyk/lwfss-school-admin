@@ -883,6 +883,109 @@ html[data-app-role="student"] a[data-staff-only] { display: none; }
   .deadline-item { grid-template-columns: 1fr; gap: 4px; }
 }
 
+/* 文件期限 form (staff_deadlines CRUD) */
+.deadline-form {
+  margin: 14px 0 8px;
+  padding: 12px 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--primary-soft, #eef4fb);
+}
+.deadline-form[hidden] { display: none !important; }
+.deadline-form-title {
+  margin: 0 0 4px;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.deadline-form-hint {
+  margin: 0 0 10px;
+  font-size: 0.78rem;
+}
+.deadline-form-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 10px;
+  margin-bottom: 8px;
+}
+.deadline-form-label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+.deadline-form-label-block {
+  display: block;
+  margin-bottom: 4px;
+}
+.deadline-form-input {
+  height: 2rem;
+  min-width: 9.5rem;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  background: var(--card);
+  color: var(--text);
+}
+.deadline-form-sort { min-width: 5rem; max-width: 6.5rem; }
+.deadline-form-title-input {
+  display: block;
+  width: 100%;
+  resize: vertical;
+  min-height: 4.5rem;
+  max-height: 12rem;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--card);
+}
+.deadline-form-title-input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+.deadline-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+.deadline-item.is-editing {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+.deadline-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.deadline-actions .home-memo-btn {
+  height: 1.7rem;
+  padding: 0 10px;
+  font-size: 0.72rem;
+}
+
+html[data-theme="dark"] .deadline-form {
+  background: rgba(80, 120, 180, 0.14);
+}
+html[data-theme="dark"] .deadline-form-input,
+html[data-theme="dark"] .deadline-form-title-input {
+  background: var(--card);
+  color: var(--text);
+}
+
+
 /* ——— Homepage: sticky top+func bar; bottom panel swaps by tab ——— */
 .home-section { margin-bottom: 18px; }
 .home-section-title {

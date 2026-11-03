@@ -73,3 +73,35 @@ CREATE POLICY staff_read_staff_deadlines ON public.staff_deadlines
 
 REVOKE ALL ON TABLE public.staff_deadlines FROM anon;
 GRANT SELECT ON TABLE public.staff_deadlines TO authenticated;
+
+-- Write access for authenticated school staff (see also staff_deadlines_write.sql)
+CREATE OR REPLACE FUNCTION public.is_staff()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.staff s
+    WHERE s.email = public.jwt_email()
+  );
+$$;
+
+DROP POLICY IF EXISTS staff_insert_staff_deadlines ON public.staff_deadlines;
+CREATE POLICY staff_insert_staff_deadlines ON public.staff_deadlines
+  FOR INSERT TO authenticated
+  WITH CHECK (public.is_staff());
+
+DROP POLICY IF EXISTS staff_update_staff_deadlines ON public.staff_deadlines;
+CREATE POLICY staff_update_staff_deadlines ON public.staff_deadlines
+  FOR UPDATE TO authenticated
+  USING (public.is_staff())
+  WITH CHECK (public.is_staff());
+
+DROP POLICY IF EXISTS staff_delete_staff_deadlines ON public.staff_deadlines;
+CREATE POLICY staff_delete_staff_deadlines ON public.staff_deadlines
+  FOR DELETE TO authenticated
+  USING (public.is_staff());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.staff_deadlines TO authenticated;

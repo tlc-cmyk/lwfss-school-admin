@@ -3380,6 +3380,11 @@
         window.SchoolAdminPersonalMemo.show();
       }
     }
+    if (panelId === "docs") {
+      if (window.SchoolAdminStaffDeadlines && typeof window.SchoolAdminStaffDeadlines.show === "function") {
+        window.SchoolAdminStaffDeadlines.show();
+      }
+    }
     if (panelId === "meet") {
       if (window.SchoolAdminMeet && typeof window.SchoolAdminMeet.show === "function") {
         window.SchoolAdminMeet.show();
@@ -3541,7 +3546,17 @@
     }
   }
 
+  function reloadBrowseDay() {
+    var session = getSession();
+    if (session) loadCycleAndCalendar(session);
+  }
+
+  document.addEventListener("schooladmin:deadlines-changed", function () {
+    reloadBrowseDay();
+  });
+
   window.SchoolAdminHome = {
+    reloadBrowseDay: reloadBrowseDay,
     getBrowseDate: function () { return state.browseDate || todayHK(); },
     getBrowseCycleDay: function () { return state.browseCycleDay; },
     getTodayCycleDay: function () { return state.todayCycleDay; },
