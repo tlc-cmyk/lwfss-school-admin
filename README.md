@@ -40,6 +40,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day` / `school_read_duty_roster`（本校 `@g.lwfss.edu.hk`）
 - `staff_deadlines`：教職員（`public.staff` 名單）可 SELECT；另有 INSERT／UPDATE／DELETE（見 `db/staff_deadlines_write.sql`），主頁「文件／會議」表單寫入後會刷新頂卡今日事項／日曆
 - `staff_deadlines` Sheet 同步：Google Sheet「文件期限」係 source of truth；定時／手動同步見 `scripts/sync_staff_deadlines_from_sheet.md`
+- `duty_roster` Sheet 同步：Google Sheet「老師當值／值日表」係 source of truth；定時／手動同步見 `scripts/sync_duty_roster_from_sheet.md`
 - `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 - `seating_charts_*`（教職員：INSERT／UPDATE 僅 `owner_email`＝自己 **且** 任教該 `scope`（整班／科目分組／合班 token）；layout 學生必須屬該範圍；DELETE 僅 owner；SELECT 自己或任教同 scope）
@@ -136,7 +137,10 @@ school-admin/
 │   ├── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
 │   ├── parse_students.py   # 從班名單／分組 Excel 產生 seed_students.sql
 │   ├── sync_staff_deadlines_from_sheet.md  # 文件期限 Sheet→DB 同步說明
-│   └── sync_staff_deadlines_checklist.md
+│   ├── sync_staff_deadlines_checklist.md
+│   ├── duty_roster_sheet.md               # 值日表 Sheet ops note
+│   ├── sync_duty_roster_from_sheet.md     # 值日 Sheet→DB 同步說明
+│   └── sync_duty_roster_checklist.md
 ├── docs/                   # GitHub Pages 網站根目錄
 │   ├── index.html
 │   ├── timetable.html
