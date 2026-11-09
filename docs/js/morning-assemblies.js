@@ -486,8 +486,8 @@
             '" data-date="' + escapeHtml(iso) + '">' +
             '<span class="ma-item-handle" title="拖拉排序" aria-hidden="true">⋮⋮</span>' +
             '<div class="ma-item-body">' +
-              '<div class="ma-item-text">' + escapeHtml(it.content || "") + "</div>" +
-              (who ? '<div class="ma-item-who muted">' + escapeHtml(who) + "</div>" : "") +
+              '<span class="ma-item-text">' + escapeHtml(it.content || "") + "</span>" +
+              (who ? '<span class="ma-item-who muted">' + escapeHtml(who) + "</span>" : "") +
             "</div>" +
             '<button type="button" class="ma-item-del" data-ma-action="delete" data-date="' +
               escapeHtml(iso) + '" data-id="' + escapeHtml(String(it.id)) +

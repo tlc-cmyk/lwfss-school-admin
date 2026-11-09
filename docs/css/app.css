@@ -5373,16 +5373,20 @@ html[data-theme="dark"] .almanac-pick-date {
 .ma-item-body {
   flex: 1 1 auto;
   min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 8px;
+  line-height: 1.35;
 }
 .ma-item-text {
   font-size: 0.9rem;
   font-weight: 600;
-  line-height: 1.35;
   word-break: break-word;
 }
 .ma-item-who {
-  margin-top: 2px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
 }
 .ma-item-del {
   flex: 0 0 auto;
