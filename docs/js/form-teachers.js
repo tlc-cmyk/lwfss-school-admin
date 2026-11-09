@@ -27,8 +27,7 @@
     /** @type {object[]} */
     nonForm: [],
     meta: { classCount: 0, formTeacherSlots: 0, nonFormCount: 0, year: ACADEMIC_YEAR },
-    bound: false,
-    query: ""
+    bound: false
   };
 
   function $(id) { return document.getElementById(id); }
@@ -96,40 +95,6 @@
     return { form: m[1], stream: m[2], classCode: c };
   }
 
-  function normalizeFtQuery(q) {
-    return String(q || "")
-      .trim()
-      .toUpperCase()
-      .replace(/\s+/g, "");
-  }
-
-  function teacherMatches(entry, rawQ, upperQ) {
-    if (!upperQ) return true;
-    var code = normalizeShort(entry.code);
-    var tt = normalizeShort(entry.timetableCode);
-    var chi = String(entry.chi || "");
-    var eng = String(entry.eng || "").toUpperCase();
-    if (code && code.indexOf(upperQ) !== -1) return true;
-    if (tt && tt.indexOf(upperQ) !== -1) return true;
-    if (eng && eng.indexOf(upperQ) !== -1) return true;
-    if (chi && chi.indexOf(rawQ) !== -1) return true;
-    return false;
-  }
-
-  function classMatches(classCode, upperQ) {
-    if (!upperQ) return true;
-    var c = normalizeClassCode(classCode);
-    var sForm = "S" + c; // S1A
-    if (c.indexOf(upperQ) !== -1) return true;
-    if (sForm.indexOf(upperQ) !== -1) return true;
-    // form only: 1 / S1
-    var m = c.match(/^([1-6])([A-D])$/);
-    if (m) {
-      if (upperQ === m[1] || upperQ === "S" + m[1]) return true;
-    }
-    return false;
-  }
-
   function resolveDisplayNames(shortLower, staffByShort, teachersByCode) {
     var u = normalizeShort(shortLower);
     var staff = staffByShort[u] || staffByShort[String(shortLower || "").toLowerCase()];
@@ -137,8 +102,7 @@
     var tt = findTimetableTeacher(ttCode) || findTimetableTeacher(u);
     var dbT = teachersByCode[ttCode] || teachersByCode[u] || null;
     var chi = (staff && staff.name) || (tt && tt.chi) || (dbT && dbT.chi_name) || "";
-    var eng = (tt && tt.eng) || (dbT && dbT.eng_name) || "";
-    return { chi: chi, eng: eng, inTimetable: !!tt, timetableCode: tt ? tt.code : ttCode };
+    return { chi: chi, inTimetable: !!tt, timetableCode: tt ? tt.code : ttCode };
   }
 
   function buildModel(classRows, staffRows, teacherRows) {
@@ -181,7 +145,6 @@
       byClass[parsed.classCode].teachers.push({
         code: u,
         chi: names.chi,
-        eng: names.eng,
         timetableCode: names.timetableCode !== u ? names.timetableCode : (CODE_ALIASES[u] || ""),
         inTimetable: names.inTimetable,
         sortOrder: row.sort_order == null ? 0 : row.sort_order
@@ -218,7 +181,6 @@
       nonForm.push({
         code: u,
         chi: names.chi || s.name || "",
-        eng: names.eng || "",
         timetableCode: names.timetableCode !== u ? names.timetableCode : (CODE_ALIASES[u] || ""),
         inTimetable: names.inTimetable
       });
@@ -282,7 +244,7 @@
           return res.data || [];
         }),
       fetchAll(client, "staff", "short_name, name, class_teacher, is_teaching_staff", "short_name"),
-      fetchAll(client, "teachers", "code, eng_name, chi_name", "code")
+      fetchAll(client, "teachers", "code, chi_name", "code")
     ])
       .then(function (parts) {
         var model = buildModel(parts[0], parts[1], parts[2]);
@@ -341,15 +303,15 @@
     }
   }
 
-  function renderTeacherButton(entry, highlight) {
+  function renderTeacherButton(entry) {
     var tt = entry.inTimetable;
     var btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "ft-teacher" + (tt ? " has-tt" : "") + (highlight ? " is-hit" : "");
-    var nameLine = [entry.chi, entry.eng].filter(Boolean).join(" · ");
+    btn.className = "ft-teacher" + (tt ? " has-tt" : "");
+    var chi = entry.chi || "";
     btn.innerHTML =
       '<span class="ft-code">' + escapeHtml(entry.code) + "</span>" +
-      (nameLine ? '<span class="ft-name">' + escapeHtml(nameLine) + "</span>" : "") +
+      (chi ? '<span class="ft-name">' + escapeHtml(chi) + "</span>" : "") +
       (tt ? '<span class="ft-tt-hint">查看時間表</span>' : "");
     if (tt) {
       btn.title = "開啟 " + entry.code + " 時間表";
@@ -394,11 +356,6 @@
       return;
     }
 
-    var rawQ = state.query;
-    var q = normalizeFtQuery(rawQ);
-    var visibleClasses = 0;
-    var visibleTeachers = 0;
-
     FORMS.forEach(function (form) {
       var formClasses = state.classes.filter(function (c) { return c.form === form; });
       if (!formClasses.length) return;
@@ -410,51 +367,30 @@
       streamWrap.appendChild(heading);
       var formGrid = document.createElement("div");
       formGrid.className = "ft-grid";
-      var formHasVisible = false;
 
       STREAMS.forEach(function (stream) {
         var cls = formClasses.filter(function (c) { return c.stream === stream; })[0];
         if (!cls) return;
         var teachers = cls.teachers || [];
-        var classHit = classMatches(cls.classCode, q);
-        var teacherHitFlags = teachers.map(function (entry) {
-          return teacherMatches(entry, rawQ, q);
-        });
-        var anyTeacherHit = teacherHitFlags.some(Boolean);
-        if (q && !classHit && !anyTeacherHit) return;
-
-        formHasVisible = true;
-        visibleClasses += 1;
         var card = document.createElement("div");
-        card.className = "ft-class" + (q && (classHit || anyTeacherHit) ? " is-hit" : "");
+        card.className = "ft-class";
         var idEl = document.createElement("div");
         idEl.className = "ft-class-id";
         idEl.textContent = cls.classCode;
         card.appendChild(idEl);
 
-        teachers.forEach(function (entry, idx) {
-          if (q && !classHit && !teacherHitFlags[idx]) return;
-          visibleTeachers += 1;
-          card.appendChild(renderTeacherButton(entry, !!(q && teacherHitFlags[idx])));
+        teachers.forEach(function (entry) {
+          card.appendChild(renderTeacherButton(entry));
         });
         formGrid.appendChild(card);
       });
 
-      if (formHasVisible) {
-        streamWrap.appendChild(formGrid);
-        grid.appendChild(streamWrap);
-      }
+      streamWrap.appendChild(formGrid);
+      grid.appendChild(streamWrap);
     });
 
     var nonForm = state.nonForm || [];
-    var nonHits = nonForm.map(function (entry) {
-      return teacherMatches(entry, rawQ, q);
-    });
-    var queryLooksLikeClass = q && /^S?[1-6][A-D]?$/.test(q);
-    var showNon = nonForm.length > 0 && (!q || nonHits.some(Boolean)) &&
-      !(queryLooksLikeClass && !nonHits.some(Boolean));
-
-    if (showNon) {
+    if (nonForm.length > 0) {
       var nfBlock = document.createElement("div");
       nfBlock.className = "ft-form-block";
       var nfH = document.createElement("h3");
@@ -462,10 +398,8 @@
       nfBlock.appendChild(nfH);
       var nfWrap = document.createElement("div");
       nfWrap.className = "ft-nonform";
-      nonForm.forEach(function (entry, idx) {
-        if (q && !nonHits[idx]) return;
-        visibleTeachers += 1;
-        nfWrap.appendChild(renderTeacherButton(entry, !!(q && nonHits[idx])));
+      nonForm.forEach(function (entry) {
+        nfWrap.appendChild(renderTeacherButton(entry));
       });
       nfBlock.appendChild(nfWrap);
       grid.appendChild(nfBlock);
@@ -473,49 +407,17 @@
 
     if (metaEl) {
       var m = state.meta || {};
-      metaEl.textContent = q
-        ? ("搜尋「" + rawQ + "」· 顯示 " + visibleClasses + " 班／" + visibleTeachers + " 人")
-        : ("班主任 · " + (m.year || ACADEMIC_YEAR) + " · " + (m.classCount || 0) + " 班 · " +
-          (m.formTeacherSlots || 0) + " 位班主任 · 非班主任 " + (m.nonFormCount || 0) + " 人");
+      metaEl.textContent =
+        "班主任 · " + (m.year || ACADEMIC_YEAR) + " · " + (m.classCount || 0) + " 班 · " +
+        (m.formTeacherSlots || 0) + " 位班主任 · 非班主任 " + (m.nonFormCount || 0) + " 人";
     }
     if (empty) {
       empty.hidden = grid.children.length > 0;
-      empty.textContent = "冇符合嘅班別或教師。";
-    }
-  }
-
-  function bind() {
-    if (state.bound) return;
-    state.bound = true;
-    var input = $("home-ft-search");
-    var clearBtn = $("home-ft-search-clear");
-    if (input) {
-      input.addEventListener("input", function () {
-        state.query = input.value || "";
-        renderAll();
-      });
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Escape") {
-          input.value = "";
-          state.query = "";
-          renderAll();
-        }
-      });
-    }
-    if (clearBtn) {
-      clearBtn.addEventListener("click", function () {
-        if (input) {
-          input.value = "";
-          input.focus();
-        }
-        state.query = "";
-        renderAll();
-      });
+      empty.textContent = "暫時未有班主任資料。";
     }
   }
 
   function show() {
-    bind();
     if (!state.loaded && !state.loading) {
       loadData();
     } else {
