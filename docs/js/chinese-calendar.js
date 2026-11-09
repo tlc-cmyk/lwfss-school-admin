@@ -290,6 +290,15 @@
       if (assembly && assembly.theme) {
         yi.push("早會：" + assembly.theme + (assembly.is_flag ? "（升旗）" : ""));
       }
+      if (ctx.weekly) {
+        var wTheme = ctx.weekly.theme_week || ctx.weekly.s1 || "周會";
+        yi.push("周會（P6–P7）：" + truncate(wTheme, 16));
+        if (/取消/.test(String(ctx.weekly.venue || ""))) {
+          ji.push("當有周會——其實已取消");
+        }
+      } else if (day === 8) {
+        yi.push("周會時段：第6–7節");
+      }
       if (duty && (duty.teacher1 || duty.teacher2)) {
         var codes = [duty.teacher1, duty.teacher2].filter(Boolean).join("／");
         yi.push("值日老師：" + codes);
@@ -512,6 +521,13 @@
     if (ctx.assembly && ctx.assembly.theme) {
       rows.push({ k: "早會", v: ctx.assembly.theme + (ctx.assembly.is_flag ? " · 升旗" : "") });
     }
+    if (ctx.weekly) {
+      var wv = (ctx.weekly.theme_week || ctx.weekly.s1 || "周會") + " · P6–P7";
+      if (/取消/.test(String(ctx.weekly.venue || ""))) wv += "（取消）";
+      rows.push({ k: "周會", v: truncate(wv, 22) });
+    } else if (ctx.cycleDay === 8) {
+      rows.push({ k: "周會", v: "Day 8 · P6–P7" });
+    }
     if (ctx.lessons && ctx.lessons.length) {
       var first = ctx.lessons[0];
       rows.push({
@@ -552,6 +568,7 @@
     var deadlines = [];
     (deadlineItems || []).forEach(function (it) { if (it && it.title) deadlines.push(String(it.title)); });
     var duty = h && typeof h.getDuty === "function" ? h.getDuty() : null;
+    var weekly = h && typeof h.getWeeklyAssembly === "function" ? h.getWeeklyAssembly() : null;
     var assembly = null;
     if (cycleDay && h && typeof h.getAssemblyForDay === "function") {
       assembly = h.getAssemblyForDay(cycleDay);
@@ -589,6 +606,7 @@
       notes: notes,
       deadlines: deadlines,
       duty: duty,
+      weekly: weekly,
       assembly: assembly,
       lessons: lessons,
       ole: ole,

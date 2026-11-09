@@ -57,6 +57,8 @@
           <div id="home-assembly" class="home-assembly" aria-label="早會" hidden></div>
           <!-- Duty roster teachers for browse date -->
           <div id="home-duty" class="home-duty" aria-label="值日" hidden></div>
+          <!-- Weekly assembly (周會) for browse date / Day 8 · P6–P7 -->
+          <div id="home-weekly" class="home-weekly" aria-label="周會" hidden></div>
 
           <!-- Row 2: 今日事項 + 即時 / 登出 -->
           <div class="home-top-row home-top-row-tools">
@@ -97,6 +99,7 @@
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-find-room" id="home-tab-find-room" data-panel="find-room" data-role-view="staff">搵課室</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-memo" id="home-tab-memo" data-panel="memo">備忘</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet" data-role-view="staff">約開會</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-weekly" id="home-tab-weekly" data-panel="weekly">Day8 周會</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-almanac" id="home-tab-almanac" data-panel="almanac">日曆</button>
           <button type="button" class="home-func-tab member-pay-sheen" role="tab" aria-selected="false" aria-controls="home-panel-member-pay" id="home-tab-member-pay" data-panel="member-pay" data-role-view="staff">會員付費</button>
         </nav>
@@ -432,6 +435,16 @@
           </div>
         </section>
 
+        <section id="home-panel-weekly" class="home-panel home-panel-weekly hidden" role="tabpanel" aria-labelledby="home-tab-weekly" data-panel="weekly" hidden>
+          <div class="home-wa-card">
+            <h2 class="home-panel-title">Day8 周會總表</h2>
+            <p class="muted wa-hint">循環日 <strong>Day 8</strong> · 第6–7節（P6–P7）為周會時段。下列為 2026–2027 年度編排（Sheet 為準）。</p>
+            <div class="wa-meta" id="home-wa-meta" aria-live="polite"></div>
+            <div id="home-wa-table-wrap" class="wa-table-wrap"></div>
+            <div class="wa-empty" id="home-wa-empty" hidden>暫時未有周會編排。</div>
+          </div>
+        </section>
+
         <section id="home-panel-almanac" class="home-panel home-panel-almanac hidden" role="tabpanel" aria-labelledby="home-tab-almanac" data-panel="almanac" hidden>
           <div class="almanac-wrap" aria-label="中國日曆">
             <div id="almanac-root" class="almanac-sheet" aria-live="polite">
@@ -476,6 +489,7 @@
   <script src="js/meet.js"></script>
   <script src="js/find-room.js"></script>
   <script src="js/form-teachers.js"></script>
+  <script src="js/weekly-assemblies.js"></script>
   <script src="js/chinese-calendar.js"></script>
   <script src="js/member-pay.js"></script>
 </body>

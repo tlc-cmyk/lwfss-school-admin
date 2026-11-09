@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`duty_roster`（187）、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos` |
+| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`duty_roster`（187）、`weekly_assemblies`（16）、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos` |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -37,10 +37,11 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_lessons`
 - `school_read_meta`
 - `school_read_staff`
-- `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day` / `school_read_duty_roster`（本校 `@g.lwfss.edu.hk`）
+- `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day` / `school_read_duty_roster` / `school_read_weekly_assemblies`（本校 `@g.lwfss.edu.hk`）
 - `staff_deadlines`：教職員（`public.staff` 名單）可 SELECT；另有 INSERT／UPDATE／DELETE（見 `db/staff_deadlines_write.sql`），主頁「文件／會議」表單寫入後會刷新頂卡今日事項／日曆
 - `staff_deadlines` Sheet 同步：Google Sheet「文件期限」係 source of truth；定時／手動同步見 `scripts/sync_staff_deadlines_from_sheet.md`
 - `duty_roster` Sheet 同步：Google Sheet「老師當值／值日表」係 source of truth；定時／手動同步見 `scripts/sync_duty_roster_from_sheet.md`
+- `weekly_assemblies` Sheet 同步：Google Sheet「2627年度週會編排總表」係 source of truth；定時／手動同步見 `scripts/sync_weekly_assemblies_from_sheet.md`（唔好同 `assembly_by_day` 早會撈亂；時段＝Day 8 · P6–P7）
 - `school_read_students` / `school_read_student_groups` / `school_read_class_teachers`（本校 `@g.lwfss.edu.hk`）
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 - `seating_charts_*`（教職員：INSERT／UPDATE 僅 `owner_email`＝自己 **且** 任教該 `scope`（整班／科目分組／合班 token）；layout 學生必須屬該範圍；DELETE 僅 owner；SELECT 自己或任教同 scope）
@@ -62,9 +63,10 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘**（只顯示目前瀏覽日期嘅自己備忘，無編輯）。唔再堆疊校網 header、今日卡、事項卡三層。
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。無循環日唔顯示。頂欄：無循環日時若 `calendar_events.event_type=exam`／標題含「統測」則顯示「統測」並用一般藍（非假期紅）；真正 `holiday`（公眾假期、聖誕、農曆新年、復活節、旅行翌日假期等）才用假期樣式。OLE `ole_fridays` special／off 只取消 P8，不驅動假期 chrome。
 3. **值日**：按瀏覽日期讀 `duty_roster`；頂欄顯示「值日：T1 · T2」；無當日值日則隱藏；登入短碼若為值日老師會輕微標示。
+3b. **周會**：按瀏覽日期讀 `weekly_assemblies`（有日期嘅全校周會）；頂欄顯示「周會：主題 · P6–P7」；若當日係循環日 Day 8 但 Sheet 無該日，仍提示「Day 8 時段 · P6–P7」。今日事項會加入周會列。功能欄「Day8 周會」顯示全年總表（日期／主題週／中一–中六／場地）。與頂欄「早會」（`assembly_by_day`）分開。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
 4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**班主任**／**座位表**／文件／會議／即時空堂／**搵課室**／**備忘**／約開會／**會員付費**（stub）。切換只換下方面板。學生只見時間表＋備忘。
-5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**班主任** tab＝按 `class_teachers`（2026-2027）顯示 1A–6D 班主任網格（代碼＋中文名）；撳有時間表嘅老師會切去時間表 tab（代碼別名 LTTJ→LTTT、WWKF→WWK、GG→NET、CKHC→CKH）；底部列教學職中嘅非班主任（`docs/js/form-teachers.js`）；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；**備忘** tab＝揀日期、編輯／儲存／刪除當日個人備忘（`personal_memos`）；**搵課室** tab＝揀循環日 D1–D10＋**多選節次**（可同時揀 P1…P7／P8；「全部」＝全選／清除），搵各選節皆空嘅課室（連續可用＝交集；優先普通課室如 301；略過操場；課室名單由時間表推導，無獨立 rooms 表；`docs/js/find-room.js`）；**約開會** tab＝揀 2–8 位同事（`teachers`），按 `lessons`／時間表計 **共同空堂**（單日 D1–D10 或全日週），每節建議可用課室（該節無人用；優先普通課室如 301；`docs/js/meet.js`）。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
+5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**班主任** tab＝按 `class_teachers`（2026-2027）顯示 1A–6D 班主任網格（代碼＋中文名）；撳有時間表嘅老師會切去時間表 tab（代碼別名 LTTJ→LTTT、WWKF→WWK、GG→NET、CKHC→CKH）；底部列教學職中嘅非班主任（`docs/js/form-teachers.js`）；**Day8 周會** tab＝全年周會總表（`docs/js/weekly-assemblies.js`）；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；**備忘** tab＝揀日期、編輯／儲存／刪除當日個人備忘（`personal_memos`）；**搵課室** tab＝揀循環日 D1–D10＋**多選節次**（可同時揀 P1…P7／P8；「全部」＝全選／清除），搵各選節皆空嘅課室（連續可用＝交集；優先普通課室如 301；略過操場；課室名單由時間表推導，無獨立 rooms 表；`docs/js/find-room.js`）；**約開會** tab＝揀 2–8 位同事（`teachers`），按 `lessons`／時間表計 **共同空堂**（單日 D1–D10 或全日週），每節建議可用課室（該節無人用；優先普通課室如 301；`docs/js/meet.js`）。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
 
@@ -128,6 +130,8 @@ school-admin/
 │   ├── seed_assembly_by_day.sql
 │   ├── duty_roster.sql     # 值日老師（按日期）
 │   ├── seed_duty_roster.sql
+│   ├── weekly_assemblies.sql # 周會編排（按日期；Day 8 · P6–P7）
+│   ├── seed_weekly_assemblies.sql
 │   ├── students.sql        # students / student_groups / class_teachers DDL+RLS
 │   ├── seed_students.sql   # 2026-2027 學生＋分組種子
 │   ├── seating_charts.sql  # seating_charts DDL+RLS
@@ -140,7 +144,9 @@ school-admin/
 │   ├── sync_staff_deadlines_checklist.md
 │   ├── duty_roster_sheet.md               # 值日表 Sheet ops note
 │   ├── sync_duty_roster_from_sheet.md     # 值日 Sheet→DB 同步說明
-│   └── sync_duty_roster_checklist.md
+│   ├── sync_duty_roster_checklist.md
+│   ├── sync_weekly_assemblies_from_sheet.md # 周會 Sheet→DB 同步說明
+│   └── sync_weekly_assemblies_checklist.md
 ├── docs/                   # GitHub Pages 網站根目錄
 │   ├── index.html
 │   ├── timetable.html

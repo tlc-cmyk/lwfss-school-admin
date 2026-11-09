@@ -94,6 +94,7 @@
     calendarItems: [],
     deadlineItems: [],
     assemblyByDay: {},
+    weeklyAssembly: null,
     dutyRow: null,
     oleFridays: null,
     oleByTeacher: null,
@@ -799,12 +800,86 @@
     updateNextLessonCountdown();
     renderAssembly();
     renderDuty(session);
+    renderWeeklyAssembly(session);
     renderNotes(session);
     try {
       document.dispatchEvent(new CustomEvent("schooladmin:browse-date", {
         detail: { date: state.browseDate || todayHK() }
       }));
     } catch (e) { /* ignore */ }
+  }
+
+  function formLevelFromSession(session) {
+    session = session || getSession();
+    var code = "";
+    if (session && session.staff && session.staff.class_teacher) {
+      code = normalizeClassCode(session.staff.class_teacher);
+    }
+    if (!code && state.crClass) code = normalizeClassCode(state.crClass);
+    var m = String(code || "").match(/^([1-6])/);
+    return m ? m[1] : "";
+  }
+
+  function weeklyProgrammeForForm(row, formLevel) {
+    if (!row) return "";
+    if (formLevel) {
+      var key = "s" + formLevel;
+      if (row[key]) return String(row[key]);
+    }
+    var vals = ["s1", "s2", "s3", "s4", "s5", "s6"].map(function (k) {
+      return String(row[k] || "").trim();
+    }).filter(Boolean);
+    if (!vals.length) return "";
+    var allSame = vals.every(function (v) { return v === vals[0]; });
+    return allSame ? vals[0] : "";
+  }
+
+  /** Compact headline for top bar / notes. */
+  function weeklyAssemblyHeadline(row, opts) {
+    opts = opts || {};
+    if (!row) {
+      if (opts.day8Only) return "周會時段（P6–P7）";
+      return "";
+    }
+    var parts = ["周會（P6–P7）"];
+    if (row.theme_week) parts.push(String(row.theme_week).trim());
+    var prog = weeklyProgrammeForForm(row, opts.formLevel);
+    if (prog && prog !== row.theme_week) parts.push(prog);
+    if (row.venue) {
+      var v = String(row.venue).trim();
+      if (/取消/.test(v)) parts.push("已取消");
+      else if (v.length <= 18) parts.push(v);
+    }
+    return parts.filter(Boolean).join(" · ");
+  }
+
+  function renderWeeklyAssembly(session) {
+    var el = $("home-weekly");
+    if (!el) return;
+    var row = state.weeklyAssembly;
+    var day = effectiveCycleDay();
+    var isDay8 = day === 8;
+    if (!row && !isDay8) {
+      el.innerHTML = "";
+      el.hidden = true;
+      return;
+    }
+    var formLevel = formLevelFromSession(session);
+    var cancelled = row && /取消/.test(String(row.venue || ""));
+    if (row) {
+      var main = row.theme_week || weeklyProgrammeForForm(row, formLevel) || "周會";
+      el.innerHTML =
+        '<span class="home-weekly-label">周會：</span>' +
+        '<span class="home-weekly-theme">' + escapeHtml(main) + "</span>" +
+        (cancelled ? ' <span class="home-weekly-flag">· 取消</span>' : "") +
+        ' <span class="home-weekly-slot">· P6–P7</span>';
+    } else {
+      el.innerHTML =
+        '<span class="home-weekly-label">周會：</span>' +
+        '<span class="home-weekly-theme">Day 8 時段</span>' +
+        ' <span class="home-weekly-slot">· P6–P7</span>';
+    }
+    el.hidden = false;
   }
 
   function renderAssembly() {
@@ -996,6 +1071,16 @@
       deadlineTitles = collectTitles(state.deadlineItems);
     }
 
+    var weeklyTitles = [];
+    var dayForNotes = effectiveCycleDay();
+    if (state.weeklyAssembly) {
+      weeklyTitles.push(weeklyAssemblyHeadline(state.weeklyAssembly, {
+        formLevel: formLevelFromSession(session)
+      }));
+    } else if (dayForNotes === 8) {
+      weeklyTitles.push("周會時段（P6–P7）");
+    }
+
     var items = [];
     var seen = {};
 
@@ -1005,14 +1090,18 @@
       items.push(title);
     }
 
+    // Weekly assembly first when relevant (Day 8 / matching date), then calendar + staff deadlines.
+    weeklyTitles.forEach(pushTitle);
+
     // Students: calendar only. Staff: calendar + that day's staff_deadlines
     // (deadlines must not be squeezed out when calendar alone would fill the cap).
     if (session && session.role === "staff" && deadlineTitles.length) {
-      var deadlineReserve = Math.min(deadlineTitles.length, NOTES_MAX - (calendarTitles.length ? 1 : 0));
-      var calendarCap = Math.min(calendarTitles.length, NOTES_MAX - deadlineReserve);
+      var roomLeft = Math.max(0, NOTES_MAX - items.length);
+      var deadlineReserve = Math.min(deadlineTitles.length, roomLeft - (calendarTitles.length ? 1 : 0));
+      if (deadlineReserve < 0) deadlineReserve = 0;
+      var calendarCap = Math.min(calendarTitles.length, Math.max(0, roomLeft - deadlineReserve));
       calendarTitles.slice(0, calendarCap).forEach(pushTitle);
       deadlineTitles.forEach(pushTitle);
-      // Any leftover capacity after deadlines → more calendar rows
       calendarTitles.slice(calendarCap).forEach(pushTitle);
     } else {
       calendarTitles.forEach(pushTitle);
@@ -1580,6 +1669,7 @@
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
+      if (state.activePanel === "weekly") refreshWeeklyPanel();
       return;
     }
 
@@ -1611,6 +1701,12 @@
       .eq("duty_date", iso)
       .maybeSingle();
 
+    var weeklyP = client
+      .from("weekly_assemblies")
+      .select("assembly_date,theme_week,s1,s2,s3,s4,s5,s6,venue,academic_year,sort_order")
+      .eq("assembly_date", iso)
+      .maybeSingle();
+
     var oleFriP = state.oleFridays
       ? Promise.resolve({ data: null, _cached: true })
       : client.from("ole_fridays").select("ole_date,kind,title,notes").order("ole_date");
@@ -1631,16 +1727,17 @@
           .from("s6_buk_assignments")
           .select("teacher_code,subject,room,group_label,slot_kind");
 
-    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, oleFriP, oleClubP, bukMetaP, bukAsnP]).then(function (parts) {
+    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, weeklyP, oleFriP, oleClubP, bukMetaP, bukAsnP]).then(function (parts) {
       var browseRes = parts[0];
       var todayRes = parts[1];
       var calRes = parts[2];
       var assemblyRes = parts[3];
       var dutyRes = parts[4];
-      var oleFriRes = parts[5];
-      var oleClubRes = parts[6];
-      var bukMetaRes = parts[7];
-      var bukAsnRes = parts[8];
+      var weeklyRes = parts[5];
+      var oleFriRes = parts[6];
+      var oleClubRes = parts[7];
+      var bukMetaRes = parts[8];
+      var bukAsnRes = parts[9];
 
       if (assemblyRes && !assemblyRes._cached && !assemblyRes.error && assemblyRes.data) {
         var map = {};
@@ -1654,6 +1751,12 @@
         state.dutyRow = dutyRes.data;
       } else {
         state.dutyRow = null;
+      }
+
+      if (weeklyRes && !weeklyRes.error && weeklyRes.data) {
+        state.weeklyAssembly = weeklyRes.data;
+      } else {
+        state.weeklyAssembly = null;
       }
 
       if (oleFriRes && !oleFriRes._cached && !oleFriRes.error && oleFriRes.data) {
@@ -1735,6 +1838,7 @@
         if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
         if (state.activePanel === "almanac") refreshAlmanacPanel();
+      if (state.activePanel === "weekly") refreshWeeklyPanel();
         startClock();
       }
 
@@ -1767,6 +1871,7 @@
       state.cycleNote = "未能讀取循環日";
       state.calendarItems = [];
       state.deadlineItems = [];
+      state.weeklyAssembly = null;
       renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
@@ -1775,6 +1880,7 @@
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
+      if (state.activePanel === "weekly") refreshWeeklyPanel();
     });
   }
 
@@ -2331,6 +2437,7 @@
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
+      if (state.activePanel === "weekly") refreshWeeklyPanel();
       return;
     }
     var client = getClient();
@@ -2366,6 +2473,7 @@
       if (state.activePanel === "meet") refreshMeetPanel();
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
+      if (state.activePanel === "weekly") refreshWeeklyPanel();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
@@ -3400,6 +3508,11 @@
         window.SchoolAdminFindRoom.show();
       }
     }
+    if (panelId === "weekly") {
+      if (window.SchoolAdminWeeklyAssemblies && typeof window.SchoolAdminWeeklyAssemblies.show === "function") {
+        window.SchoolAdminWeeklyAssemblies.show();
+      }
+    }
     if (panelId === "almanac") {
       if (window.SchoolAdminAlmanac && typeof window.SchoolAdminAlmanac.show === "function") {
         window.SchoolAdminAlmanac.show();
@@ -3551,6 +3664,12 @@
     }
   }
 
+  function refreshWeeklyPanel() {
+    if (window.SchoolAdminWeeklyAssemblies && typeof window.SchoolAdminWeeklyAssemblies.show === "function") {
+      window.SchoolAdminWeeklyAssemblies.show();
+    }
+  }
+
   function reloadBrowseDay() {
     var session = getSession();
     if (session) loadCycleAndCalendar(session);
@@ -3577,6 +3696,9 @@
     getAssemblyForDay: function (day) {
       if (!day || !state.assemblyByDay) return null;
       return state.assemblyByDay[day] || state.assemblyByDay[String(day)] || null;
+    },
+    getWeeklyAssembly: function () {
+      return state.weeklyAssembly ? Object.assign({}, state.weeklyAssembly) : null;
     },
     getBrowseCalendarKind: function () { return browseCalendarKind(); },
     getNoCycleDayMessage: function () { return noCycleDayMessage(); },
