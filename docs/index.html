@@ -101,6 +101,7 @@
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet" data-role-view="staff">約開會</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-weekly" id="home-tab-weekly" data-panel="weekly">Day8 周會</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-morning" id="home-tab-morning" data-panel="morning" data-role-view="staff">早會</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-gate-att" id="home-tab-gate-att" data-panel="gate-att" data-role-view="staff">今日拍卡</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-almanac" id="home-tab-almanac" data-panel="almanac">日曆</button>
           <button type="button" class="home-func-tab member-pay-sheen" role="tab" aria-selected="false" aria-controls="home-panel-member-pay" id="home-tab-member-pay" data-panel="member-pay" data-role-view="staff">會員付費</button>
         </nav>
@@ -459,6 +460,36 @@
           </div>
         </section>
 
+
+        <section id="home-panel-gate-att" class="home-panel home-panel-gate-att hidden" role="tabpanel" aria-labelledby="home-tab-gate-att" data-panel="gate-att" hidden>
+          <div class="home-att-card" id="home-att-staff" data-role-view="staff">
+            <h2 class="home-panel-title">今日拍卡</h2>
+            <div class="att-toolbar" id="home-att-toolbar">
+              <button class="home-memo-btn home-memo-btn-save" type="button" id="home-att-upload" data-att-write>上載 CSV</button>
+              <input type="file" id="home-att-file" accept=".csv,text/csv,text/plain,.txt" />
+              <button class="home-memo-btn" type="button" id="home-att-sample" data-att-write>載入示例</button>
+              <button class="home-memo-btn home-memo-btn-danger" type="button" id="home-att-clear" data-att-write>清除當日</button>
+              <div class="att-view-toggle" role="group" aria-label="顯示方式">
+                <button type="button" class="active" data-att-view="byclass" id="home-att-view-class">按班</button>
+                <button type="button" data-att-view="list" id="home-att-view-list">名單</button>
+              </div>
+            </div>
+            <div class="att-status home-memo-status" id="home-att-status" aria-live="polite"></div>
+            <div class="att-summary" id="home-att-summary" hidden>
+              <span class="att-big" id="home-att-arrived">—</span>
+              <span class="att-meta" id="home-att-summary-meta"></span>
+            </div>
+            <div class="att-class-chips" id="home-att-chips" hidden></div>
+            <div id="home-att-body"></div>
+            <p class="att-empty-hint" id="home-att-empty">尚未有拍卡資料。請上載 eClass CSV，或撳「載入示例」。</p>
+            <p class="att-export-path">eClass：考勤管理 → 報告 → 完整拍卡紀錄 → 匯出原始數據。上載後全校教職員共用。</p>
+          </div>
+          <div class="staff-only-note home-att-student" id="home-att-student" data-role-view="student" aria-label="學生提示" hidden>
+            <h2 class="home-panel-title">僅供教職員</h2>
+            <p>今日拍卡只供教職員使用。學生介面不會顯示此內容。</p>
+          </div>
+        </section>
+
         <section id="home-panel-almanac" class="home-panel home-panel-almanac hidden" role="tabpanel" aria-labelledby="home-tab-almanac" data-panel="almanac" hidden>
           <div class="almanac-wrap" aria-label="中國日曆">
             <div id="almanac-root" class="almanac-sheet" aria-live="polite">
@@ -505,6 +536,8 @@
   <script src="js/form-teachers.js"></script>
   <script src="js/weekly-assemblies.js"></script>
   <script src="js/morning-assemblies.js"></script>
+  <script src="js/attendance.js"></script>
+  <script src="js/gate-attendance.js"></script>
   <script src="js/chinese-calendar.js"></script>
   <script src="js/member-pay.js"></script>
 </body>

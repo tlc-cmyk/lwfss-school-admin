@@ -3576,6 +3576,11 @@
         window.SchoolAdminMorningAssemblies.show();
       }
     }
+    if (panelId === "gate-att") {
+      if (window.SchoolAdminGateAttendance && typeof window.SchoolAdminGateAttendance.show === "function") {
+        window.SchoolAdminGateAttendance.show();
+      }
+    }
     if (panelId === "almanac") {
       if (window.SchoolAdminAlmanac && typeof window.SchoolAdminAlmanac.show === "function") {
         window.SchoolAdminAlmanac.show();
