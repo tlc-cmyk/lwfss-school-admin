@@ -95,6 +95,7 @@
     deadlineItems: [],
     assemblyByDay: {},
     weeklyAssembly: null,
+    morningAssembly: null,
     dutyRow: null,
     oleFridays: null,
     oleByTeacher: null,
@@ -887,18 +888,28 @@
     if (!el) return;
     var day = effectiveCycleDay();
     var row = day && state.assemblyByDay ? state.assemblyByDay[day] : null;
-    if (!row || !row.theme) {
+    var booking = state.morningAssembly || null;
+    var bookedContent = booking && String(booking.content || "").trim();
+    var bookedVenue = booking && String(booking.venue || "").trim();
+    var defaultTheme = row && row.theme ? String(row.theme) : "";
+    var themeText = bookedContent || defaultTheme;
+    if (!themeText && !bookedVenue) {
       el.innerHTML = "";
       el.hidden = true;
       return;
     }
-    var flagNote = row.is_flag
+    if (!themeText) themeText = defaultTheme || "早會";
+    var flagNote = row && row.is_flag
       ? ' <span class="home-assembly-flag">· 升國旗</span>'
+      : "";
+    var venueNote = bookedVenue
+      ? ' <span class="home-assembly-venue">· ' + escapeHtml(bookedVenue) + "</span>"
       : "";
     el.innerHTML =
       '<span class="home-assembly-label">早會：</span>' +
-      '<span class="home-assembly-theme">' + escapeHtml(row.theme) + "</span>" +
-      flagNote;
+      '<span class="home-assembly-theme">' + escapeHtml(themeText) + "</span>" +
+      flagNote +
+      venueNote;
     el.hidden = false;
   }
 
@@ -1655,6 +1666,7 @@
       state.calendarItems = [];
       state.deadlineItems = [];
       state.assemblyByDay = {};
+      state.morningAssembly = null;
       state.dutyRow = null;
       state.oleFridays = null;
       state.oleByTeacher = null;
@@ -1670,6 +1682,7 @@
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
       if (state.activePanel === "weekly") refreshWeeklyPanel();
+      if (state.activePanel === "morning") refreshMorningPanel();
       return;
     }
 
@@ -1707,6 +1720,12 @@
       .eq("assembly_date", iso)
       .maybeSingle();
 
+    var morningP = client
+      .from("morning_assemblies")
+      .select("assembly_date,content,venue,booked_by,booked_by_code,booked_at,notes")
+      .eq("assembly_date", iso)
+      .maybeSingle();
+
     var oleFriP = state.oleFridays
       ? Promise.resolve({ data: null, _cached: true })
       : client.from("ole_fridays").select("ole_date,kind,title,notes").order("ole_date");
@@ -1727,17 +1746,18 @@
           .from("s6_buk_assignments")
           .select("teacher_code,subject,room,group_label,slot_kind");
 
-    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, weeklyP, oleFriP, oleClubP, bukMetaP, bukAsnP]).then(function (parts) {
+    Promise.all([cycleBrowse, cycleToday, calP, assemblyP, dutyP, weeklyP, morningP, oleFriP, oleClubP, bukMetaP, bukAsnP]).then(function (parts) {
       var browseRes = parts[0];
       var todayRes = parts[1];
       var calRes = parts[2];
       var assemblyRes = parts[3];
       var dutyRes = parts[4];
       var weeklyRes = parts[5];
-      var oleFriRes = parts[6];
-      var oleClubRes = parts[7];
-      var bukMetaRes = parts[8];
-      var bukAsnRes = parts[9];
+      var morningRes = parts[6];
+      var oleFriRes = parts[7];
+      var oleClubRes = parts[8];
+      var bukMetaRes = parts[9];
+      var bukAsnRes = parts[10];
 
       if (assemblyRes && !assemblyRes._cached && !assemblyRes.error && assemblyRes.data) {
         var map = {};
@@ -1757,6 +1777,12 @@
         state.weeklyAssembly = weeklyRes.data;
       } else {
         state.weeklyAssembly = null;
+      }
+
+      if (morningRes && !morningRes.error && morningRes.data) {
+        state.morningAssembly = morningRes.data;
+      } else {
+        state.morningAssembly = null;
       }
 
       if (oleFriRes && !oleFriRes._cached && !oleFriRes.error && oleFriRes.data) {
@@ -1839,6 +1865,7 @@
       if (state.activePanel === "find-room") refreshFindRoomPanel();
         if (state.activePanel === "almanac") refreshAlmanacPanel();
       if (state.activePanel === "weekly") refreshWeeklyPanel();
+      if (state.activePanel === "morning") refreshMorningPanel();
         startClock();
       }
 
@@ -1872,6 +1899,7 @@
       state.calendarItems = [];
       state.deadlineItems = [];
       state.weeklyAssembly = null;
+      state.morningAssembly = null;
       renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
@@ -1881,6 +1909,7 @@
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
       if (state.activePanel === "weekly") refreshWeeklyPanel();
+      if (state.activePanel === "morning") refreshMorningPanel();
     });
   }
 
@@ -2438,6 +2467,7 @@
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
       if (state.activePanel === "weekly") refreshWeeklyPanel();
+      if (state.activePanel === "morning") refreshMorningPanel();
       return;
     }
     var client = getClient();
@@ -2474,6 +2504,7 @@
       if (state.activePanel === "find-room") refreshFindRoomPanel();
       if (state.activePanel === "almanac") refreshAlmanacPanel();
       if (state.activePanel === "weekly") refreshWeeklyPanel();
+      if (state.activePanel === "morning") refreshMorningPanel();
     }).catch(function () {
       cloudStarted = false;
       if (status) status.textContent = getData() ? "使用本地備份" : "未能載入時間表";
@@ -3513,6 +3544,11 @@
         window.SchoolAdminWeeklyAssemblies.show();
       }
     }
+    if (panelId === "morning") {
+      if (window.SchoolAdminMorningAssemblies && typeof window.SchoolAdminMorningAssemblies.show === "function") {
+        window.SchoolAdminMorningAssemblies.show();
+      }
+    }
     if (panelId === "almanac") {
       if (window.SchoolAdminAlmanac && typeof window.SchoolAdminAlmanac.show === "function") {
         window.SchoolAdminAlmanac.show();
@@ -3670,6 +3706,12 @@
     }
   }
 
+  function refreshMorningPanel() {
+    if (window.SchoolAdminMorningAssemblies && typeof window.SchoolAdminMorningAssemblies.show === "function") {
+      window.SchoolAdminMorningAssemblies.show();
+    }
+  }
+
   function reloadBrowseDay() {
     var session = getSession();
     if (session) loadCycleAndCalendar(session);
@@ -3677,6 +3719,11 @@
 
   document.addEventListener("schooladmin:deadlines-changed", function () {
     reloadBrowseDay();
+  });
+
+  document.addEventListener("schooladmin:morning-assemblies-changed", function () {
+    reloadBrowseDay();
+    if (state.activePanel === "morning") refreshMorningPanel();
   });
 
   window.SchoolAdminHome = {
@@ -3699,6 +3746,9 @@
     },
     getWeeklyAssembly: function () {
       return state.weeklyAssembly ? Object.assign({}, state.weeklyAssembly) : null;
+    },
+    getMorningAssembly: function () {
+      return state.morningAssembly ? Object.assign({}, state.morningAssembly) : null;
     },
     getBrowseCalendarKind: function () { return browseCalendarKind(); },
     getNoCycleDayMessage: function () { return noCycleDayMessage(); },

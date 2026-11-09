@@ -1383,6 +1383,12 @@ html[data-theme="dark"] .theme-label-dark { display: inline; }
   color: #ffe08a;
   white-space: nowrap;
 }
+
+.home-assembly-venue {
+  font-weight: 700;
+  opacity: 0.95;
+  white-space: nowrap;
+}
 html[data-theme="dark"] .home-assembly {
   color: rgba(255, 255, 255, 0.96);
 }
@@ -5264,6 +5270,152 @@ html[data-theme="dark"] .almanac-pick-date {
 }
 
 /* 班主任（form teachers） */
+
+/* 早會預約 panel */
+.home-panel-morning .home-ma-card {
+  padding: 12px 14px 18px;
+  max-width: 100%;
+}
+.home-panel-morning .home-panel-title { margin-bottom: 4px; }
+.ma-hint {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+.ma-meta {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: var(--muted, #667);
+}
+.ma-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ma-card {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  padding: 12px 12px 10px;
+  background: var(--card, #fff);
+}
+.ma-card.is-today {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+.ma-card.is-booked {
+  border-left: 4px solid #2563eb;
+}
+.ma-card.is-empty {
+  border-left: 4px solid rgba(0, 0, 0, 0.12);
+}
+.ma-card-head { margin-bottom: 8px; }
+.ma-card-date {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 0.95rem;
+}
+.ma-cycle {
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+}
+.ma-today-badge,
+.ma-flag-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+.ma-today-badge {
+  background: rgba(37, 99, 235, 0.15);
+  color: #1d4ed8;
+}
+.ma-flag-badge {
+  background: rgba(234, 179, 8, 0.2);
+  color: #a16207;
+}
+.ma-default {
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+.ma-booked-by {
+  margin-top: 2px;
+  font-size: 0.78rem;
+}
+.ma-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 6px 0 4px;
+}
+.ma-content,
+.ma-venue,
+.ma-notes {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 0.9rem;
+  background: #fff;
+  color: inherit;
+}
+.ma-content {
+  resize: vertical;
+  min-height: 3.2rem;
+}
+.ma-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 12px;
+}
+@media (max-width: 560px) {
+  .ma-row { grid-template-columns: 1fr; }
+}
+.ma-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ma-status.is-err { color: #b91c1c; }
+.ma-empty {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--muted, #667);
+}
+html[data-theme="dark"] .ma-card {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+}
+html[data-theme="dark"] .ma-card.is-empty {
+  border-left-color: rgba(255, 255, 255, 0.18);
+}
+html[data-theme="dark"] .ma-cycle,
+html[data-theme="dark"] .ma-today-badge {
+  background: rgba(96, 165, 250, 0.18);
+  color: #93c5fd;
+}
+html[data-theme="dark"] .ma-flag-badge {
+  background: rgba(250, 204, 21, 0.18);
+  color: #fde68a;
+}
+html[data-theme="dark"] .ma-content,
+html[data-theme="dark"] .ma-venue,
+html[data-theme="dark"] .ma-notes {
+  border-color: rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+.home-panel-morning .home-ma-student { margin-top: 0; }
+
 .home-panel-form-teachers .home-ft-card {
   background: var(--card);
   border: 1px solid var(--border);
