@@ -268,13 +268,16 @@
                 <button type="button" class="chip" data-cr-attend-action="all-present">全部出席</button>
                 <button type="button" class="chip seat-btn-danger" data-cr-attend-action="clear-all">清除當日</button>
               </div>
-              <p class="muted seat-hint">撳座位循環：未記 → 出席 → 缺席 → 遲到 → 未記。粉紅／粉藍＝性別（同座位表）。</p>
+              <p class="muted seat-hint">撳座位循環：未記 → 出席 → 缺席 → 遲到 → 未記。粉紅／粉藍＝性別（同座位表）。座位下方「拍／未拍」跟閘口拍卡名單（唔會自動改你嘅點名）。</p>
               <p class="seat-legend" aria-label="出席同性別說明">
                 <span><span class="seat-legend-swatch girl" aria-hidden="true"></span>女</span>
                 <span><span class="seat-legend-swatch boy" aria-hidden="true"></span>男</span>
                 <span><span class="cr-attend-legend-swatch present" aria-hidden="true"></span>出席</span>
                 <span><span class="cr-attend-legend-swatch absent" aria-hidden="true"></span>缺席</span>
                 <span><span class="cr-attend-legend-swatch late" aria-hidden="true"></span>遲到</span>
+                <span><span class="cr-attend-legend-swatch gate-present" aria-hidden="true"></span>已拍卡</span>
+                <span><span class="cr-attend-legend-swatch gate-late" aria-hidden="true"></span>拍卡遲到</span>
+                <span><span class="cr-attend-legend-swatch gate-missing" aria-hidden="true"></span>未拍卡</span>
               </p>
               <div id="cr-attend-grid" class="seat-grid" aria-label="課堂座位點名"></div>
               <div id="cr-attend-unseated" class="cr-attend-unseated" hidden></div>

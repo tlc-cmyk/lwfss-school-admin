@@ -1,11 +1,15 @@
 /**
  * 我的課堂 — seating layout + attendance for taught classes/groups
  * Reuses taught-scope logic from SchoolAdminSeating; date from sticky browse date.
+ * Gate punches (gate_attendance / 今日拍卡) overlay live status by class+class_no;
+ * does not overwrite teacher class_attendance marks.
  */
 (function () {
   "use strict";
 
   var ACADEMIC_YEAR = "2026-2027";
+  /** First tap at/after this time → gate suggests 遲到 (soft hint only). */
+  var GATE_LATE_AFTER = "08:15:00";
   var STATUS_CYCLE = ["", "present", "absent", "late"];
   var STATUS_LABEL = {
     present: "出席",
@@ -16,6 +20,17 @@
     present: "出",
     absent: "缺",
     late: "遲"
+  };
+  var GATE_LABEL = {
+    present: "已拍卡",
+    late: "拍卡遲到",
+    missing: "未拍卡",
+    none: "暫無拍卡"
+  };
+  var GATE_SHORT = {
+    present: "拍",
+    late: "遲拍",
+    missing: "未拍"
   };
 
   var state = {
@@ -33,6 +48,11 @@
     attendanceDate: "",
     /** student_id -> status */
     attendance: {},
+    /** studentKey(class|no) -> { firstTap, lastTap, punched } */
+    gateByKey: {},
+    /** True when gate_attendance has any row for attendanceDate */
+    gateHasData: false,
+    gateLoaded: false,
     saving: false,
     statusMsg: "",
     bound: false
@@ -116,6 +136,78 @@
     if (n === "F") return " is-girl";
     if (n === "M") return " is-boy";
     return "";
+  }
+
+  function studentKey(className, no) {
+    var U = window.AttendanceUtil;
+    if (U && typeof U.studentKey === "function") return U.studentKey(className, no);
+    var c = String(className || "").trim().toUpperCase();
+    var m = c.match(/^S?(\d+[A-D])$/i);
+    if (m) c = m[1].toUpperCase();
+    var n = parseInt(no, 10);
+    if (!c || !n) return "";
+    return c + "|" + n;
+  }
+
+  function shortTap(t) {
+    var U = window.AttendanceUtil;
+    if (U && typeof U.shortTime === "function") return U.shortTime(t);
+    if (!t) return "";
+    return String(t).length >= 5 ? String(t).slice(0, 5) : String(t);
+  }
+
+  function normalizeTapTime(t) {
+    var s = String(t || "").trim();
+    var m = s.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    if (!m) return "";
+    return ("0" + m[1]).slice(-2) + ":" + m[2] + ":" + (m[3] != null ? m[3] : "00");
+  }
+
+  /** Soft gate suggestion: present | late | missing | "" (no gate data that day). */
+  function gateSuggestFromTap(firstTap) {
+    var norm = normalizeTapTime(firstTap);
+    if (!norm) return "missing";
+    if (norm >= GATE_LATE_AFTER) return "late";
+    return "present";
+  }
+
+  function gateInfoForStudent(stu) {
+    if (!stu || !state.gateHasData) return null;
+    var k = studentKey(stu.class_code || stu.className, stu.class_no != null ? stu.class_no : stu.no);
+    if (!k) return null;
+    var hit = state.gateByKey[k];
+    if (hit && hit.punched) {
+      var sug = gateSuggestFromTap(hit.firstTap);
+      return {
+        punched: true,
+        firstTap: hit.firstTap || "",
+        lastTap: hit.lastTap || "",
+        suggest: sug,
+        label: GATE_LABEL[sug] || GATE_LABEL.present,
+        short: GATE_SHORT[sug] || GATE_SHORT.present,
+        timeText: shortTap(hit.firstTap)
+      };
+    }
+    return {
+      punched: false,
+      firstTap: "",
+      lastTap: "",
+      suggest: "missing",
+      label: GATE_LABEL.missing,
+      short: GATE_SHORT.missing,
+      timeText: ""
+    };
+  }
+
+  function gateInfoForSeat(seat) {
+    if (!seat || seat.student_id == null) return null;
+    var stu = findStudent(seat.student_id);
+    if (stu) return gateInfoForStudent(stu);
+    // Fallback from seat fields when roster miss
+    return gateInfoForStudent({
+      class_code: seat.class_code,
+      class_no: seat.class_no
+    });
   }
 
   function setStatus(msg, isErr) {
@@ -375,6 +467,50 @@
     });
   }
 
+  async function loadGateAttendance() {
+    state.gateByKey = {};
+    state.gateHasData = false;
+    state.gateLoaded = false;
+    var client = getClient();
+    var date = state.attendanceDate;
+    if (!client || !date) {
+      state.gateLoaded = true;
+      return;
+    }
+    var res = await client
+      .from("gate_attendance")
+      .select("class_name,student_no,student_name,tap_times,first_tap,last_tap")
+      .eq("punch_date", date)
+      .limit(2000);
+    if (res.error) {
+      // Soft-fail: classroom still works without gate overlay
+      state.gateLoaded = true;
+      console.warn("[classroom] gate_attendance:", res.error.message || res.error);
+      return;
+    }
+    var rows = res.data || [];
+    state.gateHasData = rows.length > 0;
+    rows.forEach(function (row) {
+      var times = Array.isArray(row.tap_times) ? row.tap_times : [];
+      var first = row.first_tap || (times.length ? times[0] : "");
+      var last = row.last_tap || (times.length ? times[times.length - 1] : "");
+      var punched = !!(first || times.length);
+      if (!punched) return;
+      var k = studentKey(row.class_name, row.student_no);
+      if (!k) return;
+      var prev = state.gateByKey[k];
+      if (!prev || (first && (!prev.firstTap || first < prev.firstTap))) {
+        state.gateByKey[k] = {
+          punched: true,
+          firstTap: first || "",
+          lastTap: last || "",
+          name: row.student_name || ""
+        };
+      }
+    });
+    state.gateLoaded = true;
+  }
+
   async function upsertAttendance(studentId, status) {
     var client = getClient();
     var session = getSession();
@@ -427,31 +563,46 @@
 
   function countSummary() {
     var present = 0, absent = 0, late = 0, unmarked = 0;
+    var gateArrived = 0, gateLate = 0, gateMissing = 0;
     var seen = {};
+    function tallyStudent(stuOrId, maybeStu) {
+      var id = String(stuOrId);
+      if (seen[id]) return;
+      seen[id] = true;
+      var st = state.attendance[id] || "";
+      if (st === "present") present++;
+      else if (st === "absent") absent++;
+      else if (st === "late") late++;
+      else unmarked++;
+      var stu = maybeStu || findStudent(stuOrId);
+      if (stu && state.gateHasData) {
+        var g = gateInfoForStudent(stu);
+        if (g) {
+          if (g.suggest === "present") gateArrived++;
+          else if (g.suggest === "late") { gateArrived++; gateLate++; }
+          else if (g.suggest === "missing") gateMissing++;
+        }
+      }
+    }
     Object.keys(state.seats).forEach(function (k) {
       var s = state.seats[k];
       if (!s || s.student_id == null) return;
-      var id = String(s.student_id);
-      if (seen[id]) return;
-      seen[id] = true;
-      var st = state.attendance[id] || "";
-      if (st === "present") present++;
-      else if (st === "absent") absent++;
-      else if (st === "late") late++;
-      else unmarked++;
+      tallyStudent(s.student_id, findStudent(s.student_id));
     });
-    // Also count roster students not on seats
     state.roster.forEach(function (stu) {
-      var id = String(stu.id);
-      if (seen[id]) return;
-      seen[id] = true;
-      var st = state.attendance[id] || "";
-      if (st === "present") present++;
-      else if (st === "absent") absent++;
-      else if (st === "late") late++;
-      else unmarked++;
+      tallyStudent(stu.id, stu);
     });
-    return { present: present, absent: absent, late: late, unmarked: unmarked, total: Object.keys(seen).length };
+    return {
+      present: present,
+      absent: absent,
+      late: late,
+      unmarked: unmarked,
+      total: Object.keys(seen).length,
+      gateArrived: gateArrived,
+      gateLate: gateLate,
+      gateMissing: gateMissing,
+      gateHasData: state.gateHasData
+    };
   }
 
   function fillScopeSelect() {
@@ -512,11 +663,23 @@
         sumEl.hidden = true;
       } else {
         sumEl.hidden = false;
+        var gateHtml = "";
+        if (sum.gateHasData) {
+          gateHtml =
+            '<span class="cr-attend-pill is-gate-arrived" title="閘口拍卡（唔會自動改點名）">拍卡已到 ' + sum.gateArrived + "</span>" +
+            (sum.gateLate
+              ? '<span class="cr-attend-pill is-gate-late" title="首次拍卡 ≥ ' + GATE_LATE_AFTER.slice(0, 5) + '">其中遲拍 ' + sum.gateLate + "</span>"
+              : "") +
+            '<span class="cr-attend-pill is-gate-missing" title="名單有、當日無拍卡">未拍卡 ' + sum.gateMissing + "</span>";
+        } else if (state.gateLoaded) {
+          gateHtml = '<span class="cr-attend-pill is-unmarked" title="gate_attendance 當日無資料">暫無拍卡資料</span>';
+        }
         sumEl.innerHTML =
           '<span class="cr-attend-pill is-present">出席 ' + sum.present + "</span>" +
           '<span class="cr-attend-pill is-absent">缺席 ' + sum.absent + "</span>" +
           '<span class="cr-attend-pill is-late">遲到 ' + sum.late + "</span>" +
           '<span class="cr-attend-pill is-unmarked">未記 ' + sum.unmarked + "</span>" +
+          gateHtml +
           '<span class="muted">共 ' + sum.total + " 人</span>";
       }
     }
@@ -533,6 +696,18 @@
       return seat.class_code + "-" + (seat.class_no || "");
     }
     return String(seat.class_no != null ? seat.class_no : "");
+  }
+
+  function gateChipHtml(gate) {
+    if (!gate) return "";
+    var tip = gate.punched
+      ? (gate.label + (gate.timeText ? " " + gate.timeText : ""))
+      : gate.label;
+    var body = gate.punched
+      ? (escapeHtml(gate.short) + (gate.timeText ? " " + escapeHtml(gate.timeText) : ""))
+      : escapeHtml(gate.short);
+    return '<span class="cr-gate-chip is-gate-' + escapeHtml(gate.suggest) + '" title="' +
+      escapeHtml(tip) + '">' + body + "</span>";
   }
 
   function renderGrid() {
@@ -557,23 +732,37 @@
         if (seat && seat.student_id) {
           sid = String(seat.student_id);
           var st = state.attendance[sid] || "";
+          var gate = gateInfoForSeat(seat);
           cls += " is-filled";
           cls += sexClass(seat.sex || sexFromRosterId(seat.student_id));
-          if (st) cls += " is-att-" + st;
+          if (st) {
+            cls += " is-att-" + st;
+          } else if (gate) {
+            // Soft gate suggestion only when teacher has not marked
+            cls += " is-gate-hint-" + gate.suggest;
+          }
           var badge = st
             ? '<span class="cr-attend-badge is-' + st + '">' + escapeHtml(STATUS_SHORT[st] || "") + "</span>"
             : '<span class="cr-attend-badge is-unmarked">?</span>';
           label =
             badge +
             '<span class="seat-cell-no">' + escapeHtml(noLabelForSeat(seat)) + "</span>" +
-            '<span class="seat-cell-name">' + escapeHtml(seat.name_zh || seat.name_en || "") + "</span>";
+            '<span class="seat-cell-name">' + escapeHtml(seat.name_zh || seat.name_en || "") + "</span>" +
+            gateChipHtml(gate);
         } else {
           label = '<span class="seat-cell-empty">空</span>';
         }
+        var ariaExtra = "";
+        if (sid) {
+          ariaExtra = " · " + (STATUS_LABEL[state.attendance[sid]] || "未記");
+          var g2 = gateInfoForSeat(seat);
+          if (g2) {
+            ariaExtra += " · " + g2.label + (g2.timeText ? " " + g2.timeText : "");
+          }
+        }
         html += '<div role="button" tabindex="0" class="' + cls + '" data-r="' + r + '" data-c="' + c + '"' +
           (sid ? ' data-student-id="' + escapeHtml(sid) + '"' : "") +
-          ' aria-label="座位 R' + (r + 1) + " C" + (c + 1) +
-          (sid ? " · " + (STATUS_LABEL[state.attendance[sid]] || "未記") : "") + '">' +
+          ' aria-label="座位 R' + (r + 1) + " C" + (c + 1) + ariaExtra + '">' +
           label + "</div>";
       }
     }
@@ -608,16 +797,20 @@
     free.forEach(function (s) {
       var id = String(s.id);
       var st = state.attendance[id] || "";
+      var gate = gateInfoForStudent(s);
       var no = (state.scope.kind === "group" || state.scope.kind === "split") && s.class_code
         ? (s.class_code + "-" + s.class_no)
         : String(s.class_no);
-      html += '<li class="cr-attend-unseated-item' + sexClass(s.sex) +
-        (st ? " is-att-" + st : "") +
+      var itemCls = "cr-attend-unseated-item" + sexClass(s.sex);
+      if (st) itemCls += " is-att-" + st;
+      else if (gate) itemCls += " is-gate-hint-" + gate.suggest;
+      html += '<li class="' + itemCls +
         '" role="button" tabindex="0" data-student-id="' + escapeHtml(id) + '">' +
         '<span class="cr-attend-badge is-' + (st || "unmarked") + '">' +
         escapeHtml(st ? STATUS_SHORT[st] : "?") + "</span>" +
         '<span class="seat-no">' + escapeHtml(no) + "</span>" +
         '<span class="seat-name">' + escapeHtml(displayName(s)) + "</span>" +
+        gateChipHtml(gate) +
         "</li>";
     });
     html += "</ul>";
@@ -724,6 +917,8 @@
     if (!scope) {
       state.seats = {};
       state.attendance = {};
+      state.gateByKey = {};
+      state.gateHasData = false;
       renderAll();
       setStatus(state.scopes.length ? "請揀一個班別／分組。" : "未有可點名嘅班別／分組。");
       return;
@@ -732,10 +927,12 @@
     try {
       await loadRosterForScope(scope);
       await loadChartForScope(scope);
-      await loadAttendance();
+      await Promise.all([loadAttendance(), loadGateAttendance()]);
       renderAll();
       setStatus(
-        "撳座位循環：未記 → 出席 → 缺席 → 遲到 → 未記。日期跟頂欄。"
+        state.gateHasData
+          ? "撳座位循環記點名；座位下方顯示閘口拍卡（唔會自動改你嘅紀錄）。"
+          : "撳座位循環：未記 → 出席 → 缺席 → 遲到 → 未記。日期跟頂欄。"
       );
     } catch (e) {
       setStatus((e && e.message) || "載入失敗", true);
@@ -754,9 +951,12 @@
     if (!state.scope) return;
     // Only reload attendance when panel might be visible / has scope
     try {
-      await loadAttendance();
+      await Promise.all([loadAttendance(), loadGateAttendance()]);
       renderAll();
-      setStatus("已切換日期：" + formatDateLabel(iso));
+      setStatus(
+        "已切換日期：" + formatDateLabel(iso) +
+        (state.gateHasData ? "（已同步拍卡）" : "（暫無拍卡資料）")
+      );
     } catch (e) {
       setStatus((e && e.message) || "讀取出席失敗", true);
     }

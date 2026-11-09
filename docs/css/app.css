@@ -4565,6 +4565,106 @@ html[data-theme="dark"] .footer-nav-btn:hover {
 .cr-attend-legend-swatch.present { background: #067647; border-color: #067647; }
 .cr-attend-legend-swatch.absent { background: #b42318; border-color: #b42318; }
 .cr-attend-legend-swatch.late { background: #b54708; border-color: #b54708; }
+.cr-attend-legend-swatch.gate-present { background: #12b76a; border-color: #12b76a; }
+.cr-attend-legend-swatch.gate-late { background: #f79009; border-color: #f79009; }
+.cr-attend-legend-swatch.gate-missing {
+  background: transparent;
+  border: 2px dashed #f04438;
+}
+
+/* Gate punch overlay on 我的課堂 (live from gate_attendance; does not overwrite marks) */
+.cr-gate-chip {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  border-radius: 4px;
+  padding: 1px 3px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cr-gate-chip.is-gate-present {
+  color: #067647;
+  background: rgba(6, 118, 71, 0.1);
+}
+.cr-gate-chip.is-gate-late {
+  color: #b54708;
+  background: rgba(181, 71, 8, 0.12);
+}
+.cr-gate-chip.is-gate-missing {
+  color: #b42318;
+  background: rgba(180, 35, 24, 0.08);
+}
+.cr-attend-cell.is-gate-hint-present {
+  box-shadow: inset 0 0 0 2px rgba(18, 183, 106, 0.55);
+}
+.cr-attend-cell.is-gate-hint-late {
+  box-shadow: inset 0 0 0 2px rgba(247, 144, 9, 0.7);
+}
+.cr-attend-cell.is-gate-hint-missing {
+  box-shadow: inset 0 0 0 2px rgba(240, 68, 56, 0.45);
+  opacity: 0.92;
+}
+.cr-attend-unseated-item.is-gate-hint-present {
+  box-shadow: inset 0 0 0 2px rgba(18, 183, 106, 0.45);
+}
+.cr-attend-unseated-item.is-gate-hint-late {
+  box-shadow: inset 0 0 0 2px rgba(247, 144, 9, 0.55);
+}
+.cr-attend-unseated-item.is-gate-hint-missing {
+  box-shadow: inset 0 0 0 2px rgba(240, 68, 56, 0.4);
+}
+.cr-attend-unseated-item .cr-gate-chip {
+  display: inline-block;
+  margin-top: 0;
+  margin-left: 2px;
+}
+.cr-attend-pill.is-gate-arrived {
+  background: #ecfdf3;
+  border-color: #abefc6;
+  color: #067647;
+}
+.cr-attend-pill.is-gate-late {
+  background: #fffaeb;
+  border-color: #fecd89;
+  color: #b54708;
+}
+.cr-attend-pill.is-gate-missing {
+  background: #fef3f2;
+  border-color: #fecdca;
+  color: #b42318;
+}
+html[data-theme="dark"] .cr-gate-chip.is-gate-present {
+  color: #6ee7b7;
+  background: rgba(52, 211, 153, 0.16);
+}
+html[data-theme="dark"] .cr-gate-chip.is-gate-late {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.14);
+}
+html[data-theme="dark"] .cr-gate-chip.is-gate-missing {
+  color: #fda29b;
+  background: rgba(240, 113, 103, 0.14);
+}
+html[data-theme="dark"] .cr-attend-pill.is-gate-arrived {
+  background: rgba(52, 211, 153, 0.18);
+  color: #6ee7b7;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+html[data-theme="dark"] .cr-attend-pill.is-gate-late {
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.4);
+}
+html[data-theme="dark"] .cr-attend-pill.is-gate-missing {
+  background: rgba(240, 113, 103, 0.18);
+  color: #fda29b;
+  border-color: rgba(240, 113, 103, 0.4);
+}
 
 .cr-attend-unseated {
   margin-top: 12px;
