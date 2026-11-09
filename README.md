@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`duty_roster`（187）、`weekly_assemblies`（16）、`morning_assemblies`、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos` |
+| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`duty_roster`（187）、`weekly_assemblies`（16）、`morning_assemblies`、`morning_assembly_items`、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos` |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -37,7 +37,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `school_read_lessons`
 - `school_read_meta`
 - `school_read_staff`
-- `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day` / `school_read_duty_roster` / `school_read_weekly_assemblies` / `school_read_morning_assemblies`（本校 `@g.lwfss.edu.hk`）；`morning_assemblies` 寫入：`staff_insert/update/delete_morning_assemblies`（`is_staff()`）
+- `school_read_cycle_days` / `school_read_calendar_events` / `school_read_assembly_by_day` / `school_read_duty_roster` / `school_read_weekly_assemblies` / `school_read_morning_assemblies`／`school_read_morning_assembly_items`（本校 `@g.lwfss.edu.hk`）；`morning_assemblies` 寫入：`staff_insert/update/delete_morning_assemblies`（`is_staff()`）
 - `staff_deadlines`：教職員（`public.staff` 名單）可 SELECT；另有 INSERT／UPDATE／DELETE（見 `db/staff_deadlines_write.sql`），主頁「文件／會議」表單寫入後會刷新頂卡今日事項／日曆
 - `staff_deadlines` Sheet 同步：Google Sheet「文件期限」係 source of truth；定時／手動同步見 `scripts/sync_staff_deadlines_from_sheet.md`
 - `duty_roster` Sheet 同步：Google Sheet「老師當值／值日表」係 source of truth；定時／手動同步見 `scripts/sync_duty_roster_from_sheet.md`
@@ -61,7 +61,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
 
 1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘**（只顯示目前瀏覽日期嘅自己備忘，無編輯）。唔再堆疊校網 header、今日卡、事項卡三層。
-2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。若該日有 `morning_assemblies` 預約，頂欄優先顯示預約內容；有場地更改則加「· 場地」。無循環日且無預約唔顯示。教職員功能欄「早會」每日一欄輸入＋「增加」預約未來 10 個上學日內容（`docs/js/morning-assemblies.js`）。頂欄：無循環日時若 `calendar_events.event_type=exam`／標題含「統測」則顯示「統測」並用一般藍（非假期紅）；真正 `holiday`（公眾假期、聖誕、農曆新年、復活節、旅行翌日假期等）才用假期樣式。OLE `ole_fridays` special／off 只取消 P8，不驅動假期 chrome。
+2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。若該日有 `morning_assemblies` 預約，頂欄優先顯示預約內容；有場地更改則加「· 場地」。無循環日且無預約唔顯示。教職員功能欄「早會」每日可加多項宣布（輸入＋「增加」），可拖拉排序；資料在 `morning_assembly_items`（`docs/js/morning-assemblies.js`）。頂欄：無循環日時若 `calendar_events.event_type=exam`／標題含「統測」則顯示「統測」並用一般藍（非假期紅）；真正 `holiday`（公眾假期、聖誕、農曆新年、復活節、旅行翌日假期等）才用假期樣式。OLE `ole_fridays` special／off 只取消 P8，不驅動假期 chrome。
 3. **值日**：按瀏覽日期讀 `duty_roster`；頂欄顯示「值日：T1 · T2」；無當日值日則隱藏；登入短碼若為值日老師會輕微標示。
 3b. **周會**：按瀏覽日期讀 `weekly_assemblies`（有日期嘅全校周會）；頂欄顯示「周會：主題 · P6–P7」；若當日係循環日 Day 8 但 Sheet 無該日，仍提示「Day 8 時段 · P6–P7」。今日事項會加入周會列。功能欄「Day8 周會」顯示全年總表（日期／主題週／中一–中六／場地）。與頂欄「早會」（`assembly_by_day`）分開。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
@@ -132,7 +132,8 @@ school-admin/
 │   ├── seed_duty_roster.sql
 │   ├── weekly_assemblies.sql # 周會編排（按日期；Day 8 · P6–P7）
 │   ├── seed_weekly_assemblies.sql
-│   ├── morning_assemblies.sql # 早會內容預約／場地更改（按日期）
+│   ├── morning_assemblies.sql # 早會日期列（場地等）
+│   ├── morning_assembly_items.sql # 早會宣布事項（每日多項）
 │   ├── students.sql        # students / student_groups / class_teachers DDL+RLS
 │   ├── seed_students.sql   # 2026-2027 學生＋分組種子
 │   ├── seating_charts.sql  # seating_charts DDL+RLS

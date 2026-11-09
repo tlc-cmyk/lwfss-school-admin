@@ -5290,27 +5290,27 @@ html[data-theme="dark"] .almanac-pick-date {
 .ma-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
-.ma-row {
+.ma-day {
   border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 10px;
-  padding: 10px 12px;
+  border-radius: 12px;
+  padding: 10px 12px 12px;
   background: var(--card, #fff);
 }
-.ma-row.is-today {
+.ma-day.is-today {
   border-color: rgba(37, 99, 235, 0.35);
 }
-.ma-row.is-booked {
+.ma-day.is-booked {
   border-left: 4px solid #2563eb;
 }
-.ma-row-label {
+.ma-day-head { margin-bottom: 8px; }
+.ma-day-label {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 8px;
   font-size: 0.92rem;
-  margin-bottom: 2px;
 }
 .ma-cycle {
   font-weight: 700;
@@ -5328,12 +5328,78 @@ html[data-theme="dark"] .almanac-pick-date {
   background: rgba(37, 99, 235, 0.15);
   color: #1d4ed8;
 }
-.ma-current {
-  font-size: 0.8rem;
-  margin: 2px 0 8px;
-  line-height: 1.35;
+.ma-default {
+  margin-top: 3px;
+  font-size: 0.78rem;
 }
-.ma-row-add {
+.ma-items {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ma-items-empty {
+  font-size: 0.8rem;
+  margin: 0 0 8px;
+}
+.ma-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.04);
+  cursor: grab;
+}
+.ma-item.is-dragging {
+  opacity: 0.55;
+}
+.ma-item.is-drag-over {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+}
+.ma-item-handle {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  padding-top: 2px;
+  user-select: none;
+  letter-spacing: -2px;
+}
+.ma-item-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.ma-item-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.ma-item-who {
+  margin-top: 2px;
+  font-size: 0.75rem;
+}
+.ma-item-del {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+.ma-item-del:hover {
+  color: #b91c1c;
+  background: rgba(185, 28, 28, 0.08);
+}
+.ma-day-add {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -5351,19 +5417,15 @@ html[data-theme="dark"] .almanac-pick-date {
   background: #fff;
   color: inherit;
 }
-.ma-add-btn {
-  flex: 0 0 auto;
-}
-.ma-status {
-  font-size: 0.8rem;
-}
+.ma-add-btn { flex: 0 0 auto; }
+.ma-status { font-size: 0.8rem; }
 .ma-status.is-err { color: #b91c1c; }
 .ma-empty {
   margin-top: 8px;
   font-size: 0.9rem;
   color: var(--muted, #667);
 }
-html[data-theme="dark"] .ma-row {
+html[data-theme="dark"] .ma-day {
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.03);
 }
@@ -5372,11 +5434,16 @@ html[data-theme="dark"] .ma-today-badge {
   background: rgba(96, 165, 250, 0.18);
   color: #93c5fd;
 }
+html[data-theme="dark"] .ma-item {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(96, 165, 250, 0.08);
+}
 html[data-theme="dark"] .ma-input {
   border-color: rgba(255, 255, 255, 0.14);
   background: rgba(0, 0, 0, 0.25);
   color: inherit;
 }
+html[data-theme="dark"] .ma-item-del { color: #94a3b8; }
 .home-panel-morning .home-ma-student { margin-top: 0; }
 
 .home-panel-form-teachers .home-ft-card {

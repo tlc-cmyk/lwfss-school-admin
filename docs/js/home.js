@@ -95,7 +95,8 @@
     deadlineItems: [],
     assemblyByDay: {},
     weeklyAssembly: null,
-    morningAssembly: null,
+    morningItems: [],
+    morningVenue: "",
     dutyRow: null,
     oleFridays: null,
     oleByTeacher: null,
@@ -883,14 +884,23 @@
     el.hidden = false;
   }
 
+  function morningItemsHeadline(items) {
+    var texts = (items || []).map(function (it) {
+      return String((it && it.content) || "").trim();
+    }).filter(Boolean);
+    if (!texts.length) return "";
+    if (texts.length === 1) return texts[0];
+    if (texts.length === 2) return texts[0] + "；" + texts[1];
+    return texts[0] + "；" + texts[1] + " 等" + texts.length + "項";
+  }
+
   function renderAssembly() {
     var el = $("home-assembly");
     if (!el) return;
     var day = effectiveCycleDay();
     var row = day && state.assemblyByDay ? state.assemblyByDay[day] : null;
-    var booking = state.morningAssembly || null;
-    var bookedContent = booking && String(booking.content || "").trim();
-    var bookedVenue = booking && String(booking.venue || "").trim();
+    var bookedContent = morningItemsHeadline(state.morningItems || []);
+    var bookedVenue = String(state.morningVenue || "").trim();
     var defaultTheme = row && row.theme ? String(row.theme) : "";
     var themeText = bookedContent || defaultTheme;
     if (!themeText && !bookedVenue) {
@@ -1666,7 +1676,8 @@
       state.calendarItems = [];
       state.deadlineItems = [];
       state.assemblyByDay = {};
-      state.morningAssembly = null;
+      state.morningItems = [];
+      state.morningVenue = "";
       state.dutyRow = null;
       state.oleFridays = null;
       state.oleByTeacher = null;
@@ -1720,11 +1731,21 @@
       .eq("assembly_date", iso)
       .maybeSingle();
 
-    var morningP = client
-      .from("morning_assemblies")
-      .select("assembly_date,content,venue,booked_by,booked_by_code,booked_at,notes")
-      .eq("assembly_date", iso)
-      .maybeSingle();
+    var morningP = Promise.all([
+      client
+        .from("morning_assembly_items")
+        .select("id,assembly_date,content,sort_order,booked_by,booked_by_code,booked_at")
+        .eq("assembly_date", iso)
+        .order("sort_order", { ascending: true })
+        .order("id", { ascending: true }),
+      client
+        .from("morning_assemblies")
+        .select("assembly_date,venue")
+        .eq("assembly_date", iso)
+        .maybeSingle()
+    ]).then(function (pair) {
+      return { itemsRes: pair[0], venueRes: pair[1] };
+    });
 
     var oleFriP = state.oleFridays
       ? Promise.resolve({ data: null, _cached: true })
@@ -1779,10 +1800,15 @@
         state.weeklyAssembly = null;
       }
 
-      if (morningRes && !morningRes.error && morningRes.data) {
-        state.morningAssembly = morningRes.data;
+      if (morningRes && morningRes.itemsRes && !morningRes.itemsRes.error && morningRes.itemsRes.data) {
+        state.morningItems = morningRes.itemsRes.data || [];
       } else {
-        state.morningAssembly = null;
+        state.morningItems = [];
+      }
+      if (morningRes && morningRes.venueRes && !morningRes.venueRes.error && morningRes.venueRes.data) {
+        state.morningVenue = morningRes.venueRes.data.venue || "";
+      } else {
+        state.morningVenue = "";
       }
 
       if (oleFriRes && !oleFriRes._cached && !oleFriRes.error && oleFriRes.data) {
@@ -1899,7 +1925,8 @@
       state.calendarItems = [];
       state.deadlineItems = [];
       state.weeklyAssembly = null;
-      state.morningAssembly = null;
+      state.morningItems = [];
+      state.morningVenue = "";
       renderHomeBar(session);
       buildDayGrid();
       renderTimetableSection(session);
@@ -3748,7 +3775,13 @@
       return state.weeklyAssembly ? Object.assign({}, state.weeklyAssembly) : null;
     },
     getMorningAssembly: function () {
-      return state.morningAssembly ? Object.assign({}, state.morningAssembly) : null;
+      return {
+        items: (state.morningItems || []).map(function (it) { return Object.assign({}, it); }),
+        venue: state.morningVenue || ""
+      };
+    },
+    getMorningItems: function () {
+      return (state.morningItems || []).map(function (it) { return Object.assign({}, it); });
     },
     getBrowseCalendarKind: function () { return browseCalendarKind(); },
     getNoCycleDayMessage: function () { return noCycleDayMessage(); },
