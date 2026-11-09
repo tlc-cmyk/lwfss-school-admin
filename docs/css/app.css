@@ -5733,3 +5733,75 @@ html[data-theme="dark"] .att-list {
 html[data-theme="dark"] .att-row {
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
+
+.att-status-toggle {
+  display: inline-flex;
+  gap: 4px;
+}
+.att-status-toggle button {
+  border: 1px solid var(--border);
+  background: var(--card, #fff);
+  border-radius: 8px;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  cursor: pointer;
+  color: var(--muted);
+}
+.att-status-toggle button.active {
+  background: var(--primary-soft);
+  border-color: var(--free-border);
+  color: var(--primary-dark);
+}
+.att-status-toggle button[data-att-status="missing"].active {
+  background: #fff1f0;
+  border-color: #f5a8a0;
+  color: #b91c1c;
+}
+.att-summary .att-big.att-missing-count {
+  color: #b91c1c;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+.att-missing-block {
+  margin-top: 8px;
+}
+.att-missing-block > h4 {
+  font-size: 0.8rem;
+  margin: 0 0 4px;
+  color: #b91c1c;
+  font-weight: 700;
+}
+.att-list.att-list-missing {
+  border-color: #f5c2c0;
+  background: #fff8f7;
+}
+.att-list.att-list-missing .att-row .att-time {
+  color: #b91c1c;
+  font-weight: 650;
+}
+.att-class-chips button .att-miss {
+  color: #b91c1c;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.att-class-chips button.active .att-miss {
+  color: #ffe4e1;
+}
+html[data-theme="dark"] .att-status-toggle button {
+  background: rgba(255, 255, 255, 0.04);
+}
+html[data-theme="dark"] .att-list.att-list-missing {
+  background: rgba(240, 113, 103, 0.08);
+  border-color: rgba(240, 113, 103, 0.28);
+}
+html[data-theme="dark"] .att-summary .att-big.att-missing-count,
+html[data-theme="dark"] .att-missing-block > h4,
+html[data-theme="dark"] .att-list.att-list-missing .att-row .att-time {
+  color: #f07167;
+}
+.att-section-title {
+  font-size: 0.88rem;
+  margin: 8px 0 4px;
+  color: var(--primary-dark);
+}

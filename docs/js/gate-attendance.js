@@ -4,10 +4,12 @@
   /**
    * 今日拍卡 — eClass gate punches shared via public.gate_attendance.
    * Distinct from class_attendance (我的課堂點名).
+   * Missing students = roster students (students table) with no punch that day.
    */
 
   var ACADEMIC_YEAR = "2026-2027";
   var PAGE_SIZE = 1000;
+  var ROSTER_PAGE = 1000;
 
   var state = {
     loaded: false,
@@ -16,10 +18,12 @@
     error: "",
     records: [],
     dates: [],
-    view: "byclass",
+    view: "byclass", // byclass | list
+    statusFilter: "all", // all | arrived | missing
     classFilter: "",
     source: "",
     uploadedMeta: "",
+    /** @type {{studentCount:number, classes:Object.<string,number>, students:object[], byClass:Object.<string,object[]>}|null} */
     roster: null,
     bound: false
   };
@@ -59,9 +63,43 @@
     return window.AttendanceUtil || null;
   }
 
+  function normalizeClass(c) {
+    var s = String(c || "").trim().toUpperCase();
+    var m = s.match(/^S?(\d+[A-D])$/i);
+    return m ? m[1].toUpperCase() : s;
+  }
+
+  function studentKey(className, no) {
+    var U = util();
+    if (U && typeof U.studentKey === "function") return U.studentKey(className, no);
+    var c = normalizeClass(className);
+    var n = parseInt(no, 10);
+    if (!c || !n) return "";
+    return c + "|" + n;
+  }
+
+  function sortClassCodes(codes) {
+    return codes.slice().sort(function (a, b) {
+      var ma = String(a).match(/^(\d+)([A-Z])$/i);
+      var mb = String(b).match(/^(\d+)([A-Z])$/i);
+      if (ma && mb) {
+        var fa = parseInt(ma[1], 10) - parseInt(mb[1], 10);
+        if (fa !== 0) return fa;
+        return ma[2].toUpperCase().localeCompare(mb[2].toUpperCase());
+      }
+      return String(a).localeCompare(String(b), "zh-HK");
+    });
+  }
+
   function displayName(r) {
     var n = r.name || r.student_name || "";
     return n.replace(/\s*\([0-9]+[A-Za-z]-[0-9]+\)\s*$/, "").trim() || n;
+  }
+
+  function rosterDisplayName(stu) {
+    var zh = String(stu.chinese_name || "").trim();
+    var en = String(stu.english_name || "").trim();
+    return zh || en || ("#" + (stu.class_no || ""));
   }
 
   function pickFocusDate(dates) {
@@ -129,27 +167,94 @@
     el.classList.toggle("is-err", !!isErr);
   }
 
+  /**
+   * Compare day's punches against full class roll.
+   * Match key = class_code|class_no (no leading zeros), same as AttendanceUtil.studentKey.
+   */
+  function computeMissing(dayRecords) {
+    var punched = {};
+    (dayRecords || []).forEach(function (r) {
+      if (!r || !r.times || !r.times.length) return;
+      var k = studentKey(r.className, r.no);
+      if (k) punched[k] = true;
+    });
+
+    var missingByClass = {};
+    var missing = 0;
+    var students = (state.roster && state.roster.students) || [];
+    students.forEach(function (stu) {
+      var c = normalizeClass(stu.class_code);
+      var k = studentKey(c, stu.class_no);
+      if (!k || punched[k]) return;
+      if (!missingByClass[c]) missingByClass[c] = [];
+      missingByClass[c].push({
+        className: c,
+        no: String(stu.class_no),
+        name: rosterDisplayName(stu),
+        times: [],
+        firstTap: "",
+        lastTap: "",
+        missing: true
+      });
+      missing++;
+    });
+
+    Object.keys(missingByClass).forEach(function (c) {
+      missingByClass[c].sort(function (a, b) {
+        return (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0);
+      });
+    });
+
+    return {
+      missing: missing,
+      missingByClass: missingByClass,
+      classOrder: sortClassCodes(Object.keys(missingByClass))
+    };
+  }
+
   function loadRoster() {
     var client = getClient();
     if (!client) return Promise.resolve(null);
-    return client
-      .from("students")
-      .select("class_code")
-      .eq("academic_year", ACADEMIC_YEAR)
-      .then(function (res) {
-        if (res.error) return null;
+
+    function fetchPage(from, acc) {
+      return client
+        .from("students")
+        .select("id,class_code,class_no,chinese_name,english_name")
+        .eq("academic_year", ACADEMIC_YEAR)
+        .order("class_code", { ascending: true })
+        .order("class_no", { ascending: true })
+        .range(from, from + ROSTER_PAGE - 1)
+        .then(function (res) {
+          if (res.error) throw new Error(res.error.message || "名單載入失敗");
+          var rows = res.data || [];
+          acc = acc.concat(rows);
+          if (rows.length < ROSTER_PAGE) return acc;
+          return fetchPage(from + ROSTER_PAGE, acc);
+        });
+    }
+
+    return fetchPage(0, [])
+      .then(function (rows) {
         var classes = {};
-        var total = 0;
-        (res.data || []).forEach(function (row) {
-          var c = row.class_code || "";
+        var byClass = {};
+        rows.forEach(function (row) {
+          var c = normalizeClass(row.class_code);
           if (!c) return;
           classes[c] = (classes[c] || 0) + 1;
-          total++;
+          if (!byClass[c]) byClass[c] = [];
+          byClass[c].push(row);
         });
-        state.roster = { studentCount: total, classes: classes };
+        state.roster = {
+          studentCount: rows.length,
+          classes: classes,
+          students: rows,
+          byClass: byClass
+        };
         return state.roster;
       })
-      .catch(function () { return null; });
+      .catch(function () {
+        return null;
+      });
   }
 
   function loadFromCloud() {
@@ -239,7 +344,6 @@
     var del = client.from("gate_attendance").delete().in("punch_date", dates);
     return del.then(function (delRes) {
       if (delRes.error) throw new Error(delRes.error.message || "清除舊資料失敗");
-      // chunk inserts
       var chunks = [];
       var i;
       for (i = 0; i < rows.length; i += 400) {
@@ -407,23 +511,49 @@
     var focusDate = pickFocusDate(state.dates);
     var dayRecords = U.filterByDate(state.records, focusDate);
     var sum = U.summarize(dayRecords);
+    var miss = computeMissing(dayRecords);
     var roster = state.roster;
     var totalStudents = roster && roster.studentCount ? roster.studentCount : 0;
 
     if (summaryEl) summaryEl.hidden = false;
-    if (arrivedEl) arrivedEl.textContent = "已到 " + sum.arrived;
+    if (arrivedEl) {
+      arrivedEl.innerHTML =
+        "已到 " + sum.arrived +
+        (miss.missing > 0
+          ? ' <span class="att-missing-count">· 未拍卡 ' + miss.missing + "</span>"
+          : (totalStudents ? ' <span class="att-meta">· 未拍卡 0</span>' : ""));
+    }
     var metaParts = [];
     if (focusDate) {
       var parts = focusDate.split("-");
       metaParts.push(parseInt(parts[2], 10) + "/" + parseInt(parts[1], 10) + "/" + parts[0]);
     }
-    if (totalStudents) metaParts.push("全校約 " + totalStudents + " 人");
-    metaParts.push(sum.classOrder.length + " 班有紀錄");
+    if (totalStudents) {
+      metaParts.push("全校 " + totalStudents + " 人");
+      metaParts.push("已到 " + sum.arrived + "／未拍卡 " + miss.missing);
+    } else {
+      metaParts.push(sum.classOrder.length + " 班有紀錄");
+    }
     if (sum.lastTap) metaParts.push("最後 " + U.shortTime(sum.lastTap));
     if (state.source === "sample") metaParts.push("示例");
     else if (state.source === "upload") metaParts.push("已上載");
     if (state.uploadedMeta) metaParts.push(state.uploadedMeta);
     if (metaEl) metaEl.textContent = metaParts.join(" · ");
+
+    // Class chips: union of punched + missing classes
+    var chipClasses = sortClassCodes(
+      Object.keys(
+        (function () {
+          var set = {};
+          sum.classOrder.forEach(function (c) { set[c] = true; });
+          miss.classOrder.forEach(function (c) { set[c] = true; });
+          if (roster && roster.classes) {
+            Object.keys(roster.classes).forEach(function (c) { set[c] = true; });
+          }
+          return set;
+        })()
+      )
+    );
 
     if (chipsEl) {
       chipsEl.hidden = false;
@@ -431,17 +561,25 @@
       var allBtn = document.createElement("button");
       allBtn.type = "button";
       allBtn.className = !state.classFilter ? "active" : "";
-      allBtn.innerHTML = "全部<span class=\"att-n\">" + sum.arrived + "</span>";
+      allBtn.innerHTML =
+        "全部<span class=\"att-n\">" + sum.arrived + "</span>" +
+        (miss.missing ? "<span class=\"att-miss\">／" + miss.missing + "</span>" : "");
       allBtn.addEventListener("click", function () {
         state.classFilter = "";
         renderAll();
       });
       chipsEl.appendChild(allBtn);
-      sum.classOrder.forEach(function (c) {
+      chipClasses.forEach(function (c) {
+        var arrivedN = sum.byClass[c] ? sum.byClass[c].count : 0;
+        var missN = miss.missingByClass[c] ? miss.missingByClass[c].length : 0;
+        var totalN = roster && roster.classes && roster.classes[c] ? roster.classes[c] : (arrivedN + missN);
         var btn = document.createElement("button");
         btn.type = "button";
         btn.className = state.classFilter === c ? "active" : "";
-        btn.innerHTML = escapeHtml(c) + "<span class=\"att-n\">" + sum.byClass[c].count + "</span>";
+        btn.innerHTML =
+          escapeHtml(c) +
+          "<span class=\"att-n\">" + arrivedN + (totalN ? "／" + totalN : "") + "</span>" +
+          (missN ? "<span class=\"att-miss\">缺" + missN + "</span>" : "");
         btn.addEventListener("click", function () {
           state.classFilter = c;
           renderAll();
@@ -453,17 +591,31 @@
     document.querySelectorAll("[data-att-view]").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-att-view") === state.view);
     });
+    document.querySelectorAll("[data-att-status]").forEach(function (b) {
+      b.classList.toggle("active", b.getAttribute("data-att-status") === state.statusFilter);
+    });
 
     var classesToShow = state.classFilter
-      ? (sum.byClass[state.classFilter] ? [state.classFilter] : [])
-      : sum.classOrder.slice();
+      ? (chipClasses.indexOf(state.classFilter) !== -1 ? [state.classFilter] : [])
+      : chipClasses.slice();
+
+    // If filtering to arrived-only, drop classes with no arrivals; missing-only drop empty missing
+    if (state.statusFilter === "arrived") {
+      classesToShow = classesToShow.filter(function (c) {
+        return sum.byClass[c] && sum.byClass[c].count;
+      });
+    } else if (state.statusFilter === "missing") {
+      classesToShow = classesToShow.filter(function (c) {
+        return miss.missingByClass[c] && miss.missingByClass[c].length;
+      });
+    }
 
     if (!classesToShow.length) {
-      bodyEl.innerHTML = "<p class=\"att-empty-hint\">此篩選無拍卡紀錄。</p>";
+      bodyEl.innerHTML = "<p class=\"att-empty-hint\">此篩選無學生。</p>";
       return;
     }
 
-    function rowHtml(r) {
+    function arrivedRowHtml(r) {
       return "<div class=\"att-row\">" +
         "<span class=\"att-no\">" + escapeHtml(r.no) + "</span>" +
         "<span class=\"att-name\">" + escapeHtml(displayName(r)) + "</span>" +
@@ -471,30 +623,93 @@
         escapeHtml(U.shortTime(r.lastTap)) + "</span></div>";
     }
 
+    function missingRowHtml(r) {
+      return "<div class=\"att-row\">" +
+        "<span class=\"att-no\">" + escapeHtml(r.no) + "</span>" +
+        "<span class=\"att-name\">" + escapeHtml(r.name) + "</span>" +
+        "<span class=\"att-time\">未拍卡</span></div>";
+    }
+
+    function showArrived() {
+      return state.statusFilter === "all" || state.statusFilter === "arrived";
+    }
+    function showMissing() {
+      return state.statusFilter === "all" || state.statusFilter === "missing";
+    }
+
     if (state.view === "list") {
-      var flat = [];
-      classesToShow.forEach(function (c) {
-        (sum.byClass[c].students || []).forEach(function (r) { flat.push(r); });
-      });
-      flat.sort(function (a, b) {
-        if (a.lastTap !== b.lastTap) return a.lastTap < b.lastTap ? 1 : -1;
-        if (a.className !== b.className) return String(a.className).localeCompare(String(b.className));
-        return (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0);
-      });
-      bodyEl.innerHTML = "<div class=\"att-list\">" + flat.map(rowHtml).join("") + "</div>";
+      var parts = [];
+      if (showArrived()) {
+        var flatA = [];
+        classesToShow.forEach(function (c) {
+          if (sum.byClass[c]) {
+            (sum.byClass[c].students || []).forEach(function (r) { flatA.push(r); });
+          }
+        });
+        flatA.sort(function (a, b) {
+          if (a.lastTap !== b.lastTap) return a.lastTap < b.lastTap ? 1 : -1;
+          if (a.className !== b.className) return String(a.className).localeCompare(String(b.className));
+          return (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0);
+        });
+        if (flatA.length) {
+          parts.push("<h3 class=\"att-section-title\">已到 " + flatA.length + "</h3>");
+          parts.push("<div class=\"att-list\">" + flatA.map(function (r) {
+            return "<div class=\"att-row\">" +
+              "<span class=\"att-no\">" + escapeHtml(r.className + "-" + r.no) + "</span>" +
+              "<span class=\"att-name\">" + escapeHtml(displayName(r)) + "</span>" +
+              "<span class=\"att-time\" title=\"首次 " + escapeHtml(U.shortTime(r.firstTap)) + "\">" +
+              escapeHtml(U.shortTime(r.lastTap)) + "</span></div>";
+          }).join("") + "</div>");
+        }
+      }
+      if (showMissing()) {
+        var flatM = [];
+        classesToShow.forEach(function (c) {
+          (miss.missingByClass[c] || []).forEach(function (r) { flatM.push(r); });
+        });
+        flatM.sort(function (a, b) {
+          if (a.className !== b.className) return String(a.className).localeCompare(String(b.className));
+          return (parseInt(a.no, 10) || 0) - (parseInt(b.no, 10) || 0);
+        });
+        if (flatM.length) {
+          parts.push("<div class=\"att-missing-block\"><h4>未拍卡 " + flatM.length + "</h4>");
+          parts.push("<div class=\"att-list att-list-missing\">" + flatM.map(function (r) {
+            return "<div class=\"att-row\">" +
+              "<span class=\"att-no\">" + escapeHtml(r.className + "-" + r.no) + "</span>" +
+              "<span class=\"att-name\">" + escapeHtml(r.name) + "</span>" +
+              "<span class=\"att-time\">未拍卡</span></div>";
+          }).join("") + "</div></div>");
+        }
+      }
+      bodyEl.innerHTML = parts.join("") || "<p class=\"att-empty-hint\">此篩選無學生。</p>";
     } else {
       var htmlParts = [];
       classesToShow.forEach(function (c) {
         var block = sum.byClass[c];
-        var classTotal = roster && roster.classes && roster.classes[c] ? roster.classes[c] : null;
-        var countLabel = classTotal
-          ? (block.count + "／" + classTotal)
-          : String(block.count);
-        htmlParts.push(
-          "<div class=\"att-class-block\">" +
-          "<h3>" + escapeHtml(c) + "<span class=\"att-n\">已到 " + escapeHtml(countLabel) + "</span></h3>" +
-          "<div class=\"att-list\">" + block.students.map(rowHtml).join("") + "</div></div>"
-        );
+        var missList = miss.missingByClass[c] || [];
+        var arrivedN = block ? block.count : 0;
+        var missN = missList.length;
+        var classTotal = roster && roster.classes && roster.classes[c] ? roster.classes[c] : (arrivedN + missN);
+        var headBits = [];
+        if (showArrived()) headBits.push("已到 " + arrivedN + (classTotal ? "／" + classTotal : ""));
+        if (showMissing()) headBits.push("未拍卡 " + missN);
+        htmlParts.push("<div class=\"att-class-block\"><h3>" + escapeHtml(c) +
+          "<span class=\"att-n\">" + escapeHtml(headBits.join(" · ")) + "</span></h3>");
+        if (showArrived() && block && block.students && block.students.length) {
+          htmlParts.push("<div class=\"att-list\">" + block.students.map(arrivedRowHtml).join("") + "</div>");
+        } else if (showArrived() && state.statusFilter === "arrived") {
+          htmlParts.push("<p class=\"att-empty-hint\">呢班暫無已到紀錄。</p>");
+        }
+        if (showMissing() && missList.length) {
+          htmlParts.push(
+            "<div class=\"att-missing-block\"><h4>未拍卡 " + missN + "</h4>" +
+            "<div class=\"att-list att-list-missing\">" + missList.map(missingRowHtml).join("") +
+            "</div></div>"
+          );
+        } else if (showMissing() && state.statusFilter === "missing" && !missList.length) {
+          htmlParts.push("<p class=\"att-empty-hint\">呢班全部已拍卡。</p>");
+        }
+        htmlParts.push("</div>");
       });
       bodyEl.innerHTML = htmlParts.join("");
     }
@@ -520,6 +735,12 @@
     document.querySelectorAll("[data-att-view]").forEach(function (b) {
       b.addEventListener("click", function () {
         state.view = b.getAttribute("data-att-view") || "byclass";
+        renderAll();
+      });
+    });
+    document.querySelectorAll("[data-att-status]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        state.statusFilter = b.getAttribute("data-att-status") || "all";
         renderAll();
       });
     });

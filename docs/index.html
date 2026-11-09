@@ -469,6 +469,11 @@
               <input type="file" id="home-att-file" accept=".csv,text/csv,text/plain,.txt" />
               <button class="home-memo-btn" type="button" id="home-att-sample" data-att-write>載入示例</button>
               <button class="home-memo-btn home-memo-btn-danger" type="button" id="home-att-clear" data-att-write>清除當日</button>
+              <div class="att-status-toggle" role="group" aria-label="已到／未拍卡">
+                <button type="button" class="active" data-att-status="all" id="home-att-status-all">全部</button>
+                <button type="button" data-att-status="arrived" id="home-att-status-arrived">已到</button>
+                <button type="button" data-att-status="missing" id="home-att-status-missing">未拍卡</button>
+              </div>
               <div class="att-view-toggle" role="group" aria-label="顯示方式">
                 <button type="button" class="active" data-att-view="byclass" id="home-att-view-class">按班</button>
                 <button type="button" data-att-view="list" id="home-att-view-list">名單</button>
