@@ -106,7 +106,10 @@
 
   function setMeta(text) {
     var meta = $("home-ma-meta");
-    if (meta) meta.textContent = text || "";
+    if (!meta) return;
+    // Hint/summary lines intentionally not shown; keep node only for rare status if needed.
+    meta.textContent = "";
+    meta.hidden = true;
   }
 
   function setDayStatus(iso, msg, isErr) {
