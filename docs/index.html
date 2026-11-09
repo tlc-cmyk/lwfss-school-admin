@@ -89,6 +89,7 @@
         <nav id="home-func-bar" class="home-func-bar" role="tablist" aria-label="功能欄">
           <button type="button" class="home-func-tab active" role="tab" aria-selected="true" aria-controls="home-panel-tt" id="home-tab-tt" data-panel="tt">時間表</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-class-room" id="home-tab-class-room" data-panel="class-room" data-role-view="staff">班別／課室</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-form-teachers" id="home-tab-form-teachers" data-panel="form-teachers" data-role-view="staff">班主任</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-seating" id="home-tab-seating" data-panel="seating" data-role-view="staff">座位表</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-classroom" id="home-tab-classroom" data-panel="classroom" data-role-view="staff">我的課堂</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-docs" id="home-tab-docs" data-panel="docs" data-role-view="staff">文件／會議</button>
@@ -165,6 +166,26 @@
           </div>
         </section>
 
+
+
+        <section id="home-panel-form-teachers" class="home-panel home-panel-form-teachers hidden" role="tabpanel" aria-labelledby="home-tab-form-teachers" data-panel="form-teachers" hidden>
+          <div class="home-ft-card" data-role-view="staff">
+            <h2 class="home-panel-title">班主任</h2>
+            <p class="muted ft-hint">按班別睇班主任。可搜班別（例如 1A、S2D）或教師代碼／姓名。撳有時間表嘅老師可開啟課表。</p>
+            <label class="tt-teacher-label" for="home-ft-search">搜尋班別或教師</label>
+            <div class="ft-search-row">
+              <input type="text" id="home-ft-search" class="home-ft-search" placeholder="例如 2D、TLC、曹立翔…" autocomplete="off" />
+              <button type="button" class="chip" id="home-ft-search-clear">清除</button>
+            </div>
+            <div class="ft-meta" id="home-ft-meta" aria-live="polite"></div>
+            <div id="home-ft-grid" class="home-ft-grid"></div>
+            <div class="ft-empty" id="home-ft-empty" hidden>冇符合嘅班別或教師。</div>
+          </div>
+          <div class="staff-only-note home-ft-student" data-role-view="student" aria-label="學生提示">
+            <h2 class="home-panel-title">僅供教職員</h2>
+            <p>班主任名單只供教職員查閱。學生介面不會顯示此內容。</p>
+          </div>
+        </section>
 
         <section id="home-panel-seating" class="home-panel home-panel-seating hidden" role="tabpanel" aria-labelledby="home-tab-seating" data-panel="seating" hidden>
           <div id="seat-staff-ui" data-role-view="staff">
@@ -459,6 +480,7 @@
   <script src="js/personal-memo.js"></script>
   <script src="js/meet.js"></script>
   <script src="js/find-room.js"></script>
+  <script src="js/form-teachers.js"></script>
   <script src="js/chinese-calendar.js"></script>
   <script src="js/member-pay.js"></script>
 </body>

@@ -3362,6 +3362,11 @@
         showClassRoomView();
       });
     }
+    if (panelId === "form-teachers") {
+      if (window.SchoolAdminFormTeachers && typeof window.SchoolAdminFormTeachers.show === "function") {
+        window.SchoolAdminFormTeachers.show();
+      }
+    }
     if (panelId === "free") {
       renderFreePanel();
     }
@@ -3577,6 +3582,19 @@
     getNoCycleDayMessage: function () { return noCycleDayMessage(); },
     getDayTone: function (day) { return topToneForDay(day == null ? effectiveCycleDay() : day); },
     getViewingCode: function () { return state.viewingCode || ""; },
+    switchPanel: switchHomePanel,
+    viewTeacher: function (code) {
+      var t = findTeacher(code);
+      if (!t) return false;
+      fillTeacherSelect(t.code);
+      state.viewingCode = t.code;
+      var sel = $("home-teacher-select");
+      if (sel) sel.value = t.code;
+      showSelectedTeacher();
+      switchHomePanel("tt");
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { /* ignore */ }
+      return true;
+    },
     getBellSlots: function (day) {
       var sched = scheduleForDay(day);
       return (sched && sched.slots) ? sched.slots.slice() : [];
