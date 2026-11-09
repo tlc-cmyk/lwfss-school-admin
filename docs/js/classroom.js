@@ -1,26 +1,14 @@
 /**
- * 我的課堂 — seating layout + attendance for taught classes/groups
+ * 我的課堂 — seating layout + gate punch status for taught classes/groups
  * Reuses taught-scope logic from SchoolAdminSeating; date from sticky browse date.
- * Gate punches (gate_attendance / 今日拍卡) overlay live status by class+class_no;
- * does not overwrite teacher class_attendance marks.
+ * Shows live gate_attendance (拍 HH:MM / 遲拍 / 未拍) only — no teacher marking.
  */
 (function () {
   "use strict";
 
   var ACADEMIC_YEAR = "2026-2027";
-  /** First tap at/after this time → gate suggests 遲到 (soft hint only). */
+  /** First tap at/after this time → 遲拍. */
   var GATE_LATE_AFTER = "08:15:00";
-  var STATUS_CYCLE = ["", "present", "absent", "late"];
-  var STATUS_LABEL = {
-    present: "出席",
-    absent: "缺席",
-    late: "遲到"
-  };
-  var STATUS_SHORT = {
-    present: "出",
-    absent: "缺",
-    late: "遲"
-  };
   var GATE_LABEL = {
     present: "已拍卡",
     late: "拍卡遲到",
@@ -46,14 +34,11 @@
     chartTitle: "",
     layoutSource: "", // "chart" | "autofill"
     attendanceDate: "",
-    /** student_id -> status */
-    attendance: {},
     /** studentKey(class|no) -> { firstTap, lastTap, punched } */
     gateByKey: {},
     /** True when gate_attendance has any row for attendanceDate */
     gateHasData: false,
     gateLoaded: false,
-    saving: false,
     statusMsg: "",
     bound: false
   };
@@ -428,45 +413,6 @@
     }
   }
 
-  function scopeFilterFields(scope) {
-    if (!scope) return null;
-    return {
-      scope_kind: scope.kind,
-      class_code: scope.classCode || "",
-      form: scope.form || "",
-      subject: scope.subject || "",
-      group_name: scope.groupName || ""
-    };
-  }
-
-  async function loadAttendance() {
-    state.attendance = {};
-    var client = getClient();
-    var session = getSession();
-    var scope = state.scope;
-    var date = state.attendanceDate;
-    if (!client || !session || !scope || !date) return;
-    var fields = scopeFilterFields(scope);
-    var q = client
-      .from("class_attendance")
-      .select("student_id,status")
-      .eq("owner_email", ownerEmail(session))
-      .eq("attendance_date", date)
-      .eq("academic_year", ACADEMIC_YEAR)
-      .eq("scope_kind", fields.scope_kind)
-      .eq("class_code", fields.class_code)
-      .eq("form", fields.form)
-      .eq("subject", fields.subject)
-      .eq("group_name", fields.group_name);
-    var res = await q;
-    if (res.error) throw new Error(res.error.message || "讀取出席紀錄失敗");
-    (res.data || []).forEach(function (row) {
-      if (row.student_id != null && row.status) {
-        state.attendance[String(row.student_id)] = row.status;
-      }
-    });
-  }
-
   async function loadGateAttendance() {
     state.gateByKey = {};
     state.gateHasData = false;
@@ -511,69 +457,13 @@
     state.gateLoaded = true;
   }
 
-  async function upsertAttendance(studentId, status) {
-    var client = getClient();
-    var session = getSession();
-    var scope = state.scope;
-    if (!client || !session || !scope) throw new Error("未登入或未選班");
-    var fields = scopeFilterFields(scope);
-    var email = ownerEmail(session);
-    var code = teacherCode(session);
-
-    if (!status) {
-      // Clear: delete existing row
-      var del = client
-        .from("class_attendance")
-        .delete()
-        .eq("owner_email", email)
-        .eq("attendance_date", state.attendanceDate)
-        .eq("scope_kind", fields.scope_kind)
-        .eq("class_code", fields.class_code)
-        .eq("form", fields.form)
-        .eq("subject", fields.subject)
-        .eq("group_name", fields.group_name)
-        .eq("student_id", studentId);
-      var delRes = await del;
-      if (delRes.error) throw new Error(delRes.error.message || "清除出席失敗");
-      delete state.attendance[String(studentId)];
-      return;
-    }
-
-    var row = {
-      owner_email: email,
-      teacher_code: code,
-      attendance_date: state.attendanceDate,
-      scope_kind: fields.scope_kind,
-      class_code: fields.class_code,
-      form: fields.form,
-      subject: fields.subject,
-      group_name: fields.group_name,
-      student_id: studentId,
-      status: status,
-      academic_year: ACADEMIC_YEAR
-    };
-    var res = await client
-      .from("class_attendance")
-      .upsert(row, {
-        onConflict: "owner_email,attendance_date,scope_kind,class_code,form,subject,group_name,student_id"
-      });
-    if (res.error) throw new Error(res.error.message || "儲存出席失敗");
-    state.attendance[String(studentId)] = status;
-  }
-
   function countSummary() {
-    var present = 0, absent = 0, late = 0, unmarked = 0;
     var gateArrived = 0, gateLate = 0, gateMissing = 0;
     var seen = {};
     function tallyStudent(stuOrId, maybeStu) {
       var id = String(stuOrId);
       if (seen[id]) return;
       seen[id] = true;
-      var st = state.attendance[id] || "";
-      if (st === "present") present++;
-      else if (st === "absent") absent++;
-      else if (st === "late") late++;
-      else unmarked++;
       var stu = maybeStu || findStudent(stuOrId);
       if (stu && state.gateHasData) {
         var g = gateInfoForStudent(stu);
@@ -593,10 +483,6 @@
       tallyStudent(stu.id, stu);
     });
     return {
-      present: present,
-      absent: absent,
-      late: late,
-      unmarked: unmarked,
       total: Object.keys(seen).length,
       gateArrived: gateArrived,
       gateLate: gateLate,
@@ -666,7 +552,7 @@
         var gateHtml = "";
         if (sum.gateHasData) {
           gateHtml =
-            '<span class="cr-attend-pill is-gate-arrived" title="閘口拍卡（唔會自動改點名）">拍卡已到 ' + sum.gateArrived + "</span>" +
+            '<span class="cr-attend-pill is-gate-arrived" title="閘口拍卡">拍卡已到 ' + sum.gateArrived + "</span>" +
             (sum.gateLate
               ? '<span class="cr-attend-pill is-gate-late" title="首次拍卡 ≥ ' + GATE_LATE_AFTER.slice(0, 5) + '">其中遲拍 ' + sum.gateLate + "</span>"
               : "") +
@@ -675,10 +561,6 @@
           gateHtml = '<span class="cr-attend-pill is-unmarked" title="gate_attendance 當日無資料">暫無拍卡資料</span>';
         }
         sumEl.innerHTML =
-          '<span class="cr-attend-pill is-present">出席 ' + sum.present + "</span>" +
-          '<span class="cr-attend-pill is-absent">缺席 ' + sum.absent + "</span>" +
-          '<span class="cr-attend-pill is-late">遲到 ' + sum.late + "</span>" +
-          '<span class="cr-attend-pill is-unmarked">未記 ' + sum.unmarked + "</span>" +
           gateHtml +
           '<span class="muted">共 ' + sum.total + " 人</span>";
       }
@@ -731,21 +613,11 @@
         var sid = "";
         if (seat && seat.student_id) {
           sid = String(seat.student_id);
-          var st = state.attendance[sid] || "";
           var gate = gateInfoForSeat(seat);
           cls += " is-filled";
           cls += sexClass(seat.sex || sexFromRosterId(seat.student_id));
-          if (st) {
-            cls += " is-att-" + st;
-          } else if (gate) {
-            // Soft gate suggestion only when teacher has not marked
-            cls += " is-gate-hint-" + gate.suggest;
-          }
-          var badge = st
-            ? '<span class="cr-attend-badge is-' + st + '">' + escapeHtml(STATUS_SHORT[st] || "") + "</span>"
-            : '<span class="cr-attend-badge is-unmarked">?</span>';
+          if (gate) cls += " is-gate-hint-" + gate.suggest;
           label =
-            badge +
             '<span class="seat-cell-no">' + escapeHtml(noLabelForSeat(seat)) + "</span>" +
             '<span class="seat-cell-name">' + escapeHtml(seat.name_zh || seat.name_en || "") + "</span>" +
             gateChipHtml(gate);
@@ -754,13 +626,12 @@
         }
         var ariaExtra = "";
         if (sid) {
-          ariaExtra = " · " + (STATUS_LABEL[state.attendance[sid]] || "未記");
           var g2 = gateInfoForSeat(seat);
           if (g2) {
-            ariaExtra += " · " + g2.label + (g2.timeText ? " " + g2.timeText : "");
+            ariaExtra = " · " + g2.label + (g2.timeText ? " " + g2.timeText : "");
           }
         }
-        html += '<div role="button" tabindex="0" class="' + cls + '" data-r="' + r + '" data-c="' + c + '"' +
+        html += '<div class="' + cls + '" data-r="' + r + '" data-c="' + c + '"' +
           (sid ? ' data-student-id="' + escapeHtml(sid) + '"' : "") +
           ' aria-label="座位 R' + (r + 1) + " C" + (c + 1) + ariaExtra + '">' +
           label + "</div>";
@@ -792,22 +663,17 @@
       return;
     }
     box.hidden = false;
-    var html = '<div class="cr-attend-unseated-head">未入座（仍可點名） <span class="muted">' +
+    var html = '<div class="cr-attend-unseated-head">未入座 <span class="muted">' +
       free.length + '</span></div><ul class="cr-attend-unseated-list">';
     free.forEach(function (s) {
       var id = String(s.id);
-      var st = state.attendance[id] || "";
       var gate = gateInfoForStudent(s);
       var no = (state.scope.kind === "group" || state.scope.kind === "split") && s.class_code
         ? (s.class_code + "-" + s.class_no)
         : String(s.class_no);
       var itemCls = "cr-attend-unseated-item" + sexClass(s.sex);
-      if (st) itemCls += " is-att-" + st;
-      else if (gate) itemCls += " is-gate-hint-" + gate.suggest;
-      html += '<li class="' + itemCls +
-        '" role="button" tabindex="0" data-student-id="' + escapeHtml(id) + '">' +
-        '<span class="cr-attend-badge is-' + (st || "unmarked") + '">' +
-        escapeHtml(st ? STATUS_SHORT[st] : "?") + "</span>" +
+      if (gate) itemCls += " is-gate-hint-" + gate.suggest;
+      html += '<li class="' + itemCls + '" data-student-id="' + escapeHtml(id) + '">' +
         '<span class="seat-no">' + escapeHtml(no) + "</span>" +
         '<span class="seat-name">' + escapeHtml(displayName(s)) + "</span>" +
         gateChipHtml(gate) +
@@ -823,116 +689,27 @@
     renderUnseated();
   }
 
-  function nextStatus(cur) {
-    var i = STATUS_CYCLE.indexOf(cur || "");
-    if (i < 0) i = 0;
-    return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
-  }
-
-  async function cycleStudentStatus(studentId) {
-    if (!studentId || state.saving) return;
-    var cur = state.attendance[String(studentId)] || "";
-    var next = nextStatus(cur);
-    state.saving = true;
-    setStatus("儲存中…");
-    try {
-      await upsertAttendance(Number(studentId) || studentId, next);
-      renderAll();
-      setStatus(next ? ("已記「" + STATUS_LABEL[next] + "」") : "已清除出席紀錄");
-    } catch (e) {
-      setStatus((e && e.message) || "儲存失敗", true);
-    } finally {
-      state.saving = false;
-    }
-  }
-
-  async function markAllPresent() {
-    if (!state.scope || state.saving) return;
-    var ids = [];
-    var seen = {};
-    Object.keys(state.seats).forEach(function (k) {
-      var s = state.seats[k];
-      if (s && s.student_id != null && !seen[String(s.student_id)]) {
-        seen[String(s.student_id)] = true;
-        ids.push(s.student_id);
-      }
-    });
-    state.roster.forEach(function (stu) {
-      if (!seen[String(stu.id)]) {
-        seen[String(stu.id)] = true;
-        ids.push(stu.id);
-      }
-    });
-    if (!ids.length) return;
-    state.saving = true;
-    setStatus("全部標為出席…");
-    try {
-      for (var i = 0; i < ids.length; i++) {
-        await upsertAttendance(ids[i], "present");
-      }
-      renderAll();
-      setStatus("已全部標為出席（" + ids.length + " 人）");
-    } catch (e) {
-      setStatus((e && e.message) || "儲存失敗", true);
-      renderAll();
-    } finally {
-      state.saving = false;
-    }
-  }
-
-  async function clearAllAttendance() {
-    if (!state.scope || state.saving) return;
-    if (!window.confirm("清除當日呢個班／組嘅全部出席紀錄？")) return;
-    var client = getClient();
-    var session = getSession();
-    var fields = scopeFilterFields(state.scope);
-    if (!client || !session || !fields) return;
-    state.saving = true;
-    setStatus("清除中…");
-    try {
-      var res = await client
-        .from("class_attendance")
-        .delete()
-        .eq("owner_email", ownerEmail(session))
-        .eq("attendance_date", state.attendanceDate)
-        .eq("scope_kind", fields.scope_kind)
-        .eq("class_code", fields.class_code)
-        .eq("form", fields.form)
-        .eq("subject", fields.subject)
-        .eq("group_name", fields.group_name);
-      if (res.error) throw new Error(res.error.message || "清除失敗");
-      state.attendance = {};
-      renderAll();
-      setStatus("已清除當日出席紀錄");
-    } catch (e) {
-      setStatus((e && e.message) || "清除失敗", true);
-    } finally {
-      state.saving = false;
-    }
-  }
-
   async function onScopeChange(key) {
     var scope = findScopeByKey(key);
     state.scope = scope;
     if (!scope) {
       state.seats = {};
-      state.attendance = {};
       state.gateByKey = {};
       state.gateHasData = false;
       renderAll();
-      setStatus(state.scopes.length ? "請揀一個班別／分組。" : "未有可點名嘅班別／分組。");
+      setStatus(state.scopes.length ? "請揀一個班別／分組。" : "未有可睇嘅班別／分組。");
       return;
     }
-    setStatus("載入座位同出席…");
+    setStatus("載入座位同拍卡…");
     try {
       await loadRosterForScope(scope);
       await loadChartForScope(scope);
-      await Promise.all([loadAttendance(), loadGateAttendance()]);
+      await loadGateAttendance();
       renderAll();
       setStatus(
         state.gateHasData
-          ? "撳座位循環記點名；座位下方顯示閘口拍卡（唔會自動改你嘅紀錄）。"
-          : "撳座位循環：未記 → 出席 → 缺席 → 遲到 → 未記。日期跟頂欄。"
+          ? "座位顯示閘口拍卡狀態（拍／遲拍／未拍）。"
+          : "暫無當日拍卡資料；座位照常顯示。"
       );
     } catch (e) {
       setStatus((e && e.message) || "載入失敗", true);
@@ -949,16 +726,16 @@
     state.attendanceDate = iso;
     renderMeta();
     if (!state.scope) return;
-    // Only reload attendance when panel might be visible / has scope
+    // Reload gate punches for the new browse date
     try {
-      await Promise.all([loadAttendance(), loadGateAttendance()]);
+      await loadGateAttendance();
       renderAll();
       setStatus(
         "已切換日期：" + formatDateLabel(iso) +
         (state.gateHasData ? "（已同步拍卡）" : "（暫無拍卡資料）")
       );
     } catch (e) {
-      setStatus((e && e.message) || "讀取出席失敗", true);
+      setStatus((e && e.message) || "讀取拍卡失敗", true);
     }
   }
 
@@ -979,9 +756,7 @@
       var btn = e.target.closest("[data-cr-attend-action]");
       if (btn && root.contains(btn)) {
         var act = btn.getAttribute("data-cr-attend-action");
-        if (act === "all-present") markAllPresent();
-        else if (act === "clear-all") clearAllAttendance();
-        else if (act === "use-today") {
+        if (act === "use-today") {
           var today = todayHK();
           var input = $("home-date-input");
           if (input) {
@@ -991,20 +766,7 @@
             onBrowseDate(today);
           }
         }
-        return;
       }
-      var cell = e.target.closest(".cr-attend-cell[data-student-id], .cr-attend-unseated-item[data-student-id]");
-      if (cell && root.contains(cell)) {
-        cycleStudentStatus(cell.getAttribute("data-student-id"));
-      }
-    });
-
-    root.addEventListener("keydown", function (e) {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      var cell = e.target.closest(".cr-attend-cell[data-student-id], .cr-attend-unseated-item[data-student-id]");
-      if (!cell || !root.contains(cell)) return;
-      e.preventDefault();
-      cycleStudentStatus(cell.getAttribute("data-student-id"));
     });
   }
 
@@ -1032,7 +794,7 @@
     var hint = $("cr-attend-pick-hint");
     if (hint) {
       hint.textContent = state.scopes.length
-        ? "範圍同座位表一樣（Excel 分組優先，例如 S4 ICT、S5／S6 MATH）。有存座位表就用；冇就按學號排 6×6。"
+        ? "範圍同座位表一樣（Excel 分組優先）。有存座位表就用；冇就按學號排 6×6。狀態跟閘口拍卡。"
         : "未找到你嘅分組名單或任教班別。請聯絡 IT 核對 student_groups／時間表。";
     }
     if (state.scope && findScopeByKey(state.scope.key)) {
@@ -1042,8 +804,8 @@
       renderAll();
       setStatus(
         state.scopes.length
-          ? ("你有 " + state.scopes.length + " 個任教範圍，請揀一個開始點名。")
-          : "未有可點名嘅班別／分組。"
+          ? ("你有 " + state.scopes.length + " 個任教範圍，請揀一個睇拍卡狀態。")
+          : "未有可睇嘅班別／分組。"
       );
     }
     state.ready = true;

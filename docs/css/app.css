@@ -4501,11 +4501,7 @@ html[data-theme="dark"] .footer-nav-btn:hover {
 }
 .cr-attend-cell {
   position: relative;
-  cursor: pointer;
-}
-.cr-attend-cell[data-student-id]:hover {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
+  cursor: default;
 }
 .cr-attend-badge {
   position: absolute;
@@ -4692,11 +4688,11 @@ html[data-theme="dark"] .cr-attend-pill.is-gate-missing {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px 6px 22px;
+  padding: 6px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: #eff8ff;
-  cursor: pointer;
+  cursor: default;
   font-size: 0.82rem;
 }
 .cr-attend-unseated-item.is-girl { background: #ffe4ec; }
@@ -4706,11 +4702,6 @@ html[data-theme="dark"] .cr-attend-pill.is-gate-missing {
   top: 4px;
   left: 4px;
   right: auto;
-}
-.cr-attend-unseated-item:hover,
-.cr-attend-unseated-item:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
 }
 
 html[data-theme="dark"] .cr-attend-pill {
