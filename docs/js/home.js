@@ -884,42 +884,26 @@
     el.hidden = false;
   }
 
-  function morningItemsHeadline(items) {
-    var texts = (items || []).map(function (it) {
-      return String((it && it.content) || "").trim();
-    }).filter(Boolean);
-    if (!texts.length) return "";
-    if (texts.length === 1) return texts[0];
-    if (texts.length === 2) return texts[0] + "；" + texts[1];
-    return texts[0] + "；" + texts[1] + " 等" + texts.length + "項";
-  }
-
   function renderAssembly() {
     var el = $("home-assembly");
     if (!el) return;
     var day = effectiveCycleDay();
     var row = day && state.assemblyByDay ? state.assemblyByDay[day] : null;
-    var bookedContent = morningItemsHeadline(state.morningItems || []);
-    var bookedVenue = String(state.morningVenue || "").trim();
-    var defaultTheme = row && row.theme ? String(row.theme) : "";
-    var themeText = bookedContent || defaultTheme;
-    if (!themeText && !bookedVenue) {
+    // Top bar always uses the cycle-day default from assembly_by_day.
+    // Dated bookings in morning_assembly_items / morning_assemblies stay on the 早會 tab only.
+    var themeText = row && row.theme ? String(row.theme) : "";
+    if (!themeText) {
       el.innerHTML = "";
       el.hidden = true;
       return;
     }
-    if (!themeText) themeText = defaultTheme || "早會";
     var flagNote = row && row.is_flag
       ? ' <span class="home-assembly-flag">· 升國旗</span>'
-      : "";
-    var venueNote = bookedVenue
-      ? ' <span class="home-assembly-venue">· ' + escapeHtml(bookedVenue) + "</span>"
       : "";
     el.innerHTML =
       '<span class="home-assembly-label">早會：</span>' +
       '<span class="home-assembly-theme">' + escapeHtml(themeText) + "</span>" +
-      flagNote +
-      venueNote;
+      flagNote;
     el.hidden = false;
   }
 
