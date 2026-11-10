@@ -1619,9 +1619,53 @@
     });
   }
 
+  function isDesktopLayout() {
+    return document.documentElement.getAttribute("data-layout") === "desktop";
+  }
+
+  function unbindStaticDayGrid(grid) {
+    if (grid && grid._staticDayClick) {
+      grid.removeEventListener("click", grid._staticDayClick);
+      grid._staticDayClick = null;
+    }
+  }
+
+  /** Desktop: one visible row of D1–D10 (no infinite carousel / drag). */
+  function fillStaticDayGrid(grid) {
+    var prev = getDayScroller(grid);
+    if (prev) prev.destroy();
+    unbindStaticDayGrid(grid);
+    grid.classList.remove("is-loop", "is-dragging");
+    grid.innerHTML = "";
+    var track = document.createElement("div");
+    track.className = "tt-day-track";
+    for (var d = 1; d <= DAY_COUNT; d++) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tt-day-chip" + (d === 5 || d === 10 ? " is-bf" : "");
+      btn.dataset.day = String(d);
+      btn.setAttribute("role", "tab");
+      btn.textContent = "D" + d;
+      btn.setAttribute("aria-selected", "false");
+      btn.tabIndex = d === (state.selectedDay || state.todayCycleDay || 1) ? 0 : -1;
+      track.appendChild(btn);
+    }
+    grid.appendChild(track);
+    grid._staticDayClick = function (e) {
+      var chip = e.target.closest(".tt-day-chip");
+      if (!chip || !grid.contains(chip)) return;
+      var day = parseInt(chip.dataset.day, 10);
+      if (day >= 1 && day <= DAY_COUNT) selectDayFromScroller(day, { sourceGrid: grid });
+    };
+    grid.addEventListener("click", grid._staticDayClick);
+    refreshDayGridActive();
+  }
+
   function fillOneDayGrid(grid) {
     if (!grid) return;
-    createDayScroller(grid);
+    unbindStaticDayGrid(grid);
+    if (isDesktopLayout()) fillStaticDayGrid(grid);
+    else createDayScroller(grid);
   }
 
   function buildDayGrid() {
@@ -3581,6 +3625,21 @@
         window.SchoolAdminMemberPay.stop();
       }
     }
+    scrollMainToTop(false);
+  }
+
+  function scrollMainToTop(smooth) {
+    var panels = $("home-panels");
+    if (isDesktopLayout() && panels) {
+      try {
+        if (smooth) panels.scrollTo({ top: 0, behavior: "smooth" });
+        else panels.scrollTop = 0;
+      } catch (e) {
+        panels.scrollTop = 0;
+      }
+      return;
+    }
+    try { window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" }); } catch (e) { /* ignore */ }
   }
 
   function bindFuncBar() {
@@ -3596,15 +3655,15 @@
     });
     // Keyboard: left/right between tabs
     bar.addEventListener("keydown", function (e) {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "Home" && e.key !== "End") return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "ArrowUp" && e.key !== "ArrowDown" && e.key !== "Home" && e.key !== "End") return;
       var tabs = Array.prototype.slice.call(bar.querySelectorAll(".home-func-tab"));
       if (!tabs.length) return;
       var i = tabs.indexOf(document.activeElement);
       if (i < 0) i = tabs.findIndex(function (t) { return t.classList.contains("active"); });
       if (i < 0) i = 0;
       var next = i;
-      if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
-      else if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (i + 1) % tabs.length;
       else if (e.key === "Home") next = 0;
       else if (e.key === "End") next = tabs.length - 1;
       e.preventDefault();
@@ -3686,6 +3745,10 @@
       // Auth dispatches on document (CustomEvent does not bubble to window).
       document.addEventListener("schooladmin:authed", onAuthed);
       window.addEventListener("schooladmin:authed", onAuthed);
+      document.addEventListener("lwfss-layoutchange", function () {
+        buildDayGrid();
+        scrollMainToTop(false);
+      });
     }
     bindAuthedListener();
     state.browseDate = todayHK();
@@ -3786,7 +3849,7 @@
       if (sel) sel.value = t.code;
       showSelectedTeacher();
       switchHomePanel("tt");
-      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { /* ignore */ }
+      scrollMainToTop(true);
       return true;
     },
     getBellSlots: function (day) {

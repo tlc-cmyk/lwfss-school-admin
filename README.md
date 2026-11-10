@@ -58,7 +58,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 
 ### 主頁（登入後 · sticky 頂卡＋功能欄，唔顯示校網）
 
-設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。
+設計原則：**頂部資訊卡同功能欄永遠保留**（sticky），唔顯示校徽／校名／「學校行政系統」品牌 header；mobile-first，視窗 ≥ 900px（或頂欄「電腦版」）自動切換桌上電腦佈局（左側功能選單＋右側內容，同一 URL／同一 Supabase，無第二個資料庫）。**只有下方面板**跟住功能欄 tab 轉，唔 remount 頂卡／功能欄。電腦版解決手機橫向功能欄隱藏捲軸、同事用滑鼠撳唔到後面分頁嘅問題。
 
 1. **單一頂卡（sticky）**：日期＋香港即時時間＋Day N＋狀態 chip＋姓名（＋短碼）＋今日事項＋改日期／登出；第三行＝**個人備忘**（只顯示目前瀏覽日期嘅自己備忘，無編輯）。唔再堆疊校網 header、今日卡、事項卡三層。
 2. **早會**：按當日 `cycle_days.cycle_day` 對應 `assembly_by_day`；顯示「早會：…」；升國旗日（DAY2／DAY7）加「· 升國旗」。頂欄只顯示此循環日預設，不受當日 `morning_assembly_items` 預約或 `morning_assemblies` 場地更改影響。無循環日（因而無預設主題）則隱藏。教職員功能欄「早會」每日可加多項宣布（輸入＋「增加」），可拖拉排序；資料在 `morning_assembly_items`（`docs/js/morning-assemblies.js`）。頂欄：無循環日時若 `calendar_events.event_type=exam`／標題含「統測」則顯示「統測」並用一般藍（非假期紅）；真正 `holiday`（公眾假期、聖誕、農曆新年、復活節、旅行翌日假期等）才用假期樣式。OLE `ole_fridays` special／off 只取消 P8，不驅動假期 chrome。

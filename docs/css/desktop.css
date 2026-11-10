@@ -1,0 +1,551 @@
+/* Desktop office layout for the school admin app.
+   Activated by <html data-layout="desktop"> (viewport ≥ 900px, or 電腦版 toggle).
+   Mobile rules in app.css stay unchanged when data-layout is mobile. */
+
+/* ——— Shell: fixed viewport, sidebar + main ——— */
+html[data-layout="desktop"]:has(#app:not(.hidden)) body {
+  height: 100dvh;
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+html[data-layout="desktop"] #app:not(.hidden) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+html[data-layout="desktop"] #app:not(.hidden) .wrap-home {
+  max-width: 1440px;
+  width: 100%;
+  height: 100%;
+  margin: 0 auto;
+  padding: 16px 24px 16px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "top top"
+    "nav panels";
+  column-gap: 20px;
+  row-gap: 12px;
+  box-sizing: border-box;
+}
+
+html[data-layout="desktop"] #app:not(.hidden) .home-sticky {
+  display: contents;
+  position: static;
+  z-index: auto;
+  isolation: auto;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+}
+
+html[data-layout="desktop"] .home-top {
+  grid-area: top;
+  position: relative;
+  z-index: 50;
+  margin-bottom: 0;
+  padding: 12px 16px;
+  border-radius: 16px;
+}
+
+html[data-layout="desktop"] .home-top-row-main {
+  flex-wrap: nowrap;
+  gap: 10px 14px;
+}
+
+html[data-layout="desktop"] .home-bar-date {
+  font-size: 0.88rem;
+}
+
+html[data-layout="desktop"] .home-bar-clock {
+  font-size: 1.05rem;
+}
+
+html[data-layout="desktop"] .home-bar-weather {
+  font-size: 0.88rem;
+}
+
+html[data-layout="desktop"] .home-bar-day {
+  font-size: 0.98rem;
+}
+
+html[data-layout="desktop"] .home-bar-who {
+  max-width: none;
+  font-size: 0.85rem;
+}
+
+html[data-layout="desktop"] .home-next-lesson {
+  max-width: 16rem;
+  font-size: 0.78rem;
+  padding: 3px 8px;
+}
+
+html[data-layout="desktop"] .home-top-actions {
+  gap: 8px;
+}
+
+html[data-layout="desktop"] .home-bar-live,
+html[data-layout="desktop"] .home-theme-toggle,
+html[data-layout="desktop"] .home-layout-toggle,
+html[data-layout="desktop"] .home-sign-out {
+  height: 2.25rem;
+  min-width: 2.25rem;
+  padding: 0 12px;
+  font-size: 0.8rem;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+html[data-layout="desktop"] .home-layout-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+html[data-layout="desktop"] .home-layout-toggle:hover,
+html[data-layout="desktop"] .home-layout-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.28);
+  outline: none;
+}
+
+html[data-theme="dark"][data-layout="desktop"] .home-layout-toggle {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* Show the opposite-mode label */
+html[data-layout="desktop"] .layout-label-to-desktop { display: none; }
+html[data-layout="desktop"] .layout-label-to-mobile { display: inline; }
+
+html[data-layout="mobile"] .layout-label-to-desktop { display: inline; }
+html[data-layout="mobile"] .layout-label-to-mobile { display: none; }
+
+/* Mobile-layout toggle shares the compact top-bar button look */
+html[data-layout="mobile"] .home-layout-toggle {
+  flex: 0 0 auto;
+  height: 1.9rem;
+  min-width: 1.9rem;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+html[data-layout="mobile"] .home-layout-toggle:hover,
+html[data-layout="mobile"] .home-layout-toggle:focus-visible {
+  background: rgba(255, 255, 255, 0.28);
+  outline: none;
+}
+
+html[data-theme="dark"][data-layout="mobile"] .home-layout-toggle {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* ——— Sidebar function nav: every tab visible, mouse-friendly ——— */
+html[data-layout="desktop"] .home-func-bar,
+html[data-layout="desktop"][data-app-role="staff"] .home-func-bar:not(.hidden),
+html[data-layout="desktop"][data-app-role="student"] .home-func-bar {
+  grid-area: nav;
+  display: flex !important;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 4px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: auto;
+  scrollbar-width: thin;
+  margin: 0;
+  padding: 4px 6px 8px 0;
+  max-height: 100%;
+  min-height: 0;
+  background: transparent;
+}
+
+html[data-layout="desktop"] .home-func-bar::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
+html[data-layout="desktop"] .home-func-bar::-webkit-scrollbar-thumb {
+  background: rgba(var(--tone-rgb, 26, 58, 108), 0.28);
+  border-radius: 999px;
+}
+
+html[data-layout="desktop"] .home-func-bar::before {
+  content: "功能選單";
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 2px 12px 8px;
+}
+
+html[data-layout="desktop"] .home-func-tab,
+html[data-layout="desktop"][data-app-role="staff"] .home-func-tab[data-role-view="staff"] {
+  display: flex;
+  width: 100%;
+  justify-content: flex-start;
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 0.9rem;
+  min-height: 40px;
+  line-height: 1.2;
+  box-shadow: none;
+}
+
+html[data-layout="desktop"] .home-func-tab:hover {
+  background: var(--primary-soft);
+}
+
+html[data-layout="desktop"] .home-func-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(var(--tone-rgb, 26, 58, 108), 0.22);
+}
+
+/* ——— Scrollable main panels ——— */
+html[data-layout="desktop"] .home-panels {
+  grid-area: panels;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 0 4px 8px 0;
+  z-index: 0;
+}
+
+html[data-layout="desktop"] .home-panel {
+  margin-bottom: 0;
+}
+
+/* Day chips: all D1–D10 in one row, no carousel / drag */
+html[data-layout="desktop"] .tt-day-grid {
+  overflow: visible;
+  cursor: default;
+  touch-action: auto;
+  -webkit-user-select: auto;
+  user-select: auto;
+  margin-bottom: 16px;
+}
+
+html[data-layout="desktop"] .tt-day-grid.is-loop {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+html[data-layout="desktop"] .tt-day-track {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: auto;
+  transform: none !important;
+  will-change: auto;
+}
+
+html[data-layout="desktop"] .tt-day-chip {
+  min-width: 52px;
+  min-height: 40px;
+  padding: 8px 14px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+/* Selects, chips, common actions — larger mouse targets */
+html[data-layout="desktop"] .home-teacher-select,
+html[data-layout="desktop"] select.home-teacher-select {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 1rem;
+  max-width: 28rem;
+}
+
+html[data-layout="desktop"] .chip,
+html[data-layout="desktop"] .wa-filters .chip,
+html[data-layout="desktop"] .seat-actions .chip,
+html[data-layout="desktop"] .home-memo-btn,
+html[data-layout="desktop"] .att-toolbar .home-memo-btn,
+html[data-layout="desktop"] .att-status-toggle button,
+html[data-layout="desktop"] .att-view-toggle button,
+html[data-layout="desktop"] .att-class-chips button {
+  min-height: 36px;
+  padding: 6px 14px;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+html[data-layout="desktop"] .mp-seg .chip {
+  min-height: 36px;
+}
+
+html[data-layout="desktop"] #fr-day-grid.mp-seg .chip,
+html[data-layout="desktop"] .fr-day-seg.mp-seg .chip,
+html[data-layout="desktop"] .meet-day-seg.mp-seg .chip {
+  padding: 8px 6px;
+  font-size: 0.88rem;
+}
+
+/* Timetable periods stay chronological; slightly roomier cards */
+html[data-layout="desktop"] .tt-periods {
+  gap: 10px;
+  max-width: 920px;
+}
+
+html[data-layout="desktop"] .tt-period {
+  min-height: 52px;
+}
+
+html[data-layout="desktop"] .tt-period.lesson {
+  min-height: 64px;
+}
+
+/* 班主任: 4–6 columns already; keep roomy on wide screens */
+html[data-layout="desktop"] .ft-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+html[data-layout="desktop"] .ft-class {
+  min-height: 80px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+/* 即時空堂: multi-column teacher list */
+html[data-layout="desktop"] .home-free-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+}
+
+/* 搵課室 results */
+html[data-layout="desktop"] .fr-results {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+/* 約開會: picker + results side by side */
+html[data-layout="desktop"] .home-meet-card {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: 24px;
+  row-gap: 8px;
+  align-items: start;
+}
+
+html[data-layout="desktop"] .home-meet-card > .home-panel-title,
+html[data-layout="desktop"] .home-meet-card > .meet-mode,
+html[data-layout="desktop"] .home-meet-card > .meet-day-wrap {
+  grid-column: 1 / -1;
+}
+
+html[data-layout="desktop"] .home-meet-card > .meet-pick-block {
+  grid-column: 1;
+  grid-row: 4;
+}
+
+html[data-layout="desktop"] .home-meet-card > .meet-hint,
+html[data-layout="desktop"] .home-meet-card > .meet-results {
+  grid-column: 2;
+}
+
+html[data-layout="desktop"] .home-meet-card > .meet-hint {
+  grid-row: 4;
+  align-self: start;
+  margin: 0;
+}
+
+html[data-layout="desktop"] .home-meet-card > .meet-results {
+  grid-row: 4;
+  margin-top: 1.8em;
+}
+
+html[data-layout="desktop"] .meet-picker-list {
+  max-height: min(28rem, calc(100dvh - 22rem));
+}
+
+html[data-layout="desktop"] .meet-pick-row {
+  padding: 9px 12px;
+  min-height: 40px;
+}
+
+/* Day8 周會: month cards can sit two-up when a month has several events */
+html[data-layout="desktop"] .wa-month-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+html[data-layout="desktop"] .wa-filters .chip {
+  min-width: 4.5rem;
+}
+
+/* 早會: two-column day cards */
+html[data-layout="desktop"] .ma-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* 座位表: wider workspace (existing 840px two-col now actually applies) */
+html[data-layout="desktop"] .seat-workspace {
+  grid-template-columns: minmax(0, 1fr) 240px;
+}
+
+html[data-layout="desktop"] .seat-cell {
+  min-height: 64px;
+  cursor: grab;
+}
+
+html[data-layout="desktop"] .seat-roster {
+  max-height: calc(100dvh - 18rem);
+}
+
+/* 今日拍卡 toolbar + class chips stay wrap, with larger targets (above) */
+html[data-layout="desktop"] .att-class-chips {
+  gap: 8px;
+}
+
+/* 文件期限 form */
+html[data-layout="desktop"] .deadline-form-input,
+html[data-layout="desktop"] .deadline-form-title-input,
+html[data-layout="desktop"] .home-memo-input,
+html[data-layout="desktop"] .home-memo-date-input,
+html[data-layout="desktop"] .meet-search,
+html[data-layout="desktop"] .seat-title-input,
+html[data-layout="desktop"] .seat-dim-input {
+  min-height: 40px;
+  font-size: 1rem;
+}
+
+/* Almanac can use the wider main column */
+html[data-layout="desktop"] .almanac-wrap,
+html[data-layout="desktop"] .almanac-sheet {
+  max-width: none;
+}
+
+/* Holiday ocean: fill leftover main column, don't swallow clicks outside itself */
+html[data-layout="desktop"][data-tone="holiday"] #home-panel-tt.home-tt {
+  min-height: 0;
+  height: 100%;
+}
+
+html[data-layout="desktop"] .tt-holiday-ocean {
+  min-height: clamp(200px, calc(100dvh - 22rem), 60vh);
+  height: clamp(200px, calc(100dvh - 22rem), 60vh);
+}
+
+/* Slightly narrower laptop / forced desktop in a modest window */
+@media (max-width: 1100px) {
+  html[data-layout="desktop"] #app:not(.hidden) .wrap-home {
+    grid-template-columns: 188px minmax(0, 1fr);
+    padding: 12px 16px;
+    column-gap: 14px;
+  }
+
+  html[data-layout="desktop"] .ft-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  html[data-layout="desktop"] .home-free-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  html[data-layout="desktop"] .fr-results,
+  html[data-layout="desktop"] .wa-month-cards,
+  html[data-layout="desktop"] .ma-list {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-layout="desktop"] .home-meet-card {
+    grid-template-columns: 1fr;
+  }
+
+  html[data-layout="desktop"] .home-meet-card > .meet-pick-block,
+  html[data-layout="desktop"] .home-meet-card > .meet-hint,
+  html[data-layout="desktop"] .home-meet-card > .meet-results {
+    grid-column: 1;
+    grid-row: auto;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Forced 電腦版 on a narrow window: stack nav above content, keep all tabs visible */
+  html[data-layout="desktop"] #app:not(.hidden) .wrap-home {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "top"
+      "nav"
+      "panels";
+  }
+
+  html[data-layout="desktop"] .home-func-bar,
+  html[data-layout="desktop"][data-app-role="staff"] .home-func-bar:not(.hidden),
+  html[data-layout="desktop"][data-app-role="student"] .home-func-bar {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: visible;
+    max-height: none;
+    padding: 0 0 4px;
+    gap: 6px;
+  }
+
+  html[data-layout="desktop"] .home-func-bar::before {
+    flex: 1 0 100%;
+    padding: 0 4px 2px;
+  }
+
+  html[data-layout="desktop"] .home-func-tab,
+  html[data-layout="desktop"][data-app-role="staff"] .home-func-tab[data-role-view="staff"] {
+    width: auto;
+    flex: 0 0 auto;
+  }
+}
+
+@media print {
+  html[data-layout="desktop"]:has(#app:not(.hidden)) body,
+  html[data-layout="desktop"] #app:not(.hidden) {
+    height: auto;
+    overflow: visible;
+  }
+
+  html[data-layout="desktop"] #app:not(.hidden) .wrap-home {
+    display: block;
+    height: auto;
+    max-width: none;
+  }
+
+  html[data-layout="desktop"] .home-panels {
+    overflow: visible;
+    height: auto;
+  }
+}

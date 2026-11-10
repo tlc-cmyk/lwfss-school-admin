@@ -15,11 +15,17 @@
           document.documentElement.setAttribute("data-theme", "dark");
         }
       } catch (e) {}
+      try {
+        var pref = localStorage.getItem("lwfss-layout") || "auto";
+        var desktop = pref === "desktop" || (pref !== "mobile" && window.matchMedia("(min-width: 900px)").matches);
+        document.documentElement.setAttribute("data-layout", desktop ? "desktop" : "mobile");
+      } catch (e) {}
     })();
   </script>
   <!-- 通勝日曆自托管字體（宋／筆刷／裝飾） -->
   <link rel="stylesheet" href="fonts/almanac/almanac-fonts.css" />
   <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/desktop.css" />
 </head>
 <body>
   <div id="gate" class="gate">
@@ -70,6 +76,9 @@
             </div>
             <div class="home-top-actions">
               <button type="button" id="home-live" class="home-bar-live" title="即時（回到今日時間表）" aria-label="即時，顯示今日時間表">即時</button>
+              <button type="button" id="layout-toggle" class="home-layout-toggle" title="切換電腦版或手機版" aria-pressed="false" aria-label="切換電腦版或手機版">
+                <span class="layout-label-to-desktop">電腦版</span><span class="layout-label-to-mobile">手機版</span>
+              </button>
               <button type="button" id="theme-toggle" class="home-theme-toggle" title="切換深色模式" aria-pressed="false" aria-label="切換深淺色">
                 <span class="theme-label-light">黑</span><span class="theme-label-dark">亮</span>
               </button>
@@ -521,6 +530,7 @@
   </div>
 
   <script src="js/theme.js"></script>
+  <script src="js/layout.js"></script>
   <script src="js/config.js"></script>
   <script src="js/login-hero.js"></script>
   <script src="js/login-mascot.js"></script>
