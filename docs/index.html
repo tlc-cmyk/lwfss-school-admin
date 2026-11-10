@@ -429,9 +429,18 @@
         <section id="home-panel-weekly" class="home-panel home-panel-weekly hidden" role="tabpanel" aria-labelledby="home-tab-weekly" data-panel="weekly" hidden>
           <div class="home-wa-card">
             <h2 class="home-panel-title">Day8 周會總表</h2>
-            <p class="muted wa-hint">循環日 <strong>Day 8</strong> · 第6–7節（P6–P7）為周會時段。下列為 2026–2027 年度編排（Sheet 為準）。</p>
-            <div class="wa-meta" id="home-wa-meta" aria-live="polite"></div>
-            <div id="home-wa-table-wrap" class="wa-table-wrap"></div>
+            <p class="wa-meta" id="home-wa-meta" aria-live="polite"></p>
+            <div id="home-wa-next" class="wa-next" hidden></div>
+            <div id="home-wa-filters" class="wa-filters" role="group" aria-label="按級別篩選">
+              <button type="button" class="chip active" data-wa-form="all" aria-pressed="true">全部</button>
+              <button type="button" class="chip" data-wa-form="s1" aria-pressed="false">中一</button>
+              <button type="button" class="chip" data-wa-form="s2" aria-pressed="false">中二</button>
+              <button type="button" class="chip" data-wa-form="s3" aria-pressed="false">中三</button>
+              <button type="button" class="chip" data-wa-form="s4" aria-pressed="false">中四</button>
+              <button type="button" class="chip" data-wa-form="s5" aria-pressed="false">中五</button>
+              <button type="button" class="chip" data-wa-form="s6" aria-pressed="false">中六</button>
+            </div>
+            <div id="home-wa-list" class="wa-timeline"></div>
             <div class="wa-empty" id="home-wa-empty" hidden>暫時未有周會編排。</div>
           </div>
         </section>
