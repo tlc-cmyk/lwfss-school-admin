@@ -201,6 +201,7 @@
     if (!el) return;
     el.textContent = state.statusMsg;
     el.classList.toggle("is-err", !!isErr);
+    el.hidden = !state.statusMsg;
   }
 
   function formatDateLabel(iso) {
@@ -209,8 +210,7 @@
     var WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
     var dt = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2], 4, 0, 0));
     var wd = WEEKDAYS[dt.getUTCDay()];
-    var today = iso === todayHK() ? " · 今日" : "";
-    return parts[1] + "月" + parts[2] + "日（週" + wd + "）" + today;
+    return parts[1] + "月" + parts[2] + "日（週" + wd + "）";
   }
 
   async function loadScopes(session) {
@@ -530,16 +530,8 @@
 
     var srcEl = $("cr-attend-layout-src");
     if (srcEl) {
-      if (!state.scope) {
-        srcEl.textContent = "";
-        srcEl.hidden = true;
-      } else if (state.layoutSource === "chart") {
-        srcEl.textContent = "座位：已存座位表" + (state.chartTitle ? "「" + state.chartTitle + "」" : "");
-        srcEl.hidden = false;
-      } else {
-        srcEl.textContent = "座位：未存座位表 → 按學號排 " + state.rows + "×" + state.cols;
-        srcEl.hidden = false;
-      }
+      srcEl.textContent = "";
+      srcEl.hidden = true;
     }
 
     var sum = countSummary();
@@ -568,8 +560,6 @@
 
     var body = $("cr-attend-body");
     if (body) body.classList.toggle("hidden", !state.scope);
-    var hint = $("cr-attend-pick-hint");
-    if (hint) hint.classList.toggle("hidden", !!state.scope);
   }
 
   function noLabelForSeat(seat) {
@@ -706,11 +696,7 @@
       await loadChartForScope(scope);
       await loadGateAttendance();
       renderAll();
-      setStatus(
-        state.gateHasData
-          ? "座位顯示閘口拍卡狀態（拍／遲拍／未拍）。"
-          : "暫無當日拍卡資料；座位照常顯示。"
-      );
+      setStatus("");
     } catch (e) {
       setStatus((e && e.message) || "載入失敗", true);
       renderAll();
@@ -730,10 +716,7 @@
     try {
       await loadGateAttendance();
       renderAll();
-      setStatus(
-        "已切換日期：" + formatDateLabel(iso) +
-        (state.gateHasData ? "（已同步拍卡）" : "（暫無拍卡資料）")
-      );
+      setStatus("");
     } catch (e) {
       setStatus((e && e.message) || "讀取拍卡失敗", true);
     }
@@ -752,22 +735,6 @@
       });
     }
 
-    root.addEventListener("click", function (e) {
-      var btn = e.target.closest("[data-cr-attend-action]");
-      if (btn && root.contains(btn)) {
-        var act = btn.getAttribute("data-cr-attend-action");
-        if (act === "use-today") {
-          var today = todayHK();
-          var input = $("home-date-input");
-          if (input) {
-            input.value = today;
-            input.dispatchEvent(new Event("change", { bubbles: true }));
-          } else {
-            onBrowseDate(today);
-          }
-        }
-      }
-    });
   }
 
   async function showPanel() {
@@ -793,9 +760,13 @@
     fillScopeSelect();
     var hint = $("cr-attend-pick-hint");
     if (hint) {
-      hint.textContent = state.scopes.length
-        ? "範圍同座位表一樣（Excel 分組優先）。有存座位表就用；冇就按學號排 6×6。狀態跟閘口拍卡。"
-        : "未找到你嘅分組名單或任教班別。請聯絡 IT 核對 student_groups／時間表。";
+      if (state.scopes.length) {
+        hint.textContent = "";
+        hint.hidden = true;
+      } else {
+        hint.textContent = "未找到你嘅分組名單或任教班別。請聯絡 IT 核對 student_groups／時間表。";
+        hint.hidden = false;
+      }
     }
     if (state.scope && findScopeByKey(state.scope.key)) {
       await onScopeChange(state.scope.key);
