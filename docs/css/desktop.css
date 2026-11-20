@@ -336,6 +336,16 @@ html[data-layout="desktop"] .ft-class {
   cursor: pointer;
 }
 
+html[data-layout="desktop"] .ft-class-id {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+html[data-layout="desktop"] .ft-class-room {
+  font-size: 0.82rem;
+}
+
 /* 即時空堂: multi-column teacher list */
 html[data-layout="desktop"] .home-free-list {
   display: grid;

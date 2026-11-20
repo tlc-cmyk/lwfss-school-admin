@@ -5739,10 +5739,21 @@ html[data-theme="dark"] .ma-item-del { color: #94a3b8; }
   min-height: 72px;
 }
 .ft-class-id {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
   font-weight: 800;
   font-size: 0.88rem;
   color: var(--primary-dark);
   margin-bottom: 6px;
+  line-height: 1.2;
+}
+.ft-class-room {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }
 .ft-teacher {
   display: block;

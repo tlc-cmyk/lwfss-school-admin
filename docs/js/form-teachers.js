@@ -10,6 +10,16 @@
   var STREAMS = ["A", "B", "C", "D"];
   var FORMS = ["1", "2", "3", "4", "5", "6"];
 
+  /** Homeroom numbers from the school classroom list (class code → room). */
+  var CLASS_ROOMS = {
+    "1A": "301", "1B": "302", "1C": "303", "1D": "304",
+    "2A": "401", "2B": "402", "2C": "403", "2D": "404",
+    "3A": "305", "3B": "306", "3C": "405", "3D": "406",
+    "4A": "501", "4B": "502", "4C": "503", "4D": "504",
+    "5A": "601", "5B": "602", "5C": "603", "5D": "604",
+    "6A": "505", "6B": "506", "6C": "605", "6D": "606"
+  };
+
   /** class_teachers / staff short codes → TIMETABLE_DATA ShortName */
   var CODE_ALIASES = {
     LTTJ: "LTTT",
@@ -376,7 +386,17 @@
         card.className = "ft-class";
         var idEl = document.createElement("div");
         idEl.className = "ft-class-id";
-        idEl.textContent = cls.classCode;
+        var codeEl = document.createElement("span");
+        codeEl.className = "ft-class-code";
+        codeEl.textContent = cls.classCode;
+        idEl.appendChild(codeEl);
+        var room = CLASS_ROOMS[cls.classCode] || "";
+        if (room) {
+          var roomEl = document.createElement("span");
+          roomEl.className = "ft-class-room";
+          roomEl.textContent = room;
+          idEl.appendChild(roomEl);
+        }
         card.appendChild(idEl);
 
         teachers.forEach(function (entry) {
