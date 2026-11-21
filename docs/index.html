@@ -109,6 +109,7 @@
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-free" id="home-tab-free" data-panel="free" data-role-view="staff">即時空堂</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-find-room" id="home-tab-find-room" data-panel="find-room" data-role-view="staff">搵課室</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-memo" id="home-tab-memo" data-panel="memo">備忘</button>
+          <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-ict-quiz" id="home-tab-ict-quiz" data-panel="ict-quiz">ICT 題庫</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-meet" id="home-tab-meet" data-panel="meet" data-role-view="staff">約開會</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-weekly" id="home-tab-weekly" data-panel="weekly">Day8 周會</button>
           <button type="button" class="home-func-tab" role="tab" aria-selected="false" aria-controls="home-panel-morning" id="home-tab-morning" data-panel="morning" data-role-view="staff">早會</button>
@@ -397,6 +398,15 @@
           </div>
         </section>
 
+        <section id="home-panel-ict-quiz" class="home-panel home-panel-ict-quiz hidden" role="tabpanel" aria-labelledby="home-tab-ict-quiz" data-panel="ict-quiz" hidden>
+          <div id="ict-quiz-root">
+            <div class="ict-quiz-card">
+              <h2 class="home-panel-title">ICT 題庫</h2>
+              <p class="muted">登入後會載入官方樣本試卷與練習卷甲部選擇題。撳選項後即時顯示對錯。</p>
+            </div>
+          </div>
+        </section>
+
         <section id="home-panel-meet" class="home-panel home-panel-meet hidden" role="tabpanel" aria-labelledby="home-tab-meet" data-panel="meet" hidden>
           <div class="home-meet-card" data-role-view="staff">
             <h2 class="home-panel-title">約開會</h2>
@@ -545,6 +555,7 @@
   <script src="js/classroom.js"></script>
   <script src="js/staff-deadlines.js"></script>
   <script src="js/personal-memo.js"></script>
+  <script src="js/ict-quiz.js"></script>
   <script src="js/meet.js"></script>
   <script src="js/find-room.js"></script>
   <script src="js/form-teachers.js"></script>

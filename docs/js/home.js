@@ -3584,6 +3584,11 @@
         window.SchoolAdminStaffDeadlines.show();
       }
     }
+    if (panelId === "ict-quiz") {
+      if (window.SchoolAdminIctQuiz && typeof window.SchoolAdminIctQuiz.show === "function") {
+        window.SchoolAdminIctQuiz.show();
+      }
+    }
     if (panelId === "meet") {
       if (window.SchoolAdminMeet && typeof window.SchoolAdminMeet.show === "function") {
         window.SchoolAdminMeet.show();

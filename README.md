@@ -6,7 +6,7 @@
 - **本機備份**：SQLite `db/school.db`（離線備份／匯入快取，**不要刪除**）
 - **網站**：靜態 HTML/CSS/JS，GitHub Pages（`docs/`）
 - **登入**：Supabase Auth 的 Google provider，只接受 `@g.lwfss.edu.hk`
-- **模組**：主頁 sticky 頂卡＋功能欄；個人備忘錄；約開會（共同空堂）；搵課室（空課室）；會員付費（stub／coming Zoom）；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；**班主任**（1A–6D 網格＋撳開課表；非班主任）；座位表；文件遞交清單及校務會議（教職員）
+- **模組**：主頁 sticky 頂卡＋功能欄；個人備忘錄；**ICT 題庫**（登入後練習官方樣本／練習卷選擇題）；約開會（共同空堂）；搵課室（空課室）；會員付費（stub／coming Zoom）；下方面板跟 tab 轉（預設時間表）；教師時間表查詢；**班主任**（1A–6D 網格＋撳開課表；非班主任）；座位表；文件遞交清單及校務會議（教職員）
 
 學校：世界龍岡學校劉皇發中學（LWFSS）  
 維護：IT Coordinator（曹立翔 / TLC）  
@@ -24,7 +24,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 | Project ref | `edausixxdclhonkrdzqg` |
 | API URL | `https://edausixxdclhonkrdzqg.supabase.co` |
 | 區域 | `ap-southeast-1` |
-| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`duty_roster`（187）、`weekly_assemblies`（16）、`morning_assemblies`、`morning_assembly_items`、`gate_attendance`、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos` |
+| 資料表 | `teachers`（65）、`lessons`（1920）、`meta`、`staff`（75）、`staff_deadlines`（92）、`cycle_days`（67）、`calendar_events`（~290）、`assembly_by_day`（10）、`duty_roster`（187）、`weekly_assemblies`（16）、`morning_assemblies`、`morning_assembly_items`、`gate_attendance`、`students`（755）、`student_groups`（2542）、`class_teachers`（49）、`seating_charts`、`personal_memos`、`ict_quiz_papers`／`ict_quiz_questions`／`ict_quiz_assets` |
 
 前端只用 **anon key**（寫在 `docs/js/config.js`）。這把鑰匙是公開的。  
 真正的限制是 **RLS**，不是把 anon key 藏起來。
@@ -46,6 +46,7 @@ Pages：<https://tlc-cmyk.github.io/lwfss-school-admin/>
 - `staff_read_staff_deadlines`（**僅** `staff` 表內電郵可 SELECT）
 - `seating_charts_*`（教職員：INSERT／UPDATE 僅 `owner_email`＝自己 **且** 任教該 `scope`（整班／科目分組／合班 token）；layout 學生必須屬該範圍；DELETE 僅 owner；SELECT 自己或任教同 scope）
 - `personal_memos_*`（任何已登入 `@g.lwfss.edu.hk`：SELECT／INSERT／UPDATE／DELETE **僅** `owner_email`＝JWT email；複合鍵 `owner_email`＋`memo_date`，每日一列）
+- `ict_quiz_papers_select`／`ict_quiz_questions_select`／`ict_quiz_assets_select`（任何已登入 `@g.lwfss.edu.hk`：**只** SELECT；anon 無授權。官方試題、答案、附圖同 Paper 1 PDF 只放喺資料庫，唔寫入公開嘅 `docs/`）
 
 條件（約）：
 
@@ -65,7 +66,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 3. **值日**：按瀏覽日期讀 `duty_roster`；頂欄顯示「值日：T1 · T2」；無當日值日則隱藏；登入短碼若為值日老師會輕微標示。
 3b. **周會**：按瀏覽日期讀 `weekly_assemblies`（有日期嘅全校周會）；頂欄顯示「周會：主題 · P6–P7」；若當日係循環日 Day 8 但 Sheet 無該日，仍提示「Day 8 時段 · P6–P7」。今日事項會加入周會列。功能欄「Day8 周會」以按月時間軸卡片顯示全年編排（下次／今日摘要、合併同級活動、可按級別篩選）。與頂欄「早會」（`assembly_by_day`）分開。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
-4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**班主任**／**座位表**／文件／會議／即時空堂／**搵課室**／**備忘**／約開會／**今日拍卡**／**會員付費**（stub）。切換只換下方面板。學生只見時間表＋備忘。
+4. **功能欄（sticky tabs）**：時間表（預設）／班別／課室／**班主任**／**座位表**／文件／會議／即時空堂／**搵課室**／**備忘**／**ICT 題庫**／約開會／**今日拍卡**／**會員付費**（stub）。切換只換下方面板。學生可見時間表、備忘、ICT 題庫、Day8 周會、日曆。
 5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**班主任** tab＝按 `class_teachers`（2026-2027）顯示 1A–6D 班主任網格（代碼＋中文名）；撳有時間表嘅老師會切去時間表 tab（代碼別名 LTTJ→LTTT、WWKF→WWK、GG→NET、CKHC→CKH）；底部列教學職中嘅非班主任（`docs/js/form-teachers.js`）；**Day8 周會** tab＝按月時間軸卡片（下次／今日摘要、合併同級活動、可篩中一至中六；`docs/js/weekly-assemblies.js`）；**今日拍卡** tab＝上載 eClass「完整拍卡紀錄」原始數據（UTF-16／UTF-8 TSV），顯示今日已到／未拍卡（對照 `students` 名單）；資料存 `gate_attendance` 供教職員共享（`docs/js/attendance.js`＋`gate-attendance.js`）；**我的課堂** 只按 `class_code|class_no` 顯示閘口拍卡狀態（拍 HH:MM／遲拍≥08:15／未拍），無老師手動點名；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；**備忘** tab＝揀日期、編輯／儲存／刪除當日個人備忘（`personal_memos`）；**搵課室** tab＝揀循環日 D1–D10＋**多選節次**（可同時揀 P1…P7／P8；「全部」＝全選／清除），搵各選節皆空嘅課室（連續可用＝交集；優先普通課室如 301；略過操場；課室名單由時間表推導，無獨立 rooms 表；`docs/js/find-room.js`）；**約開會** tab＝揀 2–8 位同事（`teachers`），按 `lessons`／時間表計 **共同空堂**（單日 D1–D10 或全日週），每節建議可用課室（該節無人用；優先普通課室如 301；`docs/js/meet.js`）。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
@@ -105,6 +106,14 @@ DDL／RLS：`db/seating_charts.sql`（只可為自己任教班／分組建表；
 
 DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `owner_email`＝JWT email；本校 `@g.lwfss.edu.hk`）。前端：sticky 頂卡第三行**只顯示**目前瀏覽日期嘅備忘摘要；功能欄「備忘」面板揀日期編輯／儲存，下方「已寫備忘」清單列每則右側有**更新**（載入編輯）／**刪除**（`docs/js/personal-memo.js`）。教職員同學生登入後都可用。
 
+### ICT 題庫（HKDSE 選擇題練習）
+
+登入後，教職員同學生都可以喺功能欄開「ICT 題庫」，練習考評局《資訊及通訊科技》樣本試卷 Paper 1 甲部（20 題）同練習卷 Paper 1 甲部（40 題，2012）。撳 A–D 後即時標示對錯，正確選項綠色、錯誤紅色；可用上一題／下一題同跳題。作答進度存在該帳戶喺呢部裝置嘅瀏覽器。
+
+題幹、選項、官方答案、附圖同兩份中文試卷一 PDF **只存放喺 Supabase**（`ict_quiz_papers`／`ict_quiz_questions`／`ict_quiz_assets`），前端 `docs/js/ict-quiz.js` 要有有效嘅 `@g.lwfss.edu.hk` Google 工作階段先會向資料庫取題。公開倉庫唔包含試題內容，亦唔好把官方 PDF 放到 `docs/papers/` 或公開 GitHub Pages。
+
+結構見 `db/ict_quiz.sql`。若要重新匯入，用本機私人題庫目錄（含 `js/data.js`、`images/`、`papers/`）跑 `scripts/seed_ict_quiz.py`（需 `SUPABASE_SERVICE_ROLE_KEY`，唔好把 key 或試題檔提交到呢個倉庫）。試題及評卷參考版權屬香港考試及評核局，僅供本校已登入師生校本練習。
+
 ### 約開會（共同空堂）
 
 教職員功能欄「約開會」：揀 **2–8** 位同事（`teachers` 短碼＋中文名），計出大家在選定 **單日（D1–D10）** 或 **全日週** 的 **共同空堂**（各人該節皆無 `lessons`／時間表課）。每節另建議 **可用課室**（該 Day＋節在 `lessons` 無人使用；優先普通課室如 301／506，其次其他室內室，略過操場；每節最多約 4 個）。節次時間跟一般／BF 鐘聲（Day 5／10＝BF，含第 8 節）。純前端計算，無新資料表。實作：`docs/js/meet.js`。
@@ -139,6 +148,7 @@ school-admin/
 │   ├── seed_students.sql   # 2026-2027 學生＋分組種子
 │   ├── seating_charts.sql  # seating_charts DDL+RLS
 │   ├── personal_memos.sql  # personal_memos DDL+RLS
+│   ├── ict_quiz.sql        # ict_quiz_papers / questions / assets DDL+RLS（無試題種子）
 │   └── school.db           # 離線備份／匯入快取（保留）
 ├── scripts/
 │   ├── import_timetable.py # 從 Sheet 匯出重建 SQLite + 本地 JSON
@@ -149,7 +159,8 @@ school-admin/
 │   ├── sync_duty_roster_from_sheet.md     # 值日 Sheet→DB 同步說明
 │   ├── sync_duty_roster_checklist.md
 │   ├── sync_weekly_assemblies_from_sheet.md # 周會 Sheet→DB 同步說明
-│   └── sync_weekly_assemblies_checklist.md
+│   ├── sync_weekly_assemblies_checklist.md
+│   └── seed_ict_quiz.py    # 從私人題庫目錄重新匯入 ICT 題庫（需 service role）
 ├── docs/                   # GitHub Pages 網站根目錄
 │   ├── index.html
 │   ├── timetable.html
@@ -162,6 +173,7 @@ school-admin/
 │   ├── js/timetable.js     # 雲端時間表 + 今日循環日
 │   ├── js/seating.js       # 座位表編輯／儲存／PDF
 │   ├── js/personal-memo.js # 個人備忘錄（sticky 顯示；面板編輯／按日）
+│   ├── js/ict-quiz.js      # ICT 題庫：登入後由 Supabase 取題，即時對錯
 │   ├── js/meet.js          # 約開會：共同空堂＋建議課室（2–8 人）
 │   ├── js/find-room.js     # 搵課室：按 Day／多選節次列連續空課室
 │   ├── js/staff-deadlines.js
@@ -348,3 +360,5 @@ git push origin main
 
 供劉皇發中學校內行政使用。  
 anon key 可以留在前端；Client Secret 與 service role key 不可以。
+
+ICT 題庫內的試題、圖表、評卷參考及官方 PDF 版權屬香港考試及評核局，僅供已登入的本校 `@g.lwfss.edu.hk` 帳戶作校本練習，不得公開轉載或作商業用途。

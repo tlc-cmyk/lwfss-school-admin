@@ -13,3 +13,6 @@ node_modules/
 
 # student parse scratch
 scripts/_student_parse/
+
+# Official HKEAA ICT paper dumps (never commit)
+scripts/_ict_quiz_seed/
