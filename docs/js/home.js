@@ -105,6 +105,7 @@
     viewingCode: "",
     selectedDay: null,
     activePanel: "tt",
+    userPickedPanel: false,
     lessonRows: null,
     crMode: "class",
     crClass: "",
@@ -3589,6 +3590,11 @@
         window.SchoolAdminIctQuiz.show();
       }
     }
+    if (panelId === "subject-choice") {
+      if (window.SchoolAdminSubjectChoice && typeof window.SchoolAdminSubjectChoice.show === "function") {
+        window.SchoolAdminSubjectChoice.show();
+      }
+    }
     if (panelId === "meet") {
       if (window.SchoolAdminMeet && typeof window.SchoolAdminMeet.show === "function") {
         window.SchoolAdminMeet.show();
@@ -3647,6 +3653,17 @@
     try { window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" }); } catch (e) { /* ignore */ }
   }
 
+
+  function bindSubjectChoiceCta() {
+    var btn = $("home-tt-goto-subject-choice");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", function () {
+      state.userPickedPanel = true;
+      switchHomePanel("subject-choice");
+    });
+  }
+
   function bindFuncBar() {
     var bar = $("home-func-bar");
     if (!bar || bar.dataset.bound === "1") return;
@@ -3656,12 +3673,15 @@
       if (!tab || !bar.contains(tab)) return;
       var id = tab.getAttribute("data-panel");
       if (!id || id === state.activePanel) return;
+      state.userPickedPanel = true;
       switchHomePanel(id);
     });
     // Keyboard: left/right between tabs
     bar.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight" && e.key !== "ArrowUp" && e.key !== "ArrowDown" && e.key !== "Home" && e.key !== "End") return;
-      var tabs = Array.prototype.slice.call(bar.querySelectorAll(".home-func-tab"));
+      var tabs = Array.prototype.slice.call(bar.querySelectorAll(".home-func-tab")).filter(function (t) {
+        return t.offsetParent !== null;
+      });
       if (!tabs.length) return;
       var i = tabs.indexOf(document.activeElement);
       if (i < 0) i = tabs.findIndex(function (t) { return t.classList.contains("active"); });
@@ -3672,6 +3692,7 @@
       else if (e.key === "Home") next = 0;
       else if (e.key === "End") next = tabs.length - 1;
       e.preventDefault();
+      state.userPickedPanel = true;
       tabs[next].focus();
       switchHomePanel(tabs[next].getAttribute("data-panel"));
     });
@@ -3733,7 +3754,12 @@
     bindDatePicker();
     bindLiveToday();
     bindFuncBar();
-    switchHomePanel(state.activePanel || "tt");
+    bindSubjectChoiceCta();
+    if (session.role === "student" && !state.userPickedPanel) {
+      switchHomePanel("subject-choice");
+    } else {
+      switchHomePanel(state.activePanel || "tt");
+    }
     renderHomeBar(session);
     loadCycleAndCalendar(session);
     if (session.role === "staff") loadTimetableCloud(session);
@@ -3844,7 +3870,11 @@
     getNoCycleDayMessage: function () { return noCycleDayMessage(); },
     getDayTone: function (day) { return topToneForDay(day == null ? effectiveCycleDay() : day); },
     getViewingCode: function () { return state.viewingCode || ""; },
-    switchPanel: switchHomePanel,
+    switchPanel: function (id) {
+      if (!id) return;
+      state.userPickedPanel = true;
+      switchHomePanel(id);
+    },
     viewTeacher: function (code) {
       var t = findTeacher(code);
       if (!t) return false;
