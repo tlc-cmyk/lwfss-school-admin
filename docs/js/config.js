@@ -13,5 +13,8 @@ window.SCHOOL_ADMIN_CONFIG = {
   // 開發／演示：若尚未設定 OAuth，可暫時用緊急通行碼（正式環境請留空字串停用）
   emergencyPassword: "",
   schoolName: "世界龍岡學校劉皇發中學",
-  schoolShort: "劉皇發中學"
+  schoolShort: "劉皇發中學",
+  // 學生填表（選科等）在獨立的學生app
+  studentAppUrl: "https://tlc-cmyk.github.io/lwfss-student-app/"
 };
+

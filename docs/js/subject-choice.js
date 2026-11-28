@@ -67,6 +67,12 @@
 
   function pad2(n) { return String(n).padStart(2, "0"); }
 
+  function studentAppUrl() {
+    var cfg = window.SCHOOL_ADMIN_CONFIG || {};
+    var u = cfg.studentAppUrl || "https://tlc-cmyk.github.io/lwfss-student-app/";
+    return String(u).replace(/\/?$/, "/");
+  }
+
   function formatHkDateTime(iso) {
     if (!iso) return "";
     var d = new Date(iso);
@@ -792,6 +798,13 @@
           '<p class="sc-deadline" id="sc-staff-status">' + escapeHtml(deadlineStatusText(roundRow, false)) + "</p>" +
         "</header>" +
         '<section class="sc-card sc-settings" aria-label="選科設定">' +
+          "<h3>學生填表網址</h3>" +
+          '<p class="sc-hint">請將以下學生app連結轉發給中三同學。學生只在學生app填表，不會在本行政系統提交。</p>' +
+          '<p class="sc-share-url"><a href="' + studentAppUrl() + '" id="sc-student-app-link">' + studentAppUrl() + "</a></p>" +
+          '<p class="sc-settings-actions" style="margin-bottom:16px">' +
+            '<button type="button" class="btn" id="sc-copy-student-url">複製連結</button>' +
+            '<span class="sc-settings-msg" id="sc-copy-msg" role="status"></span>' +
+          "</p>" +
           "<h3>改選限期與開關</h3>" +
           '<p class="sc-hint">限期以香港時間為準。未設定限期時，除非關閉表格，否則學生可隨時提交或更改。過了限期或關閉表格後，學生仍可查看已提交選擇，但不能再改選。</p>' +
           '<div class="sc-settings-row">' +
@@ -853,6 +866,23 @@
       var inp = $("sc-deadline-input");
       if (inp) inp.value = "";
     });
+    var copyBtn = $("sc-copy-student-url");
+    if (copyBtn) {
+      copyBtn.addEventListener("click", function () {
+        var url = studentAppUrl();
+        var done = function () {
+          var msg = $("sc-copy-msg");
+          if (msg) msg.textContent = "已複製學生app連結。";
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done).catch(function () {
+            window.prompt("請複製學生app連結：", url);
+          });
+        } else {
+          window.prompt("請複製學生app連結：", url);
+        }
+      });
+    }
     $("sc-save-settings") && $("sc-save-settings").addEventListener("click", saveSettings);
     $("sc-export") && $("sc-export").addEventListener("click", exportCsv);
     ["sc-filter-class", "sc-filter-maths", "sc-filter-status"].forEach(function (id) {
@@ -976,6 +1006,26 @@
     }, 500);
   }
 
+  function renderStudentRedirect() {
+    if (!root) return;
+    var url = studentAppUrl();
+    root.innerHTML =
+      '<div class="sc-wrap sc-student">' +
+        '<header class="sc-hero">' +
+          '<h2 class="sc-title">學生選科系統</h2>' +
+          '<p class="sc-subtitle">請前往學生app填寫</p>' +
+        "</header>" +
+        '<section class="sc-card" aria-label="前往學生app">' +
+          "<p>中三升中四選科已改為在獨立的<strong>學生app</strong>填寫，學校行政系統不再接受學生提交，以免兩邊重複。</p>" +
+          "<p>請用學校 Google 帳戶（@g.lwfss.edu.hk）登入學生app，選擇班別與學號後填上 1 至 21 優次，並選擇來年數學科修讀語言。</p>" +
+          '<p class="sc-actions" style="text-align:left;margin-top:12px">' +
+            '<a class="btn" id="sc-open-student-app" href="' + url + '">前往學生app填寫選科</a>' +
+          "</p>" +
+          '<p class="muted">網址：<a href="' + url + '">' + url + "</a></p>" +
+        "</section>" +
+      "</div>";
+  }
+
   async function show() {
     root = $("subject-choice-root");
     if (!root) return;
@@ -995,7 +1045,7 @@
         await loadStaffData();
         renderStaff();
       } else {
-        await loadStudent();
+        renderStudentRedirect();
       }
       loaded = true;
     } catch (e) {

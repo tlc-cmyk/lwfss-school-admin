@@ -6798,3 +6798,9 @@ html[data-theme="dark"] .sc-pill-wait { background: #332b16; color: #e0c88e; }
 html[data-theme="dark"] .sc-block-x1 .sc-block-head { background: #1a4a82; }
 html[data-theme="dark"] .sc-block-x2 .sc-block-head { background: #0c5f54; }
 html[data-theme="dark"] .sc-block-x3 .sc-block-head { background: #0b6a6a; }
+
+.sc-share-url {
+  font-size: 0.92rem;
+  word-break: break-all;
+  margin: 0 0 8px;
+}

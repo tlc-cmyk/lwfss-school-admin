@@ -3654,13 +3654,23 @@
   }
 
 
+  function studentAppUrl() {
+    var cfg = window.SCHOOL_ADMIN_CONFIG || {};
+    var u = cfg.studentAppUrl || "https://tlc-cmyk.github.io/lwfss-student-app/";
+    return String(u).replace(/\/?$/, "/");
+  }
+
   function bindSubjectChoiceCta() {
     var btn = $("home-tt-goto-subject-choice");
-    if (!btn || btn.dataset.bound === "1") return;
+    if (!btn) return;
+    var url = studentAppUrl();
+    if (btn.tagName === "A") btn.setAttribute("href", url);
+    if (btn.dataset.bound === "1") return;
     btn.dataset.bound = "1";
-    btn.addEventListener("click", function () {
-      state.userPickedPanel = true;
-      switchHomePanel("subject-choice");
+    btn.addEventListener("click", function (e) {
+      if (btn.tagName === "A") return; // let the link navigate
+      e.preventDefault();
+      window.location.href = url;
     });
   }
 
@@ -3755,7 +3765,8 @@
     bindLiveToday();
     bindFuncBar();
     bindSubjectChoiceCta();
-    if (session.role === "student" && !state.userPickedPanel) {
+    var hashPanel = (location.hash || "").replace(/^#/, "");
+    if (hashPanel === "subject-choice") {
       switchHomePanel("subject-choice");
     } else {
       switchHomePanel(state.activePanel || "tt");

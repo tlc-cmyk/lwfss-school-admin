@@ -69,7 +69,7 @@ COALESCE(auth.jwt() ->> 'email', '') ILIKE '%@g.lwfss.edu.hk'
 3. **值日**：按瀏覽日期讀 `duty_roster`；頂欄顯示「值日：T1 · T2」；無當日值日則隱藏；登入短碼若為值日老師會輕微標示。
 3b. **周會**：按瀏覽日期讀 `weekly_assemblies`（有日期嘅全校周會）；頂欄顯示「周會：主題 · P6–P7」；若當日係循環日 Day 8 但 Sheet 無該日，仍提示「Day 8 時段 · P6–P7」。今日事項會加入周會列。功能欄「Day8 周會」以按月時間軸卡片顯示全年編排（下次／今日摘要、合併同級活動、可按級別篩選）。與頂欄「早會」（`assembly_by_day`）分開。
 3. **今日事項**：優先當日 `calendar_events`（校曆備註／活動／假期／考試，含「關愛月」等；種子見 `db/seed_calendar_events.sql`），再補最多合共 3 條今日 `staff_deadlines`；頂卡內白底 inset、**單行省略**。當日**未有真 DB 資料就唔顯示**。
-4. **功能欄（sticky tabs）**：時間表（預設）／**選科**／班別／課室／**班主任**／**座位表**／文件／會議／即時空堂／**搵課室**／**備忘**／**ICT 題庫**／約開會／**今日拍卡**／**會員付費**（stub）。切換只換下方面板。學生可見時間表、**選科**、備忘、ICT 題庫、Day8 周會、日曆；學生登入後預設打開「選科」。
+4. **功能欄（sticky tabs）**：時間表（預設）／**選科**／班別／課室／**班主任**／**座位表**／文件／會議／即時空堂／**搵課室**／**備忘**／**ICT 題庫**／約開會／**今日拍卡**／**會員付費**（stub）。切換只換下方面板。學生可見時間表、**選科**（只顯示前往學生app的說明與連結）、備忘、ICT 題庫、Day8 周會、日曆。
 5. **下方面板**：預設＝D1–D10 選擇器＋教師下拉＋節卡（P1…；其間插入一般／BF 鐘聲嘅緊湊 早會／小息／午膳列；時間、現正節／休息 highlight、細倒數依選取／今日循環日揀 BF 或一般）；鐘聲類型已喺頂卡 Day N 顯示，唔再喺面板重複標「一般／BF上課時間」或教師姓名塊。**班別／課室** tab＝同一套 D1–D10（與教師時間表共用 `selectedDay`）＋班別（1A–6D）或課室選擇，按 `lessons` 過濾當日課節（教職員可用；學生稍後）。**文件／會議** tab 嵌入 `staff_deadlines` 清單（即將到期／全年、按月分組；教職員專用，學生見友善提示）；**班主任** tab＝按 `class_teachers`（2026-2027）顯示 1A–6D 班主任網格（代碼＋中文名）；撳有時間表嘅老師會切去時間表 tab（代碼別名 LTTJ→LTTT、WWKF→WWK、GG→NET、CKHC→CKH）；底部列教學職中嘅非班主任（`docs/js/form-teachers.js`）；**Day8 周會** tab＝按月時間軸卡片（下次／今日摘要、合併同級活動、可篩中一至中六；`docs/js/weekly-assemblies.js`）；**今日拍卡** tab＝上載 eClass「完整拍卡紀錄」原始數據（UTF-16／UTF-8 TSV），顯示今日已到／未拍卡（對照 `students` 名單）；資料存 `gate_attendance` 供教職員共享（`docs/js/attendance.js`＋`gate-attendance.js`）；**我的課堂** 只按 `class_code|class_no` 顯示閘口拍卡狀態（拍 HH:MM／遲拍≥08:15／未拍），無老師手動點名；**座位表** tab＝教職員為任教／班主任班編座位格（拖曳或點選學生入座）、儲存至 `seating_charts`、瀏覽器列印／另存 PDF（`docs/js/seating.js`）；**即時空堂** tab＝按香港時間＋今日循環日＋一般／BF 鐘聲（Day 5／10＝BF）判斷現正節，列出該節 `lessons` 無課之教師（`short_name`＋`name`；教職員專用）；**備忘** tab＝揀日期、編輯／儲存／刪除當日個人備忘（`personal_memos`）；**搵課室** tab＝揀循環日 D1–D10＋**多選節次**（可同時揀 P1…P7／P8；「全部」＝全選／清除），搵各選節皆空嘅課室（連續可用＝交集；優先普通課室如 301；略過操場；課室名單由時間表推導，無獨立 rooms 表；`docs/js/find-room.js`）；**約開會** tab＝揀 2–8 位同事（`teachers`），按 `lessons`／時間表計 **共同空堂**（單日 D1–D10 或全日週），每節建議可用課室（該節無人用；優先普通課室如 301；`docs/js/meet.js`）。Day 5／10 用 BF 鐘聲，其餘循環日用一般。
 
 Auth 繼續喺 `document` 派 `schooladmin:authed`；教職員／學生規則不變；前端只用 anon key，**唔用** `service_role`。
@@ -120,7 +120,9 @@ DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `own
 
 ### 中三選科系統（中三升中四）
 
-2026-2027 學年中三學生用學校 Google 帳戶（`@g.lwfss.edu.hk`）登入後，可在功能欄「選科」為 X1／X2／X3 共 21 科填上不重複的優次 1–21，並必須選擇「希望中四修讀數學科的語言」（中文修讀／英文修讀）。教職員可查看已提交／未提交名單、各科第一志願人數、匯出 CSV，以及設定改選限期（香港時間）或關閉表格。限期過後或表格關閉後，學生仍可查看已提交選擇，但不能再更改。
+學生填表已改為獨立的 [學生app](https://tlc-cmyk.github.io/lwfss-student-app/)（倉庫：`tlc-cmyk/lwfss-student-app`）。學校行政系統只負責教職員管理，避免兩邊重複提交。
+
+2026-2027 學年中三學生用學校 Google 帳戶（`@g.lwfss.edu.hk`）登入**學生app**後，為 X1／X2／X3 共 21 科填上不重複的優次 1–21，並必須選擇「希望中四修讀數學科的語言」（中文修讀／英文修讀）。教職員在本系統功能欄「選科」查看已提交／未提交名單、各科第一志願人數、匯出 CSV，以及設定改選限期（香港時間）或關閉表格；頁面亦顯示學生app連結以便轉發。學生若登入本行政系統，會看到前往學生app填表的說明與連結。限期過後或老師關閉表格後，學生在學生app仍可查看已提交選擇，但不能再更改。
 
 | 表 | 說明 |
 |----|------|
@@ -128,9 +130,11 @@ DDL／RLS：`db/personal_memos.sql`（SELECT／INSERT／UPDATE／DELETE 僅 `own
 | `subject_choice_rounds` | 每年一列：標題、是否關閉、改選限期 `deadline`（timestamptz，畫面以香港時間顯示） |
 | `subject_choice_submissions` | 每名學生每年一列：登入電郵、班別／學號、數學語言、`ranks` JSON（21 個不重複優次） |
 
-DDL／RLS：`db/subject_choice.sql`。前端：`docs/js/subject-choice.js`。寫入另有資料庫觸發器核對 1–21 不重複、必須選數學語言、班別學號必須對得上 2026-2027 中三名單，並在限期過後或鎖定後拒絕學生更新。
+DDL／RLS：`db/subject_choice.sql`（兩套前端共用同一專案）。本系統前端：`docs/js/subject-choice.js`（教職員管理）。學生填表前端在學生app。寫入另有資料庫觸發器核對 1–21 不重複、必須選數學語言、班別學號必須對得上 2026-2027 中三名單，並在限期過後或鎖定後拒絕學生更新。
 
-現時 `students.email` 全部為空，系統不能單靠電郵自動對學生。學生需選擇班別（3A–3D）與學號，確認名單上的中／英文姓名後才可提交；提交列以登入電郵＋班別＋學號保存，暫時不會把電郵寫回 `students` 表。非中三學生會看到此表格只供中三選科的說明。部署到 `admin.lwfss.edu.hk` 需要把 `docs/` 變更推上 GitHub Pages。
+現時 `students.email` 全部為空，系統不能單靠電郵自動對學生。學生需在學生app選擇班別（3A–3D）與學號，確認名單上的中／英文姓名後才可提交；提交列以登入電郵＋班別＋學號保存，暫時不會把電郵寫回 `students` 表。
+
+Supabase Authentication → URL Configuration 的 Redirect URLs 須同時允許學生app，例如 `https://tlc-cmyk.github.io/lwfss-student-app/**`（以及本機預覽 `http://localhost:8080/**`），否則學生登入後無法導回。
 
 ### 約開會（共同空堂）
 
@@ -282,6 +286,7 @@ Dashboard：<https://supabase.com/dashboard/project/edausixxdclhonkrdzqg/auth/pr
 - Site URL：`https://tlc-cmyk.github.io/lwfss-school-admin/`
 - Redirect URLs 加入（PKCE 會回到目前頁面）：
   - `https://tlc-cmyk.github.io/lwfss-school-admin/**`
+  - `https://tlc-cmyk.github.io/lwfss-student-app/**`（學生app）
   - `http://localhost:8080/**`（本機預覽）
 
 未列入允許清單時，Google 登入完成後 Supabase 會拒絕導回。
